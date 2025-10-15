@@ -34,7 +34,7 @@ function AdminDashboard() {
 
   const carregarEstadoPlayer = async () => {
     try {
-      const response = await axios.get(`${API_URL}/player/estado`);
+      const response = await axios.get(`${API_URL}/api/player/estado`);
       setEstadoPlayer(response.data);
     } catch (err) {
       console.error('Erro ao carregar estado do player:', err);
@@ -44,8 +44,8 @@ function AdminDashboard() {
   const carregarFilaPlayer = async () => {
     try {
       const [musicaAtual, fila] = await Promise.all([
-        axios.get(`${API_URL}/musicas/atual`),
-        axios.get(`${API_URL}/musicas/fila`)
+        axios.get(`${API_URL}/api/musicas/atual`),
+        axios.get(`${API_URL}/api/musicas/fila`)
       ]);
       setMusicaAtualPlayer(musicaAtual.data);
       setFilaPlayer(fila.data.filter(m => m.status !== 'tocando'));
@@ -56,7 +56,7 @@ function AdminDashboard() {
 
   const handlePlayerPlay = async () => {
     try {
-      await axios.post(`${API_URL}/player/play`, {}, {
+      await axios.post(`${API_URL}/api/player/play`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSuccess('Player tocando!');
@@ -68,7 +68,7 @@ function AdminDashboard() {
 
   const handlePlayerPause = async () => {
     try {
-      await axios.post(`${API_URL}/player/pause`, {}, {
+      await axios.post(`${API_URL}/api/player/pause`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSuccess('Player pausado!');
@@ -80,7 +80,7 @@ function AdminDashboard() {
 
   const handlePlayerSkip = async () => {
     try {
-      await axios.post(`${API_URL}/player/skip`, {}, {
+      await axios.post(`${API_URL}/api/player/skip`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSuccess('Música pulada!');
@@ -93,7 +93,7 @@ function AdminDashboard() {
 
   const carregarConfiguracoes = async () => {
     try {
-      const response = await axios.get(`${API_URL}/config`, {
+      const response = await axios.get(`${API_URL}/api/config`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setConfigs(response.data);
@@ -111,7 +111,7 @@ function AdminDashboard() {
 
     try {
       await axios.put(
-        `${API_URL}/config/${chave}`,
+        `${API_URL}/api/config/${chave}`,
         { valor },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -148,7 +148,7 @@ function AdminDashboard() {
 
     try {
       await axios.post(
-        `${API_URL}/auth/alterar-senha`,
+        `${API_URL}/api/auth/alterar-senha`,
         { senhaAtual, senhaNova },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -172,7 +172,7 @@ function AdminDashboard() {
 
     try {
       const response = await axios.post(
-        `${API_URL}/sugestoes/atualizar`,
+        `${API_URL}/api/sugestoes/atualizar`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
