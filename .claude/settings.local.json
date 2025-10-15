@@ -30,7 +30,12 @@
       "Bash(tar:*)",
       "Bash(powershell:*)",
       "Bash(\"./ffmpeg/ffmpeg-8.0-essentials_build/bin/ffprobe.exe\":*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(node seed-moderation.js)",
+      "Bash(node test-moderation.js)",
+      "Bash(gh pr list:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(node test-moderation-crud.js)"
     ],
     "deny": [],
     "ask": []

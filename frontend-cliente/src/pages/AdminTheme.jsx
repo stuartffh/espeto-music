@@ -54,7 +54,7 @@ const AdminTheme = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/admin/theme', {
+      const response = await fetch('http://localhost:3000/api/admin/theme', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ const AdminTheme = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/admin/theme/reset', {
+      const response = await fetch('http://localhost:3000/api/admin/theme/reset', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
