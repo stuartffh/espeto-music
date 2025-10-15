@@ -116,12 +116,15 @@ async function baixarVideo(youtubeId) {
         : 'ffmpeg'; // No Linux/Docker, ffmpeg estará no PATH
 
       // Construir comando completo com formato específico para browser
-      // Usa formato que garante vídeo+áudio em MP4 compatível com navegadores
-      // -f 22: 720p MP4 com áudio (pre-merged)
-      // Fallback: best format até 720p com áudio, forçando merge em MP4 com FFmpeg
-      const command = `"${ytdlpPath}" ${videoUrl} -f "22/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]" --merge-output-format mp4 --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --no-warnings --progress --newline`;
+      // Formato simples e robusto que evita bugs do yt-dlp com merge
+      // Prioriza formatos pre-merged (18=360p, 22=720p) que já contém áudio
+      // Fallback para best até 720p se pre-merged não disponível
+      const command = `"${ytdlpPath}" "${videoUrl}" -f "18/22/best[height<=720]" --merge-output-format mp4 --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --progress --newline`;
 
-      console.log(`🎬 Executando: ${command}`);
+      console.log(`🎬 Executando yt-dlp:`);
+      console.log(`   URL: ${videoUrl}`);
+      console.log(`   Output: ${tempOutputTemplate}.mp4`);
+      console.log(`   Formato: 18 (360p) ou 22 (720p) pre-merged`);
 
       const ytdlp = spawn(command, {
         shell: true,
