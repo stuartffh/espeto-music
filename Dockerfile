@@ -19,7 +19,7 @@ WORKDIR /app/frontend
 COPY frontend-cliente/package*.json ./
 
 # Instalar dependências
-RUN npm ci
+RUN npm install --production=false
 
 # Copiar código fonte
 COPY frontend-cliente/ ./
@@ -52,7 +52,7 @@ WORKDIR /app/backend
 COPY backend/package*.json ./
 
 # Instalar apenas dependências de produção
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # Copiar código fonte do backend
 COPY backend/ ./
