@@ -384,6 +384,7 @@
                 this.currentDropdown = null;
                 this.awaitingManualStart = false;
                 this.wasMutedForAutoplay = false;
+                this.smartTVEnvironment = this.detectSmartTVEnvironment();
 
                 this.init();
             }
@@ -405,11 +406,43 @@
                 } catch (e) {}
 
                 this.video.removeAttribute('src');
+                while (this.video.firstChild) {
+                    this.video.removeChild(this.video.firstChild);
+                }
                 this.video.load();
                 this.video.autoplay = true;
                 this.video.setAttribute('autoplay', '');
                 this.video.setAttribute('playsinline', '');
                 this.video.preload = 'auto';
+            }
+
+            detectSmartTVEnvironment() {
+                const ua = (navigator.userAgent || '').toLowerCase();
+                const tvKeywords = [
+                    'tizen',
+                    'webos',
+                    'web0s',
+                    'smarttv',
+                    'smart-tv',
+                    'netcast',
+                    'hbbtv',
+                    'viera',
+                    'inettvbrowser',
+                    'hisense',
+                    'philips',
+                    'panasonic',
+                    'sonybravia',
+                    'aquos',
+                    'samsungtv',
+                    'appletv',
+                    'firetv',
+                    'androidtv',
+                    'mitv',
+                    'chromecast',
+                    'roku'
+                ];
+
+                return tvKeywords.some(keyword => ua.includes(keyword));
             }
 
             setupEventListeners() {
@@ -840,30 +873,20 @@
             }
 
             loadMP4(url) {
-                this.video.src = url;
-                this.video.load();
-                this.playWithFallback({ allowMutedFallback: true }).then((success) => {
-                    if (!success) {
-                        this.showOSD();
-                    }
-                });
+                this.setNativeSource(url, 'video/mp4');
+                this.autoStartAfterSource();
             }
 
             loadHLS(url) {
                 // Check for native HLS support (Safari)
                 if (this.video.canPlayType('application/vnd.apple.mpegurl')) {
-                    this.video.src = url;
-                    this.video.load();
-                    this.playWithFallback({ allowMutedFallback: true }).then((success) => {
-                        if (!success) {
-                            this.showOSD();
-                        }
-                    });
+                    this.setNativeSource(url, 'application/vnd.apple.mpegurl');
+                    this.autoStartAfterSource();
                     return;
                 }
 
-                // Use hls.js
-                if (Hls.isSupported()) {
+                // Use hls.js when available
+                if (window.Hls && Hls.isSupported()) {
                     this.hls = new Hls({
                         enableWorker: true,
                         lowLatencyMode: false,
@@ -874,11 +897,7 @@
                     this.hls.attachMedia(this.video);
 
                     this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        this.playWithFallback({ allowMutedFallback: true }).then((success) => {
-                            if (!success) {
-                                this.showOSD();
-                            }
-                        });
+                        this.autoStartAfterSource();
                         this.populateQualityMenu();
                     });
 
@@ -887,9 +906,37 @@
                             this.handleError({ type: 'hls', data });
                         }
                     });
-                } else {
-                    this.handleError({ type: 'hls-not-supported' });
+                    return;
                 }
+
+                if (this.smartTVEnvironment) {
+                    console.info('Smart TV detectada, usando fluxo HLS nativo.');
+                }
+
+                this.setNativeSource(url, 'application/x-mpegURL');
+                this.autoStartAfterSource();
+            }
+
+            autoStartAfterSource() {
+                this.playWithFallback({ allowMutedFallback: true }).then((success) => {
+                    if (!success) {
+                        this.showOSD();
+                    }
+                });
+            }
+
+            setNativeSource(url, mimeType) {
+                this.video.src = url;
+
+                const source = document.createElement('source');
+                source.src = url;
+
+                if (mimeType) {
+                    source.type = mimeType;
+                }
+
+                this.video.appendChild(source);
+                this.video.load();
             }
 
             populateQualityMenu() {
