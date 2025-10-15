@@ -105,9 +105,15 @@ async function baixarVideo(youtubeId) {
   // Criar a Promise de download
   const downloadPromise = new Promise((resolve, reject) => {
     try {
-      // Usar yt-dlp via shell (mais simples e confiável no Windows)
-      const ytdlpPath = 'C:\\Users\\User\\AppData\\Roaming\\Python\\Python313\\Scripts\\yt-dlp.exe';
-      const ffmpegPath = path.join(__dirname, '../../ffmpeg/ffmpeg-8.0-essentials_build/bin/ffmpeg.exe');
+      // Detectar ambiente e usar o caminho apropriado do yt-dlp
+      const isWindows = process.platform === 'win32';
+      const ytdlpPath = isWindows
+        ? 'C:\\Users\\User\\AppData\\Roaming\\Python\\Python313\\Scripts\\yt-dlp.exe'
+        : 'yt-dlp'; // No Linux/Docker, yt-dlp estará no PATH
+
+      const ffmpegPath = isWindows
+        ? path.join(__dirname, '../../ffmpeg/ffmpeg-8.0-essentials_build/bin/ffmpeg.exe')
+        : 'ffmpeg'; // No Linux/Docker, ffmpeg estará no PATH
 
       // Construir comando completo com formato específico para browser
       // Usa formato que garante vídeo+áudio em MP4 compatível com navegadores
