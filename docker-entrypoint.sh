@@ -12,17 +12,11 @@ npx prisma migrate deploy || echo "⚠️ Nenhuma migração pendente ou erro ao
 echo "🔧 Gerando Prisma Client..."
 npx prisma generate
 
-# Verificar se os diretórios de frontend existem
-if [ -d "/app/frontend-cliente/dist" ]; then
-  echo "✅ Frontend Cliente encontrado"
+# Verificar se o diretório de frontend existe
+if [ -d "/app/frontend/dist" ]; then
+  echo "✅ Frontend encontrado"
 else
-  echo "⚠️ Frontend Cliente não encontrado em /app/frontend-cliente/dist"
-fi
-
-if [ -d "/app/frontend-tv/dist" ]; then
-  echo "✅ Frontend TV encontrado"
-else
-  echo "⚠️ Frontend TV não encontrado em /app/frontend-tv/dist"
+  echo "⚠️ Frontend não encontrado em /app/frontend/dist"
 fi
 
 echo "🎵 Iniciando servidor..."
