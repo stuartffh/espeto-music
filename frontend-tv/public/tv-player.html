@@ -254,6 +254,26 @@
             display: block;
         }
 
+        /* Interaction Prompt */
+        .interaction-prompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(16,16,16,0.95);
+            padding: 36px 48px;
+            border-radius: 12px;
+            font-size: 24px;
+            text-align: center;
+            display: none;
+            border: 2px solid rgba(255,255,255,0.15);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+        }
+
+        .interaction-prompt.visible {
+            display: block;
+        }
+
         /* Volume Indicator */
         .volume-indicator {
             position: absolute;
@@ -293,6 +313,7 @@
 
         <div class="loading-spinner" id="loading-spinner"></div>
         <div class="error-message" id="error-message"></div>
+        <div class="interaction-prompt" id="interaction-prompt"></div>
 
         <div class="volume-indicator" id="volume-indicator">
             🔊 Volume
@@ -354,12 +375,16 @@
                 this.errorMessage = document.getElementById('error-message');
                 this.volumeIndicator = document.getElementById('volume-indicator');
                 this.volumeFill = document.getElementById('volume-fill');
+                this.interactionPrompt = document.getElementById('interaction-prompt');
 
                 this.hls = null;
                 this.hideTimeout = null;
                 this.volumeTimeout = null;
                 this.focusedElement = null;
                 this.currentDropdown = null;
+                this.awaitingManualStart = false;
+                this.wasMutedForAutoplay = false;
+                this.smartTVEnvironment = this.detectSmartTVEnvironment();
 
                 this.init();
             }
@@ -368,6 +393,56 @@
                 this.setupEventListeners();
                 this.setupKeyboardNavigation();
                 this.focusElement(this.btnPlayPause);
+            }
+
+            prepareForNewSource() {
+                this.hideInteractionPrompt();
+                this.errorMessage.classList.remove('visible');
+                this.awaitingManualStart = false;
+                this.wasMutedForAutoplay = false;
+
+                try {
+                    this.video.pause();
+                } catch (e) {}
+
+                this.video.removeAttribute('src');
+                while (this.video.firstChild) {
+                    this.video.removeChild(this.video.firstChild);
+                }
+                this.video.load();
+                this.video.autoplay = true;
+                this.video.setAttribute('autoplay', '');
+                this.video.setAttribute('playsinline', '');
+                this.video.preload = 'auto';
+            }
+
+            detectSmartTVEnvironment() {
+                const ua = (navigator.userAgent || '').toLowerCase();
+                const tvKeywords = [
+                    'tizen',
+                    'webos',
+                    'web0s',
+                    'smarttv',
+                    'smart-tv',
+                    'netcast',
+                    'hbbtv',
+                    'viera',
+                    'inettvbrowser',
+                    'hisense',
+                    'philips',
+                    'panasonic',
+                    'sonybravia',
+                    'aquos',
+                    'samsungtv',
+                    'appletv',
+                    'firetv',
+                    'androidtv',
+                    'mitv',
+                    'chromecast',
+                    'roku'
+                ];
+
+                return tvKeywords.some(keyword => ua.includes(keyword));
             }
 
             setupEventListeners() {
@@ -389,7 +464,19 @@
                 this.video.addEventListener('loadedmetadata', () => this.updateDuration());
                 this.video.addEventListener('waiting', () => this.showLoading());
                 this.video.addEventListener('canplay', () => this.hideLoading());
-                this.video.addEventListener('playing', () => this.updatePlayButton());
+                this.video.addEventListener('playing', () => {
+                    this.updatePlayButton();
+                    this.hideInteractionPrompt();
+                    this.awaitingManualStart = false;
+
+                    if (this.wasMutedForAutoplay) {
+                        setTimeout(() => {
+                            this.video.muted = false;
+                            this.video.removeAttribute('muted');
+                            this.wasMutedForAutoplay = false;
+                        }, 200);
+                    }
+                });
                 this.video.addEventListener('pause', () => this.updatePlayButton());
                 this.video.addEventListener('error', (e) => this.handleError(e));
                 this.video.addEventListener('ended', () => this.handleEnded());
@@ -530,7 +617,9 @@
 
             togglePlayPause() {
                 if (this.video.paused) {
-                    this.video.play();
+                    this.awaitingManualStart = false;
+                    this.hideInteractionPrompt();
+                    this.playWithFallback({ allowMutedFallback: true, triggeredByUser: true });
                 } else {
                     this.video.pause();
                 }
@@ -627,6 +716,55 @@
                 this.loadingSpinner.classList.remove('visible');
             }
 
+            showInteractionPrompt() {
+                if (!this.interactionPrompt) return;
+                this.interactionPrompt.textContent = 'Pressione OK/Enter para iniciar o vídeo com áudio.';
+                this.interactionPrompt.classList.add('visible');
+                this.showOSD();
+                this.focusElement(this.btnPlayPause);
+            }
+
+            hideInteractionPrompt() {
+                if (!this.interactionPrompt) return;
+                this.interactionPrompt.classList.remove('visible');
+            }
+
+            async playWithFallback({ allowMutedFallback = true, triggeredByUser = false } = {}) {
+                try {
+                    this.hideInteractionPrompt();
+                    this.errorMessage.classList.remove('visible');
+
+                    const playResult = this.video.play();
+
+                    if (playResult && typeof playResult.then === 'function') {
+                        await playResult;
+                    }
+
+                    return true;
+                } catch (error) {
+                    console.warn('Autoplay failed:', error);
+
+                    if (allowMutedFallback && !this.video.muted) {
+                        this.wasMutedForAutoplay = true;
+                        this.video.muted = true;
+                        this.video.setAttribute('muted', '');
+                        return this.playWithFallback({ allowMutedFallback: false, triggeredByUser });
+                    }
+
+                    if (!triggeredByUser) {
+                        this.awaitingManualStart = true;
+                        this.showInteractionPrompt();
+                        this.hideLoading();
+                    } else {
+                        this.errorMessage.textContent = 'Não foi possível iniciar a reprodução automática.';
+                        this.errorMessage.classList.add('visible');
+                        this.hideLoading();
+                    }
+
+                    return false;
+                }
+            }
+
             handleError(e) {
                 const error = this.video.error;
                 let message = 'Erro ao reproduzir vídeo';
@@ -651,6 +789,8 @@
                 this.errorMessage.textContent = message;
                 this.errorMessage.classList.add('visible');
                 this.hideLoading();
+                this.hideInteractionPrompt();
+                this.awaitingManualStart = false;
             }
 
             handleEnded() {
@@ -701,8 +841,10 @@
             }
 
             loadVideo(url, type = 'auto') {
-                this.errorMessage.classList.remove('visible');
+                this.prepareForNewSource();
                 this.showLoading();
+                this.video.muted = false;
+                this.video.removeAttribute('muted');
 
                 // Detect type from URL if auto
                 if (type === 'auto') {
@@ -725,24 +867,26 @@
                     this.loadHLS(url);
                 } else if (type === 'mp4') {
                     this.loadMP4(url);
+                } else {
+                    this.loadMP4(url);
                 }
             }
 
             loadMP4(url) {
-                this.video.src = url;
-                this.video.load();
-                this.video.play().catch(e => console.error('Autoplay failed:', e));
+                this.setNativeSource(url, 'video/mp4');
+                this.autoStartAfterSource();
             }
 
             loadHLS(url) {
                 // Check for native HLS support (Safari)
                 if (this.video.canPlayType('application/vnd.apple.mpegurl')) {
-                    this.loadMP4(url);
+                    this.setNativeSource(url, 'application/vnd.apple.mpegurl');
+                    this.autoStartAfterSource();
                     return;
                 }
 
-                // Use hls.js
-                if (Hls.isSupported()) {
+                // Use hls.js when available
+                if (window.Hls && Hls.isSupported()) {
                     this.hls = new Hls({
                         enableWorker: true,
                         lowLatencyMode: false,
@@ -753,7 +897,7 @@
                     this.hls.attachMedia(this.video);
 
                     this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        this.video.play().catch(e => console.error('Autoplay failed:', e));
+                        this.autoStartAfterSource();
                         this.populateQualityMenu();
                     });
 
@@ -762,9 +906,37 @@
                             this.handleError({ type: 'hls', data });
                         }
                     });
-                } else {
-                    this.handleError({ type: 'hls-not-supported' });
+                    return;
                 }
+
+                if (this.smartTVEnvironment) {
+                    console.info('Smart TV detectada, usando fluxo HLS nativo.');
+                }
+
+                this.setNativeSource(url, 'application/x-mpegURL');
+                this.autoStartAfterSource();
+            }
+
+            autoStartAfterSource() {
+                this.playWithFallback({ allowMutedFallback: true }).then((success) => {
+                    if (!success) {
+                        this.showOSD();
+                    }
+                });
+            }
+
+            setNativeSource(url, mimeType) {
+                this.video.src = url;
+
+                const source = document.createElement('source');
+                source.src = url;
+
+                if (mimeType) {
+                    source.type = mimeType;
+                }
+
+                this.video.appendChild(source);
+                this.video.load();
             }
 
             populateQualityMenu() {
