@@ -10,6 +10,7 @@ function App() {
   const [socket, setSocket] = useState(null);
   const [estadoPlayer, setEstadoPlayer] = useState(null);
   const [iframeReady, setIframeReady] = useState(false);
+  const [autoplayConsent, setAutoplayConsent] = useState(false);
   const videoRef = useRef(null);
 
   const handleVideoEnd = useCallback(() => {
@@ -71,8 +72,28 @@ function App() {
 
   useEffect(() => {
     const messageHandler = (event) => {
-      if (event.data?.type === 'video-ended') {
-        handleVideoEnd();
+      const { type, autoplayConsent: consentValue } = event.data || {};
+
+      switch (type) {
+        case 'video-ended':
+          handleVideoEnd();
+          break;
+        case 'player-ready':
+          console.log('✅ Player da TV sinalizou que está pronto');
+          setIframeReady(true);
+          setAutoplayConsent(Boolean(consentValue));
+          break;
+        case 'autoplay-consent-changed':
+          setAutoplayConsent(Boolean(event.data?.value));
+          break;
+        case 'player-autoplay-blocked':
+          console.warn('⚠️ Player da TV sinalizou bloqueio de autoplay. Aguardando interação do usuário.');
+          break;
+        case 'player-autoplay-muted':
+          console.warn('ℹ️ Player da TV iniciou reprodução sem áudio. Aguarde interação para ativar o som.');
+          break;
+        default:
+          break;
       }
     };
 
@@ -101,9 +122,10 @@ function App() {
     iframeWindow.postMessage({
       type: 'load-video',
       url: videoUrl,
-      format: 'mp4'
+      format: 'mp4',
+      autoplayConsent
     }, '*');
-  }, []);
+  }, [autoplayConsent]);
 
   useEffect(() => {
     if (!estadoPlayer?.musicaAtual) {
@@ -157,7 +179,11 @@ function App() {
               allow="autoplay; fullscreen"
               onLoad={() => {
                 console.log('✅ Player da TV carregado');
-                setIframeReady(true);
+
+                const iframeWindow = videoRef.current?.contentWindow;
+                if (iframeWindow) {
+                  iframeWindow.postMessage({ type: 'host-ready' }, '*');
+                }
               }}
             />
           ) : (
