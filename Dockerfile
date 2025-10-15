@@ -12,9 +12,9 @@ WORKDIR /app
 COPY frontend-cliente/package*.json ./frontend-cliente/
 COPY frontend-tv/package*.json ./frontend-tv/
 
-# Instalar dependências dos frontends
-RUN cd frontend-cliente && npm install --production
-RUN cd frontend-tv && npm install --production
+# Instalar dependências dos frontends (incluindo devDependencies para build)
+RUN cd frontend-cliente && npm install
+RUN cd frontend-tv && npm install
 
 # Copiar código fonte dos frontends
 COPY frontend-cliente/ ./frontend-cliente/
