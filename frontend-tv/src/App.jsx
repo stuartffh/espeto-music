@@ -2,8 +2,68 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 
-const SOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL || 'http://localhost:3000';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const sanitizeUrl = (url) => {
+  if (!url) {
+    return '';
+  }
+
+  try {
+    const trimmed = url.trim();
+    return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+  } catch (error) {
+    console.error('Erro ao sanitizar URL do backend:', error);
+    return url;
+  }
+};
+
+const detectBackendBaseUrl = () => {
+  const envUrl = sanitizeUrl(import.meta.env.VITE_API_URL);
+
+  if (envUrl) {
+    return envUrl;
+  }
+
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname, port } = window.location;
+
+    if (!hostname) {
+      return 'http://localhost:3000';
+    }
+
+    const normalizedProtocol = protocol || 'http:';
+    const normalizedHostname = hostname === '[::]' ? 'localhost' : hostname;
+
+    if (!port || port === '80' || port === '443') {
+      return `${normalizedProtocol}//${normalizedHostname}`;
+    }
+
+    if (port === '3000') {
+      return `${normalizedProtocol}//${normalizedHostname}:3000`;
+    }
+
+    return `${normalizedProtocol}//${normalizedHostname}:3000`;
+  }
+
+  return 'http://localhost:3000';
+};
+
+const detectSocketUrl = () => {
+  const envUrl = sanitizeUrl(import.meta.env.VITE_WEBSOCKET_URL);
+
+  if (envUrl) {
+    return envUrl;
+  }
+
+  return detectBackendBaseUrl();
+};
+
+const API_URL = detectBackendBaseUrl();
+const SOCKET_URL = detectSocketUrl();
+
+const api = axios.create({
+  baseURL: API_URL,
+  timeout: 15000,
+});
 
 function App() {
   const [fila, setFila] = useState([]);
@@ -28,7 +88,7 @@ function App() {
     console.log('🔌 Conectando ao backend...');
 
     // Buscar fila inicial
-    axios.get(`${API_URL}/api/musicas/fila`)
+    api.get('/api/musicas/fila')
       .then(res => {
         const filaFiltrada = res.data.filter(m => m.status !== 'tocando');
         console.log('📋 Fila:', filaFiltrada.length, 'músicas');
@@ -37,7 +97,7 @@ function App() {
       .catch(console.error);
 
     // Buscar estado do player
-    axios.get(`${API_URL}/api/player/estado`)
+    api.get('/api/player/estado')
       .then(res => {
         console.log('🎮 Estado do player:', res.data);
         setEstadoPlayer(res.data);
