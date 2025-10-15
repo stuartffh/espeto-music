@@ -6,14 +6,14 @@
 # ============================================
 # Stage 1: Build Frontend Cliente
 # ============================================
-FROM node:20-alpine AS frontend-cliente-builder
+FROM node:20-alpine AS frontend-builder
 
 # Build args para variáveis VITE
 ARG VITE_API_URL=https://espeto.zapchatbr.com
 
 ENV VITE_API_URL=$VITE_API_URL
 
-WORKDIR /app/frontend-cliente
+WORKDIR /app/frontend
 
 # Copiar package files
 COPY frontend-cliente/package*.json ./
@@ -27,35 +27,11 @@ COPY frontend-cliente/ ./
 # Criar .env.production
 RUN echo "VITE_API_URL=${VITE_API_URL}" > .env.production
 
-# Build do frontend cliente
+# Build do frontend
 RUN npm run build
 
 # ============================================
-# Stage 2: Build Frontend TV
-# ============================================
-FROM node:20-alpine AS frontend-tv-builder
-
-# Build args para variáveis VITE
-ARG VITE_API_URL=https://espeto.zapchatbr.com
-
-ENV VITE_API_URL=$VITE_API_URL
-
-WORKDIR /app/frontend-tv
-
-# Copiar package files
-COPY frontend-tv/package*.json ./
-
-# Instalar dependências
-RUN npm ci
-
-# Copiar código fonte
-COPY frontend-tv/ ./
-
-# Build do frontend TV
-RUN npm run build
-
-# ============================================
-# Stage 3: Produção (Backend + Frontends)
+# Stage 2: Produção (Backend + Frontend)
 # ============================================
 FROM node:20-slim
 
@@ -81,9 +57,8 @@ RUN npm ci --only=production
 # Copiar código fonte do backend
 COPY backend/ ./
 
-# Copiar build dos frontends
-COPY --from=frontend-cliente-builder /app/frontend-cliente/dist /app/frontend-cliente/dist
-COPY --from=frontend-tv-builder /app/frontend-tv/dist /app/frontend-tv/dist
+# Copiar build do frontend para o local correto (backend espera em ../frontend/dist)
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 # Criar diretórios necessários
 RUN mkdir -p /app/backend/downloads \

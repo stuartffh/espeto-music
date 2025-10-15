@@ -20,8 +20,8 @@ docker-compose up -d
 docker-compose logs -f
 
 # 5. Acessar aplicação
-# Frontend Cliente: https://espeto.zapchatbr.com
-# Frontend TV: https://espeto.zapchatbr.com/tv
+# Frontend: https://espeto.zapchatbr.com
+# Admin Login: https://espeto.zapchatbr.com/admin/login
 # Admin Theme: https://espeto.zapchatbr.com/admin/theme
 ```
 
