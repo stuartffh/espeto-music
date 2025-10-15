@@ -35,7 +35,8 @@
       "Bash(node test-moderation.js)",
       "Bash(gh pr list:*)",
       "WebFetch(domain:github.com)",
-      "Bash(node test-moderation-crud.js)"
+      "Bash(node test-moderation-crud.js)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []

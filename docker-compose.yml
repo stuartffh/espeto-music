@@ -5,27 +5,55 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # URL da API em produção
+        VITE_API_URL: https://espeto.zapchatbr.com
     container_name: espeto-music
     ports:
       - "3000:3000"
     environment:
+      # Servidor
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_URL=file:./prisma/dev.db
+
+      # URLs Frontend
+      - FRONTEND_URL=https://espeto.zapchatbr.com
+      - TV_PANEL_URL=https://espeto.zapchatbr.com/tv
+
+      # Database
+      - DATABASE_URL=file:./prisma/production.db
+
+      # JWT Secret (IMPORTANTE: Altere para um valor seguro!)
+      - JWT_SECRET=${JWT_SECRET:-change-this-to-a-secure-random-string-min-32-chars}
+
+      # Mercado Pago (Configure suas credenciais)
+      - MERCADOPAGO_ACCESS_TOKEN=${MERCADOPAGO_ACCESS_TOKEN}
+      - MERCADOPAGO_PUBLIC_KEY=${MERCADOPAGO_PUBLIC_KEY}
+
+      # YouTube API
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+
+      # Configurações do Sistema
+      - PRECO_MUSICA=${PRECO_MUSICA:-5.00}
+      - MAX_MUSICAS_FILA=${MAX_MUSICAS_FILA:-50}
+      - BASE_URL=https://espeto.zapchatbr.com
+
     volumes:
       # Persistir banco de dados
       - ./data/prisma:/app/backend/prisma
-      # Persistir downloads
+      # Persistir downloads de música
       - ./data/downloads:/app/backend/downloads
+      # Persistir uploads
+      - ./data/uploads:/app/backend/uploads
+
     restart: unless-stopped
+
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
-# Volumes nomeados (opcional - use se preferir volumes Docker ao invés de bind mounts)
-# volumes:
-#   prisma-data:
-#   downloads-data:
+# Para usar em desenvolvimento local:
+# docker-compose -f docker-compose.dev.yml up

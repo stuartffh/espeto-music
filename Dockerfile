@@ -1,70 +1,94 @@
-# Dockerfile Multi-Stage para Espeto Music
-# Otimizado para Easypanel
+# ============================================
+# Multi-Stage Dockerfile para Espeto Music
+# Otimizado para produção
+# ============================================
 
 # ============================================
-# Stage 1: Build do Frontend Unificado
+# Stage 1: Build Frontend Cliente
 # ============================================
-FROM node:20-alpine AS frontend-builder
+FROM node:20-alpine AS frontend-cliente-builder
 
-# Build args para variáveis VITE (serão injetadas durante o build)
-ARG VITE_API_URL
-ARG VITE_WEBSOCKET_URL
-ARG VITE_MERCADOPAGO_PUBLIC_KEY
+# Build args para variáveis VITE
+ARG VITE_API_URL=https://espeto.zapchatbr.com
 
-# Expor como variáveis de ambiente para o Vite
 ENV VITE_API_URL=$VITE_API_URL
-ENV VITE_WEBSOCKET_URL=$VITE_WEBSOCKET_URL
-ENV VITE_MERCADOPAGO_PUBLIC_KEY=$VITE_MERCADOPAGO_PUBLIC_KEY
 
-WORKDIR /app
+WORKDIR /app/frontend-cliente
 
-# Copiar package.json do frontend unificado
-COPY frontend/package*.json ./frontend/
+# Copiar package files
+COPY frontend-cliente/package*.json ./
 
-# Instalar dependências do frontend (incluindo devDependencies para build)
-RUN cd frontend && npm install
+# Instalar dependências
+RUN npm ci
 
-# Copiar código fonte do frontend
-COPY frontend/ ./frontend/
+# Copiar código fonte
+COPY frontend-cliente/ ./
 
-# Build do frontend unificado (variáveis VITE_* serão "queimadas" no código)
-RUN cd frontend && npm run build
+# Criar .env.production
+RUN echo "VITE_API_URL=${VITE_API_URL}" > .env.production
+
+# Build do frontend cliente
+RUN npm run build
 
 # ============================================
-# Stage 2: Backend + Produção
+# Stage 2: Build Frontend TV
+# ============================================
+FROM node:20-alpine AS frontend-tv-builder
+
+# Build args para variáveis VITE
+ARG VITE_API_URL=https://espeto.zapchatbr.com
+
+ENV VITE_API_URL=$VITE_API_URL
+
+WORKDIR /app/frontend-tv
+
+# Copiar package files
+COPY frontend-tv/package*.json ./
+
+# Instalar dependências
+RUN npm ci
+
+# Copiar código fonte
+COPY frontend-tv/ ./
+
+# Build do frontend TV
+RUN npm run build
+
+# ============================================
+# Stage 3: Produção (Backend + Frontends)
 # ============================================
 FROM node:20-slim
 
-# Instalar dependências necessárias (ffmpeg, Python3 e yt-dlp para downloads)
+# Instalar dependências do sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     python3 \
     python3-pip \
     openssl \
     ca-certificates \
+    curl \
     && pip3 install --break-system-packages --no-cache-dir yt-dlp \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
-# Copiar package.json do backend
-COPY backend/package*.json ./backend/
-
-# Instalar dependências do backend
 WORKDIR /app/backend
-RUN npm install --production
+
+# Copiar package files do backend
+COPY backend/package*.json ./
+
+# Instalar apenas dependências de produção
+RUN npm ci --only=production
 
 # Copiar código fonte do backend
 COPY backend/ ./
 
-# Copiar build do frontend unificado do stage anterior
-COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
+# Copiar build dos frontends
+COPY --from=frontend-cliente-builder /app/frontend-cliente/dist /app/frontend-cliente/dist
+COPY --from=frontend-tv-builder /app/frontend-tv/dist /app/frontend-tv/dist
 
 # Criar diretórios necessários
-RUN mkdir -p /app/backend/downloads /app/backend/prisma
-
-# Copiar schema do Prisma se existir
-COPY backend/prisma ./prisma
+RUN mkdir -p /app/backend/downloads \
+    && mkdir -p /app/backend/prisma \
+    && mkdir -p /app/backend/uploads
 
 # Gerar Prisma Client
 RUN npx prisma generate
@@ -73,13 +97,13 @@ RUN npx prisma generate
 EXPOSE 3000
 
 # Variáveis de ambiente padrão
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV DATABASE_URL=file:./prisma/dev.db
+ENV NODE_ENV=production \
+    PORT=3000 \
+    DATABASE_URL=file:./prisma/production.db
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Script de inicialização
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
