@@ -5,6 +5,71 @@ import useAuthStore from '../../store/authStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+const THEME_DEFAULTS = {
+  THEME_PRIMARY: '#7c3aed',
+  THEME_SECONDARY: '#f472b6',
+  THEME_ACCENT: '#facc15',
+  THEME_BACKGROUND: '#0f172a',
+  THEME_SURFACE: '#ffffff',
+  THEME_TEXT: '#f8fafc',
+};
+
+const THEME_LABELS = {
+  THEME_PRIMARY: 'Cor Primária',
+  THEME_SECONDARY: 'Cor Secundária',
+  THEME_ACCENT: 'Cor de Destaque',
+  THEME_BACKGROUND: 'Cor de Fundo',
+  THEME_SURFACE: 'Cor de Superfície',
+  THEME_TEXT: 'Cor de Texto',
+};
+
+const APPEARANCE_CONFIG_KEYS = [...Object.keys(THEME_DEFAULTS), 'TV_IDLE_VIDEO_URL'];
+
+const DEFAULT_CONFIGS = [
+  {
+    chave: 'THEME_PRIMARY',
+    valor: THEME_DEFAULTS.THEME_PRIMARY,
+    tipo: 'color',
+    descricao: 'Cor primária utilizada nos botões e destaques do cliente.',
+  },
+  {
+    chave: 'THEME_SECONDARY',
+    valor: THEME_DEFAULTS.THEME_SECONDARY,
+    tipo: 'color',
+    descricao: 'Cor secundária utilizada em gradientes e detalhes.',
+  },
+  {
+    chave: 'THEME_ACCENT',
+    valor: THEME_DEFAULTS.THEME_ACCENT,
+    tipo: 'color',
+    descricao: 'Cor de destaque aplicada em alertas e badges.',
+  },
+  {
+    chave: 'THEME_BACKGROUND',
+    valor: THEME_DEFAULTS.THEME_BACKGROUND,
+    tipo: 'color',
+    descricao: 'Cor de fundo padrão para áreas principais.',
+  },
+  {
+    chave: 'THEME_SURFACE',
+    valor: THEME_DEFAULTS.THEME_SURFACE,
+    tipo: 'color',
+    descricao: 'Cor de superfície dos cartões e blocos.',
+  },
+  {
+    chave: 'THEME_TEXT',
+    valor: THEME_DEFAULTS.THEME_TEXT,
+    tipo: 'color',
+    descricao: 'Cor principal dos textos sobre o gradiente.',
+  },
+  {
+    chave: 'TV_IDLE_VIDEO_URL',
+    valor: '',
+    tipo: 'text',
+    descricao: 'URL do vídeo exibido na TV quando não há músicas tocando.',
+  },
+];
+
 function AdminDashboard() {
   const { admin, logout, token } = useAuthStore();
   const navigate = useNavigate();
@@ -25,11 +90,14 @@ function AdminDashboard() {
   const [estadoPlayer, setEstadoPlayer] = useState({ status: 'stopped', volume: 80 });
   const [musicaAtualPlayer, setMusicaAtualPlayer] = useState(null);
   const [filaPlayer, setFilaPlayer] = useState([]);
+  const [idleVideoInfo, setIdleVideoInfo] = useState({ url: '', relativePath: '', atualizadoEm: null });
+  const [uploadingIdleVideo, setUploadingIdleVideo] = useState(false);
 
   useEffect(() => {
     carregarConfiguracoes();
     carregarEstadoPlayer();
     carregarFilaPlayer();
+    carregarIdleVideoInfo();
   }, []);
 
   const carregarEstadoPlayer = async () => {
@@ -51,6 +119,147 @@ function AdminDashboard() {
       setFilaPlayer(fila.data.filter(m => m.status !== 'tocando'));
     } catch (err) {
       console.error('Erro ao carregar fila:', err);
+    }
+  };
+
+  const garantirConfiguracoesPadrao = async (lista) => {
+    const existentes = new Map(lista.map((item) => [item.chave, item]));
+    const criados = [];
+
+    for (const configPadrao of DEFAULT_CONFIGS) {
+      if (!existentes.has(configPadrao.chave)) {
+        try {
+          const resposta = await axios.post(
+            `${API_URL}/api/config`,
+            configPadrao,
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+          criados.push(resposta.data);
+        } catch (erroCriacao) {
+          console.error(`Erro ao criar configuração padrão ${configPadrao.chave}:`, erroCriacao);
+        }
+      }
+    }
+
+    return [...lista, ...criados];
+  };
+
+  const carregarIdleVideoInfo = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/media/tv-idle-video`);
+      setIdleVideoInfo(response.data);
+    } catch (err) {
+      console.error('Erro ao carregar vídeo ocioso da TV:', err);
+    }
+  };
+
+  const handleUploadIdleVideo = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('video/')) {
+      setError('Selecione um arquivo de vídeo válido (MP4, WEBM ou MOV).');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 200 * 1024 * 1024) {
+      setError('O vídeo deve ter no máximo 200MB.');
+      event.target.value = '';
+      return;
+    }
+
+    setUploadingIdleVideo(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const formData = new FormData();
+      formData.append('video', file);
+
+      const response = await axios.post(`${API_URL}/api/media/tv-idle-video`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      setIdleVideoInfo(response.data);
+      setConfigs((prev) =>
+        prev.map((config) =>
+          config.chave === 'TV_IDLE_VIDEO_URL'
+            ? { ...config, valor: response.data.relativePath }
+            : config
+        ),
+      );
+      setSuccess('Vídeo atualizado com sucesso!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.erro || 'Erro ao enviar vídeo');
+    } finally {
+      setUploadingIdleVideo(false);
+      if (event.target) {
+        event.target.value = '';
+      }
+    }
+  };
+
+  const handleRemoverIdleVideo = async () => {
+    setError('');
+    setSuccess('');
+    try {
+      await axios.delete(`${API_URL}/api/media/tv-idle-video`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setIdleVideoInfo({ url: '', relativePath: '', atualizadoEm: null });
+      setConfigs((prev) =>
+        prev.map((config) =>
+          config.chave === 'TV_IDLE_VIDEO_URL' ? { ...config, valor: '' } : config
+        ),
+      );
+      setSuccess('Vídeo removido com sucesso!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.erro || 'Erro ao remover vídeo');
+    }
+  };
+
+  const handleRestaurarCores = async () => {
+    setSaving(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await Promise.all(
+        Object.entries(THEME_DEFAULTS).map(([chave, valorPadrao]) =>
+          axios.put(
+            `${API_URL}/api/config/${chave}`,
+            {
+              valor: valorPadrao,
+              tipo: 'color',
+              descricao: THEME_LABELS[chave],
+            },
+            { headers: { Authorization: `Bearer ${token}` } },
+          ),
+        ),
+      );
+
+      setConfigs((prev) =>
+        prev.map((config) =>
+          THEME_DEFAULTS[config.chave]
+            ? { ...config, valor: THEME_DEFAULTS[config.chave] }
+            : config
+        ),
+      );
+
+      setSuccess('Paleta restaurada para os padrões!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Erro ao restaurar paleta padrão');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -96,7 +305,9 @@ function AdminDashboard() {
       const response = await axios.get(`${API_URL}/api/config`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setConfigs(response.data);
+      const listaComPadroes = await garantirConfiguracoesPadrao(response.data);
+      listaComPadroes.sort((a, b) => a.chave.localeCompare(b.chave));
+      setConfigs(listaComPadroes);
       setLoading(false);
     } catch (err) {
       setError('Erro ao carregar configurações');
@@ -104,7 +315,7 @@ function AdminDashboard() {
     }
   };
 
-  const atualizarConfig = async (chave, valor) => {
+  const atualizarConfig = async (chave, valor, extras = {}) => {
     setSaving(true);
     setError('');
     setSuccess('');
@@ -112,12 +323,12 @@ function AdminDashboard() {
     try {
       await axios.put(
         `${API_URL}/api/config/${chave}`,
-        { valor },
+        { valor, ...extras },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setConfigs(
-        configs.map((c) => (c.chave === chave ? { ...c, valor: String(valor) } : c))
+      setConfigs((prev) =>
+        prev.map((c) => (c.chave === chave ? { ...c, valor: String(valor) } : c))
       );
 
       setSuccess('Configuração atualizada!');
@@ -193,7 +404,10 @@ function AdminDashboard() {
 
   const renderCampoConfig = (config) => {
     const handleChange = (newValue) => {
-      atualizarConfig(config.chave, newValue);
+      atualizarConfig(config.chave, newValue, {
+        descricao: config.descricao,
+        tipo: config.tipo,
+      });
     };
 
     switch (config.tipo) {
@@ -234,6 +448,20 @@ function AdminDashboard() {
           />
         );
 
+      case 'color':
+        return (
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              value={config.valor || '#ffffff'}
+              onChange={(e) => handleChange(e.target.value)}
+              disabled={saving}
+              className="w-16 h-10 border border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-600 font-mono">{config.valor}</span>
+          </div>
+        );
+
       default: // text
         return (
           <input
@@ -246,6 +474,24 @@ function AdminDashboard() {
         );
     }
   };
+
+  const configsPorChave = configs.reduce((acc, item) => {
+    acc[item.chave] = item;
+    return acc;
+  }, {});
+
+  const configuracoesGerais = configs.filter(
+    (config) => !APPEARANCE_CONFIG_KEYS.includes(config.chave),
+  );
+
+  const themeConfigs = Object.keys(THEME_DEFAULTS).map((chave) =>
+    configsPorChave[chave] || {
+      chave,
+      valor: THEME_DEFAULTS[chave],
+      tipo: 'color',
+      descricao: THEME_LABELS[chave],
+    },
+  );
 
   if (loading) {
     return (
@@ -315,6 +561,16 @@ function AdminDashboard() {
               Configurações do Sistema
             </button>
             <button
+              onClick={() => setAbaAtiva('aparencia')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                abaAtiva === 'aparencia'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Aparência & TV
+            </button>
+            <button
               onClick={() => setAbaAtiva('senha')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 abaAtiva === 'senha'
@@ -357,7 +613,7 @@ function AdminDashboard() {
             </h2>
 
             <div className="space-y-4">
-              {configs.map((config) => (
+              {configuracoesGerais.map((config) => (
                 <div
                   key={config.chave}
                   className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
@@ -373,6 +629,129 @@ function AdminDashboard() {
                   <div className="ml-4">{renderCampoConfig(config)}</div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {abaAtiva === 'aparencia' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Paleta de Cores</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Personalize as cores exibidas no site do cliente, painel da TV e telas públicas.
+                  </p>
+                </div>
+                <button
+                  onClick={handleRestaurarCores}
+                  disabled={saving}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white rounded-lg transition"
+                >
+                  Restaurar padrão
+                </button>
+              </div>
+
+              <div className="grid gap-4 mt-6 sm:grid-cols-2 xl:grid-cols-3">
+                {themeConfigs.map((config) => (
+                  <div
+                    key={config.chave}
+                    className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-gray-900">{THEME_LABELS[config.chave]}</p>
+                        {config.descricao && (
+                          <p className="text-xs text-gray-500 mt-1">{config.descricao}</p>
+                        )}
+                      </div>
+                      <div
+                        className="w-10 h-10 rounded border border-gray-200 shadow-inner"
+                        style={{ background: config.valor || '#ffffff' }}
+                      />
+                    </div>
+                    {renderCampoConfig(configsPorChave[config.chave] || config)}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 rounded-lg border border-gray-200 overflow-hidden">
+                <div
+                  className="p-6"
+                  style={{
+                    background: `linear-gradient(135deg, ${configsPorChave.THEME_PRIMARY?.valor || THEME_DEFAULTS.THEME_PRIMARY}, ${configsPorChave.THEME_SECONDARY?.valor || THEME_DEFAULTS.THEME_SECONDARY})`,
+                    color: configsPorChave.THEME_TEXT?.valor || THEME_DEFAULTS.THEME_TEXT,
+                  }}
+                >
+                  <p className="text-sm uppercase tracking-wider opacity-80">Pré-visualização</p>
+                  <h3 className="text-2xl font-bold mt-2">Espeto Music</h3>
+                  <p className="text-sm opacity-90">
+                    Botões e destaques utilizarão esta combinação de cores.
+                  </p>
+                </div>
+                <div className="p-4 bg-white flex flex-wrap gap-3 text-sm text-gray-600">
+                  <span className="px-3 py-1 rounded-full border border-gray-200" style={{ background: configsPorChave.THEME_SURFACE?.valor || THEME_DEFAULTS.THEME_SURFACE }}>
+                    Superfície
+                  </span>
+                  <span className="px-3 py-1 rounded-full border border-gray-200" style={{ background: configsPorChave.THEME_ACCENT?.valor || THEME_DEFAULTS.THEME_ACCENT }}>
+                    Destaque
+                  </span>
+                  <span className="px-3 py-1 rounded-full border border-gray-200" style={{ background: configsPorChave.THEME_BACKGROUND?.valor || THEME_DEFAULTS.THEME_BACKGROUND, color: configsPorChave.THEME_TEXT?.valor || THEME_DEFAULTS.THEME_TEXT }}>
+                    Fundo
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Vídeo de Espera na TV</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Quando não houver músicas tocando, a TV exibirá este vídeo em loop. Suporta arquivos MP4, WEBM ou MOV de até 200MB.
+              </p>
+
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <label className="flex items-center justify-center px-4 py-3 bg-purple-50 border border-dashed border-purple-300 text-purple-700 rounded-lg cursor-pointer hover:bg-purple-100 transition w-full md:w-auto">
+                  <span>{uploadingIdleVideo ? 'Enviando vídeo...' : 'Selecionar vídeo'}</span>
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime"
+                    className="hidden"
+                    onChange={handleUploadIdleVideo}
+                    disabled={uploadingIdleVideo}
+                  />
+                </label>
+                {idleVideoInfo.url && (
+                  <button
+                    onClick={handleRemoverIdleVideo}
+                    className="px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
+                    disabled={uploadingIdleVideo}
+                  >
+                    Remover vídeo
+                  </button>
+                )}
+              </div>
+
+              {idleVideoInfo.url ? (
+                <div className="mt-6">
+                  <video
+                    src={idleVideoInfo.url}
+                    controls
+                    loop
+                    muted
+                    className="w-full max-h-72 rounded-lg border border-gray-200 shadow"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Última atualização:{' '}
+                    {idleVideoInfo.atualizadoEm
+                      ? new Date(idleVideoInfo.atualizadoEm).toLocaleString()
+                      : '—'}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 mt-6">
+                  Nenhum vídeo configurado. A TV exibirá a animação padrão enquanto aguarda pedidos.
+                </p>
+              )}
             </div>
           </div>
         )}

@@ -54,7 +54,7 @@ async function buscar(req, res) {
 async function atualizar(req, res) {
   try {
     const { chave } = req.params;
-    const { valor } = req.body;
+    const { valor, descricao = null, tipo = 'text' } = req.body;
 
     if (valor === undefined) {
       return res.status(400).json({
@@ -62,12 +62,34 @@ async function atualizar(req, res) {
       });
     }
 
-    const config = await prisma.configuracao.update({
-      where: { chave },
-      data: { valor: String(valor) },
-    });
+    try {
+      const config = await prisma.configuracao.update({
+        where: { chave },
+        data: {
+          valor: String(valor),
+          ...(descricao !== null ? { descricao } : {}),
+          ...(tipo ? { tipo } : {}),
+        },
+      });
 
-    res.json(config);
+      return res.json(config);
+    } catch (error) {
+      // Caso a configuração não exista, criar automaticamente
+      if (error.code === 'P2025') {
+        const configCriada = await prisma.configuracao.create({
+          data: {
+            chave,
+            valor: String(valor),
+            descricao: descricao || undefined,
+            tipo: tipo || 'text',
+          },
+        });
+
+        return res.json(configCriada);
+      }
+
+      throw error;
+    }
   } catch (error) {
     console.error('Erro ao atualizar configuração:', error);
     res.status(500).json({

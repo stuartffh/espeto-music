@@ -9,6 +9,8 @@ const configuracaoRoutes = require('./configuracaoRoutes');
 const sugestaoRoutes = require('./sugestaoRoutes');
 const playerRoutes = require('./playerRoutes');
 const streamRoutes = require('./stream');
+const publicConfigRoutes = require('./publicConfigRoutes');
+const mediaRoutes = require('./mediaRoutes');
 
 // Health check
 router.get('/health', (req, res) => {
@@ -28,5 +30,7 @@ router.use('/config', configuracaoRoutes);
 router.use('/sugestoes', sugestaoRoutes);
 router.use('/player', playerRoutes);
 router.use('/stream', streamRoutes);
+router.use('/public/config', publicConfigRoutes);
+router.use('/media', mediaRoutes);
 
 module.exports = router;

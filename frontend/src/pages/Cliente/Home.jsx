@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { buscarMusicas, criarPedidoMusica, criarPagamento, buscarFila } from '../../services/api';
 import socket from '../../services/socket';
 import useStore from '../../store/useStore';
-import { categorias, getSugestoesPorCategoria, getSugestoesDinamicas } from '../../data/musicSuggestions';
-import axios from 'axios';
+import { categorias, getSugestoesDinamicas } from '../../data/musicSuggestions';
+import { useConfig } from '../../context/ConfigContext.jsx';
 
 function Home() {
   const [busca, setBusca] = useState('');
@@ -12,35 +12,18 @@ function Home() {
   const { fila, setFila } = useStore();
   const [nomeCliente, setNomeCliente] = useState('');
   const [categoriaAtiva, setCategoriaAtiva] = useState(null);
-  const [modoGratuito, setModoGratuito] = useState(true);
   const [adicionando, setAdicionando] = useState(false);
-  const [carregandoConfig, setCarregandoConfig] = useState(true);
   const [sugestoesDinamicas, setSugestoesDinamicas] = useState([]);
   const [carregandoSugestoes, setCarregandoSugestoes] = useState(false);
-  const [tempoMaximo, setTempoMaximo] = useState(8);
   const [mostrarRegras, setMostrarRegras] = useState(false);
+  const { modoGratuito, tempoMaximoSegundos, loading: carregandoConfiguracoes, theme } = useConfig();
+  const tempoMaximo = useMemo(
+    () => Math.max(1, Math.round((tempoMaximoSegundos || 480) / 60)),
+    [tempoMaximoSegundos],
+  );
+  const headerTextStyle = { color: theme?.onBackground || '#f8fafc' };
 
   useEffect(() => {
-    // Buscar configurações
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-    Promise.all([
-      axios.get(`${API_URL}/api/config/MODO_GRATUITO`),
-      axios.get(`${API_URL}/api/config/TEMPO_MAXIMO_MUSICA`)
-    ])
-      .then(([resModo, resTempo]) => {
-        setModoGratuito(resModo.data.valor === 'true');
-        const segundos = parseInt(resTempo.data.valor) || 480;
-        setTempoMaximo(Math.floor(segundos / 60));
-      })
-      .catch(error => {
-        console.error('Erro ao buscar config:', error);
-        setModoGratuito(true);
-        setTempoMaximo(8);
-      })
-      .finally(() => {
-        setCarregandoConfig(false);
-      });
-
     // Buscar fila inicial
     buscarFila().then(res => setFila(res.data)).catch(console.error);
 
@@ -146,28 +129,29 @@ function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 p-4">
+    <div className="min-h-screen theme-gradient-bg p-4 transition-colors duration-500">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center py-8 mb-6">
           <div className="flex items-center justify-center gap-4 mb-4">
-            <h1 className="text-5xl font-bold text-white">Espeto Music</h1>
-            {!carregandoConfig && (
+            <h1 className="text-5xl font-bold" style={headerTextStyle}>Espeto Music</h1>
+            {!carregandoConfiguracoes && (
               <span
-                className={`px-4 py-2 rounded-full text-sm font-bold ${
+                className={`px-4 py-2 rounded-full text-sm font-bold shadow-md ${
                   modoGratuito
-                    ? 'bg-green-500 text-white'
-                    : 'bg-yellow-400 text-gray-900'
+                    ? 'btn-accent'
+                    : 'btn-secondary'
                 }`}
               >
                 {modoGratuito ? 'MODO GRATUITO' : 'MODO PAGO'}
               </span>
             )}
           </div>
-          <p className="text-white text-lg mb-3">Escolha a próxima música!</p>
+          <p className="text-lg mb-3" style={headerTextStyle}>Escolha a próxima música!</p>
           <button
             onClick={() => setMostrarRegras(!mostrarRegras)}
-            className="text-white text-sm underline hover:text-yellow-300 transition"
+            className="text-sm underline transition"
+            style={{ color: theme?.onBackground || '#f8fafc' }}
           >
             {mostrarRegras ? '▲ Ocultar Regras' : '▼ Ver Regras de Uso'}
           </button>
@@ -175,8 +159,8 @@ function Home() {
 
         {/* Seção de Regras */}
         {mostrarRegras && (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="theme-card rounded-lg shadow-lg p-6 mb-6 max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-theme-primary mb-4 flex items-center gap-2">
               📋 Regras de Uso
             </h2>
             <div className="space-y-3 text-gray-700">
@@ -229,7 +213,7 @@ function Home() {
           {/* Coluna principal */}
           <div className="lg:col-span-2 space-y-6">
             {/* Campo nome */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="theme-card rounded-lg shadow-lg p-6 transition-all">
               <label className="block text-gray-700 font-semibold mb-2">
                 Seu Nome:
               </label>
@@ -243,15 +227,15 @@ function Home() {
             </div>
 
             {/* Categorias */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">Categorias</h2>
+            <div className="theme-card rounded-lg shadow-lg p-6 transition-all">
+              <h2 className="text-2xl font-bold mb-4 text-theme-primary">Categorias</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {categorias.map((categoria) => (
                   <button
                     key={categoria.id}
                     onClick={() => toggleCategoria(categoria.id)}
                     className={`${categoria.cor} text-white px-4 py-3 rounded-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105 ${
-                      categoriaAtiva === categoria.id ? 'ring-4 ring-white shadow-xl' : ''
+                      categoriaAtiva === categoria.id ? 'ring-4 ring-offset-2 ring-white shadow-xl' : ''
                     }`}
                   >
                     {categoria.nome}
@@ -275,7 +259,7 @@ function Home() {
                           key={index}
                           onClick={() => handleBuscarSugestao(sugestao)}
                           disabled={carregandoBusca}
-                          className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full text-sm font-medium hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-4 py-2 btn-primary text-sm font-medium rounded-full shadow hover:opacity-90 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {sugestao}
                         </button>
@@ -289,7 +273,7 @@ function Home() {
             </div>
 
             {/* Busca */}
-            <form onSubmit={handleBuscar} className="bg-white rounded-lg shadow-lg p-6">
+            <form onSubmit={handleBuscar} className="theme-card rounded-lg shadow-lg p-6">
               <label className="block text-gray-700 font-semibold mb-2">
                 Ou busque qualquer música:
               </label>
@@ -304,7 +288,7 @@ function Home() {
                 <button
                   type="submit"
                   disabled={carregandoBusca}
-                  className="px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:bg-gray-400 transition-colors"
+                  className="px-6 py-3 btn-primary rounded-lg font-semibold shadow hover:opacity-90 disabled:bg-gray-400 transition-colors"
                 >
                   {carregandoBusca ? 'Buscando...' : 'Buscar'}
                 </button>
@@ -313,8 +297,8 @@ function Home() {
 
             {/* Resultados */}
             {resultados.length > 0 && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-2xl font-bold mb-4 text-gray-800">Resultados</h2>
+              <div className="theme-card rounded-lg shadow-lg p-6">
+                <h2 className="text-2xl font-bold mb-4 text-theme-primary">Resultados</h2>
                 <div className="space-y-4">
                   {resultados.map((musica) => (
                     <div
@@ -333,10 +317,10 @@ function Home() {
                       <button
                         onClick={() => handleEscolherMusica(musica)}
                         disabled={adicionando}
-                        className={`px-6 py-3 rounded-lg font-semibold whitespace-nowrap transition-all ${
+                        className={`px-6 py-3 rounded-lg font-semibold whitespace-nowrap transition-all shadow ${
                           modoGratuito
-                            ? 'bg-green-500 text-white hover:bg-green-600'
-                            : 'bg-yellow-400 text-gray-900 hover:bg-yellow-500'
+                            ? 'btn-secondary hover:opacity-90'
+                            : 'btn-accent hover:opacity-90'
                         } disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         {adicionando
@@ -354,8 +338,8 @@ function Home() {
 
           {/* Fila - Coluna lateral */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
-              <h2 className="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+            <div className="theme-card rounded-lg shadow-lg p-6 sticky top-4">
+              <h2 className="text-2xl font-bold mb-4 text-theme-primary flex items-center gap-2">
                 <span>Próximas Músicas</span>
               </h2>
               {fila.length === 0 ? (

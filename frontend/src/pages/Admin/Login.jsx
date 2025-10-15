@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
+import { useConfig } from '../../context/ConfigContext.jsx';
 
 function AdminLogin() {
   const [username, setUsername] = useState('');
@@ -26,11 +27,13 @@ function AdminLogin() {
     }
   };
 
+  const { theme } = useConfig();
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center theme-gradient-bg px-4 transition-colors">
+      <div className="theme-card rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-purple-900 mb-2">Espeto Music</h1>
+          <h1 className="text-3xl font-bold text-theme-primary mb-2">Espeto Music</h1>
           <p className="text-gray-600">Painel Administrativo</p>
         </div>
 
@@ -74,14 +77,15 @@ function AdminLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 transform hover:scale-105 disabled:transform-none"
+            className="w-full btn-primary hover:opacity-90 disabled:opacity-60 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 transform hover:scale-105 disabled:transform-none"
+            style={{ background: theme?.primary, color: theme?.onPrimary }}
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
         <div className="mt-6 text-center">
-          <a href="/" className="text-sm text-purple-600 hover:text-purple-700">
+          <a href="/" className="text-sm text-theme-primary hover:underline">
             ← Voltar para o site
           </a>
         </div>

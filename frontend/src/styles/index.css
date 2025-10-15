@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary: #7c3aed;
+  --color-secondary: #f472b6;
+  --color-accent: #facc15;
+  --color-background: #0f172a;
+  --color-surface: #ffffff;
+  --color-text: #f8fafc;
+  --color-on-primary: #ffffff;
+  --color-on-secondary: #ffffff;
+  --color-on-accent: #0f172a;
+  --color-on-background: #f8fafc;
+  --color-on-surface: #0f172a;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -14,12 +28,76 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: var(--color-text);
   min-height: 100vh;
 }
 
 #root {
   min-height: 100vh;
+}
+
+.theme-gradient-bg {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+}
+
+.theme-card {
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+}
+
+.theme-card-muted {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--color-on-surface);
+}
+
+.theme-text {
+  color: var(--color-text);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.btn-secondary {
+  background: var(--color-secondary);
+  color: var(--color-on-secondary);
+}
+
+.btn-accent {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.badge-accent {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.border-theme-primary {
+  border-color: var(--color-primary);
+}
+
+.text-theme-primary {
+  color: var(--color-primary);
+}
+
+.text-theme-secondary {
+  color: var(--color-secondary);
+}
+
+.text-theme-accent {
+  color: var(--color-accent);
+}
+
+.bg-theme-surface {
+  background-color: var(--color-surface);
+}
+
+.bg-theme-background {
+  background-color: var(--color-background);
+  color: var(--color-on-background);
 }
 
 /* ========== TV Panel Styles (from frontend-tv) ========== */

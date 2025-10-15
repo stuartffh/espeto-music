@@ -18,4 +18,7 @@ export const buscarMusicaAtual = () => api.get('/musicas/atual');
 // Pagamentos
 export const criarPagamento = (pedidoId) => api.post('/pagamentos', { pedidoId });
 
+// Configurações públicas
+export const buscarConfiguracoesPublicas = () => api.get('/public/config');
+
 export default api;

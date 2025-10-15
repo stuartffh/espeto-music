@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { io } from 'socket.io-client';
 import axios from 'axios';
+import { useConfig } from '../../context/ConfigContext.jsx';
 
 const sanitizeUrl = (url) => {
   if (!url) {
@@ -79,6 +80,20 @@ function Panel() {
   const [autoplayConsent, setAutoplayConsent] = useState(false);
   const videoRef = useRef(null);
   const containerRef = useRef(null);
+  const { theme, idleVideoUrl, idleVideoUpdatedAt } = useConfig();
+
+  const idleVideoSource = useMemo(() => {
+    if (!idleVideoUrl) {
+      return '';
+    }
+
+    if (!idleVideoUpdatedAt) {
+      return idleVideoUrl;
+    }
+
+    const version = new Date(idleVideoUpdatedAt).getTime();
+    return `${idleVideoUrl}${idleVideoUrl.includes('?') ? '&' : '?'}v=${version}`;
+  }, [idleVideoUrl, idleVideoUpdatedAt]);
 
   const handleVideoEnd = useCallback(() => {
     if (estadoPlayer?.musicaAtual && socket) {
@@ -243,15 +258,26 @@ function Panel() {
 
   const proximaMusica = fila.length > 0 ? fila[0] : null;
   const musicaAtual = estadoPlayer?.musicaAtual;
+  const showIdleVideo = !musicaAtual && idleVideoSource;
 
   return (
-    <div ref={containerRef} className="h-screen w-screen flex flex-col bg-black text-white overflow-hidden">
+    <div
+      ref={containerRef}
+      className="h-screen w-screen flex flex-col bg-black text-white overflow-hidden"
+      style={{
+        background: `radial-gradient(circle at top, ${theme?.background || '#000000'} 0%, #000000 70%)`,
+        color: theme?.text || '#ffffff',
+      }}
+    >
       {/* Área Principal - Player (Tela Cheia) */}
       <div className="flex-1 flex flex-col relative min-h-0">
         {/* Header - Tocando Agora */}
         <div className="absolute top-0 left-0 z-10 bg-gradient-to-br from-black/90 via-black/70 to-transparent p-3 md:p-4 pointer-events-none max-w-2xl">
           <div>
-            <h2 className="text-sm md:text-lg font-bold mb-1 flex items-center gap-2 drop-shadow-2xl">
+            <h2
+              className="text-sm md:text-lg font-bold mb-1 flex items-center gap-2 drop-shadow-2xl"
+              style={{ color: theme?.accent || '#facc15' }}
+            >
               <span className="text-lg md:text-2xl">🎵</span>
               Tocando Agora
             </h2>
@@ -287,16 +313,31 @@ function Panel() {
                 }
               }}
             />
+          ) : showIdleVideo ? (
+            <video
+              key={idleVideoSource}
+              src={idleVideoSource}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-cover"
+            />
           ) : (
             <div className="text-center px-4 animate-fade-in">
               <div className="text-8xl mb-6 animate-bounce">🎸</div>
-              <p className="text-5xl md:text-7xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+              <p
+                className="text-5xl md:text-7xl font-bold mb-4 bg-clip-text text-transparent"
+                style={{
+                  backgroundImage: `linear-gradient(90deg, ${theme?.primary || '#a855f7'}, ${theme?.secondary || '#ec4899'})`,
+                }}
+              >
                 Espeto Music
               </p>
-              <p className="text-2xl md:text-4xl text-gray-400 mb-3">
+              <p className="text-2xl md:text-4xl text-gray-300 mb-3">
                 Aguardando músicas...
               </p>
-              <p className="text-base md:text-xl text-gray-500">
+              <p className="text-base md:text-xl text-gray-400">
                 Adicione músicas pelo celular para começar!
               </p>
             </div>

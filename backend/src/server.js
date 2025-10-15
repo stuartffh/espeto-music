@@ -6,6 +6,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const routes = require('./routes');
 const { setupSocketHandlers } = require('./utils/socketHandler');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -32,6 +34,13 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Servir uploads públicos (vídeos, imagens configuráveis)
+const uploadsPath = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsPath, { maxAge: '1d' }));
+
 // Disponibilizar io para os controllers
 app.set('io', io);
 
@@ -47,9 +56,6 @@ if (process.env.NODE_ENV !== 'production') {
 app.use('/api', routes);
 
 // Servir frontend unificado em produção
-const path = require('path');
-const fs = require('fs');
-
 // Servir frontend unificado (Cliente, Admin e TV)
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 if (fs.existsSync(frontendPath)) {
