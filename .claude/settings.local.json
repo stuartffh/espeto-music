@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npm install)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npm run seed)",
+      "Bash(ipconfig)",
+      "Bash(findstr:*)",
+      "Bash(npm run dev)",
+      "Bash(curl:*)",
+      "Bash(npm install bcrypt jsonwebtoken yt-search)",
+      "Bash(netstat:*)",
+      "Bash(tasklist)",
+      "Bash(taskkill:*)",
+      "Bash(npm create:*)",
+      "Bash(npm start)",
+      "Bash(npm install:*)",
+      "Bash(pip install:*)",
+      "Bash(C:UsersUserAppDataRoamingPythonPython313Scriptsyt-dlp.exe --version)",
+      "Bash(python -m yt_dlp:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(dir:*)",
+      "Bash(timeout:*)",
+      "Bash(\"C:\\Users\\User\\AppData\\Roaming\\Python\\Python313\\Scripts\\yt-dlp.exe\" --version)",
+      "Bash(\"C:\\Users\\User\\AppData\\Roaming\\Python\\Python313\\Scripts\\yt-dlp.exe\" https://www.youtube.com/watch?v=vy Ic6LbHzQs -f \"18/best[height<=720][ext=mp4]/best\" -o \"C:\\Users\\User\\Desktop\\testes\\Espeto Music\\backend\\downloads\\TEST.mp4\" --no-playlist --print filename)",
+      "Bash(ffprobe:*)",
+      "Bash(where:*)",
+      "Bash(tar:*)",
+      "Bash(powershell:*)",
+      "Bash(\"./ffmpeg/ffmpeg-8.0-essentials_build/bin/ffprobe.exe\":*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

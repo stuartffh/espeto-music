@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model PedidoMusica {
+  id              String   @id @default(uuid())
+  nomeCliente     String?
+  musicaTitulo    String
+  musicaYoutubeId String
+  musicaThumbnail String?
+  musicaDuracao   Int?     // em segundos
+  status          String   @default("pendente") // pendente, pago, tocando, concluida, cancelada
+  valor           Float
+  pagamentoId     String?  @unique
+  posicaoFila     Int?
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  pagamento       Pagamento? @relation(fields: [pagamentoId], references: [id])
+
+  @@map("pedidos_musica")
+  @@index([status])
+  @@index([criadoEm])
+}
+
+model Pagamento {
+  id                    String   @id @default(uuid())
+  mercadoPagoPaymentId  String?  @unique
+  mercadoPagoPreferenceId String? @unique
+  status                String   @default("pending") // pending, approved, rejected, cancelled
+  valor                 Float
+  metodoPagamento       String?
+  emailPagador          String?
+  criadoEm              DateTime @default(now())
+  atualizadoEm          DateTime @updatedAt
+
+  pedidoMusica  PedidoMusica?
+
+  @@map("pagamentos")
+  @@index([status])
+}
+
+model Configuracao {
+  id                String   @id @default(uuid())
+  chave             String   @unique
+  valor             String
+  descricao         String?
+  tipo              String   @default("text") // text, number, boolean, password
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("configuracoes")
+}
+
+model Admin {
+  id                String   @id @default(uuid())
+  username          String   @unique
+  password          String
+  nome              String
+  ativo             Boolean  @default(true)
+  ultimoAcesso      DateTime?
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Sugestao {
+  id                String   @id @default(uuid())
+  categoria         String   // sertanejo, pagode, funk, mpb, rock, forro, samba, gospel
+  titulo            String
+  youtubeId         String?
+  thumbnail         String?
+  tipo              String   @default("trending") // trending, popular, estatico
+  ordem             Int      @default(0)
+  ativo             Boolean  @default(true)
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("sugestoes")
+  @@index([categoria, ativo])
+  @@index([tipo])
+}
+
+model HistoricoBusca {
+  id                String   @id @default(uuid())
+  termo             String
+  categoria         String?
+  resultados        Int      @default(0)
+  vezesBuscado      Int      @default(1)
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("historico_buscas")
+  @@index([termo])
+  @@index([vezesBuscado])
+}
+
+model EstadoPlayer {
+  id                String   @id @default("singleton")
+  musicaAtualId     String?  // ID do pedido que está tocando
+  status            String   @default("stopped") // playing, paused, stopped
+  tempoAtual        Float    @default(0) // tempo em segundos
+  volume            Int      @default(80)
+  ultimaAtualizacao DateTime @default(now())
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("estado_player")
+}
