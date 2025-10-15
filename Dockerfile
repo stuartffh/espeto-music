@@ -2,27 +2,23 @@
 # Otimizado para Easypanel
 
 # ============================================
-# Stage 1: Build dos Frontends
+# Stage 1: Build do Frontend Unificado
 # ============================================
 FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app
 
-# Copiar package.json dos frontends
-COPY frontend-cliente/package*.json ./frontend-cliente/
-COPY frontend-tv/package*.json ./frontend-tv/
+# Copiar package.json do frontend unificado
+COPY frontend/package*.json ./frontend/
 
-# Instalar dependências dos frontends (incluindo devDependencies para build)
-RUN cd frontend-cliente && npm install
-RUN cd frontend-tv && npm install
+# Instalar dependências do frontend (incluindo devDependencies para build)
+RUN cd frontend && npm install
 
-# Copiar código fonte dos frontends
-COPY frontend-cliente/ ./frontend-cliente/
-COPY frontend-tv/ ./frontend-tv/
+# Copiar código fonte do frontend
+COPY frontend/ ./frontend/
 
-# Build dos frontends
-RUN cd frontend-cliente && npm run build
-RUN cd frontend-tv && npm run build
+# Build do frontend unificado
+RUN cd frontend && npm run build
 
 # ============================================
 # Stage 2: Backend + Produção
@@ -48,9 +44,8 @@ RUN npm install --production
 # Copiar código fonte do backend
 COPY backend/ ./
 
-# Copiar builds dos frontends do stage anterior
-COPY --from=frontend-builder /app/frontend-cliente/dist /app/frontend-cliente/dist
-COPY --from=frontend-builder /app/frontend-tv/dist /app/frontend-tv/dist
+# Copiar build do frontend unificado do stage anterior
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 # Criar diretórios necessários
 RUN mkdir -p /app/backend/downloads /app/backend/prisma

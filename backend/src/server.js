@@ -14,7 +14,7 @@ const server = http.createServer(app);
 const corsOptions = {
   origin:
     process.env.NODE_ENV === 'production'
-      ? [process.env.FRONTEND_URL, process.env.TV_PANEL_URL]
+      ? process.env.FRONTEND_URL // Frontend unificado
       : '*',
   credentials: true,
 };
@@ -46,30 +46,27 @@ if (process.env.NODE_ENV !== 'production') {
 // Rotas da API
 app.use('/api', routes);
 
-// Servir frontends em produção
+// Servir frontend unificado em produção
 const path = require('path');
 const fs = require('fs');
 
-// Servir frontend-tv em /tv
-const frontendTvPath = path.join(__dirname, '../../frontend-tv/dist');
-if (fs.existsSync(frontendTvPath)) {
-  app.use('/tv', express.static(frontendTvPath));
-  app.get('/tv/*', (req, res) => {
-    res.sendFile(path.join(frontendTvPath, 'index.html'));
+// Servir frontend unificado (Cliente, Admin e TV)
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendPath)) {
+  app.use(express.static(frontendPath));
+
+  // Todas as rotas não-API servem o frontend React Router
+  // React Router irá gerenciar as rotas: /, /tv, /admin, /admin/login, /pagamento
+  app.get('*', (req, res, next) => {
+    // Pular rotas da API
+    if (req.path.startsWith('/api') || req.path === '/qrcode') {
+      return next();
+    }
+    res.sendFile(path.join(frontendPath, 'index.html'));
   });
-}
-
-// Servir frontend-cliente na raiz
-const frontendClientePath = path.join(__dirname, '../../frontend-cliente/dist');
-if (fs.existsSync(frontendClientePath)) {
-  app.use(express.static(frontendClientePath));
-}
-
-// Rota raiz - redireciona para o frontend-cliente ou retorna info da API
-app.get('/', (req, res) => {
-  if (fs.existsSync(frontendClientePath)) {
-    res.sendFile(path.join(frontendClientePath, 'index.html'));
-  } else {
+} else {
+  // Fallback caso o frontend não esteja buildado
+  app.get('/', (req, res) => {
     res.json({
       message: 'Espeto Music API',
       version: '1.0.0',
@@ -80,10 +77,11 @@ app.get('/', (req, res) => {
         pagamentos: '/api/pagamentos',
         websocket: 'ws://localhost:' + PORT,
         tv: '/tv',
+        admin: '/admin',
       },
     });
-  }
-});
+  });
+}
 
 // Rota para gerar QR Code único (modelo "livepix")
 app.get('/qrcode', async (req, res) => {
