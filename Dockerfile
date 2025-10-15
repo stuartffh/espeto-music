@@ -4,7 +4,7 @@
 # ============================================
 
 # ============================================
-# Stage 1: Build Frontend Cliente
+# Stage 1: Build Frontend (Completo: Cliente + Admin + TV)
 # ============================================
 FROM node:20-alpine AS frontend-builder
 
@@ -16,13 +16,13 @@ ENV VITE_API_URL=$VITE_API_URL
 WORKDIR /app/frontend
 
 # Copiar package files
-COPY frontend-cliente/package*.json ./
+COPY frontend/package*.json ./
 
 # Instalar dependências
 RUN npm install --production=false
 
 # Copiar código fonte
-COPY frontend-cliente/ ./
+COPY frontend/ ./
 
 # Criar .env.production
 RUN echo "VITE_API_URL=${VITE_API_URL}" > .env.production
