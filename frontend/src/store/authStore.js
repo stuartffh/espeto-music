@@ -14,7 +14,7 @@ const useAuthStore = create((set) => ({
   login: async (username, password) => {
     set({ loading: true, error: null });
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, {
+      const response = await axios.post(`${API_URL}/api/auth/login`, {
         username,
         password,
       });
@@ -63,7 +63,7 @@ const useAuthStore = create((set) => ({
 
     try {
       const response = await axios.post(
-        `${API_URL}/auth/verificar`,
+        `${API_URL}/api/auth/verificar`,
         {},
         {
           headers: {
