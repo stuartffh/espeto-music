@@ -27,10 +27,14 @@ RUN cd frontend-tv && npm run build
 # ============================================
 # Stage 2: Backend + Produção
 # ============================================
-FROM node:20-alpine
+FROM node:20-slim
 
-# Instalar ffmpeg e OpenSSL 1.1 (necessário para Prisma)
-RUN apk add --no-cache ffmpeg openssl1.1-compat
+# Instalar dependências necessárias (ffmpeg para processamento de vídeo)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
