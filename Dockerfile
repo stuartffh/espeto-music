@@ -24,8 +24,9 @@ RUN npm install --production=false
 # Copiar código fonte
 COPY frontend/ ./
 
-# Criar .env.production
-RUN echo "VITE_API_URL=${VITE_API_URL}" > .env.production
+# Criar .env.production com todas as variáveis necessárias
+RUN echo "VITE_API_URL=${VITE_API_URL}" > .env.production && \
+    echo "VITE_WEBSOCKET_URL=${VITE_API_URL}" >> .env.production
 
 # Build do frontend
 RUN npm run build
