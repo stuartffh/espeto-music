@@ -77,8 +77,10 @@ function Panel() {
   const [estadoPlayer, setEstadoPlayer] = useState(null);
   const [iframeReady, setIframeReady] = useState(false);
   const [autoplayConsent, setAutoplayConsent] = useState(false);
+  const [configs, setConfigs] = useState({});
   const videoRef = useRef(null);
   const containerRef = useRef(null);
+  const videoDescansoRef = useRef(null);
 
   const handleVideoEnd = useCallback(() => {
     if (estadoPlayer?.musicaAtual && socket) {
@@ -117,6 +119,34 @@ function Panel() {
         document.msExitFullscreen();
       }
     }
+  }, []);
+
+  // Buscar configurações do sistema
+  useEffect(() => {
+    api.get('/api/config')
+      .then(res => {
+        const configMap = {};
+        res.data.forEach(config => {
+          configMap[config.chave] = config.valor;
+        });
+        setConfigs(configMap);
+        console.log('⚙️ Configurações carregadas:', configMap);
+
+        // Aplicar favicon customizado
+        if (configMap.FAVICON_URL) {
+          const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+          link.type = 'image/x-icon';
+          link.rel = 'shortcut icon';
+          link.href = configMap.FAVICON_URL;
+          document.getElementsByTagName('head')[0].appendChild(link);
+        }
+
+        // Aplicar título customizado
+        if (configMap.NOME_ESTABELECIMENTO) {
+          document.title = `${configMap.NOME_ESTABELECIMENTO} - TV`;
+        }
+      })
+      .catch(console.error);
   }, []);
 
   // Conectar WebSocket e buscar dados iniciais
@@ -304,12 +334,25 @@ function Panel() {
         </div>
 
         {/* Player otimizado para TV */}
-        <div className="flex-1 bg-black flex items-center justify-center relative overflow-hidden">
+        <div
+          className="flex-1 bg-black flex items-center justify-center relative overflow-hidden"
+          style={{
+            backgroundImage: configs.BACKGROUND_IMAGE_URL ? `url(${configs.BACKGROUND_IMAGE_URL})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        >
+          {/* Overlay escuro para melhor legibilidade quando há imagem de fundo */}
+          {configs.BACKGROUND_IMAGE_URL && (
+            <div className="absolute inset-0 bg-black/50" />
+          )}
+
           {musicaAtual ? (
             <iframe
               ref={videoRef}
               src="/tv-player.html"
-              className="w-full h-full border-0"
+              className="w-full h-full border-0 relative z-10"
               allow="autoplay; fullscreen"
               onLoad={() => {
                 console.log('✅ Player da TV carregado');
@@ -321,25 +364,63 @@ function Panel() {
               }}
             />
           ) : (
-            <div className="text-center px-4 animate-fade-in">
-              <div className="text-8xl mb-6 animate-bounce">🎸</div>
-              <p className="text-5xl md:text-7xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-                Espeto Music
-              </p>
-              <p className="text-2xl md:text-4xl text-gray-400 mb-3">
-                Aguardando músicas...
-              </p>
-              <p className="text-base md:text-xl text-gray-500">
-                Adicione músicas pelo celular para começar!
-              </p>
-            </div>
+            <>
+              {/* Vídeo de descanso em loop */}
+              {configs.VIDEO_DESCANSO_ATIVO === 'true' && configs.VIDEO_DESCANSO_URL ? (
+                <video
+                  ref={videoDescansoRef}
+                  src={configs.VIDEO_DESCANSO_URL}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  onError={(e) => {
+                    console.error('❌ Erro ao carregar vídeo de descanso:', e);
+                    // Fallback para tela padrão
+                    if (videoDescansoRef.current) {
+                      videoDescansoRef.current.style.display = 'none';
+                    }
+                  }}
+                />
+              ) : null}
+
+              {/* Tela de aguardo padrão (aparece sobre o vídeo com transparência) */}
+              <div className="text-center px-4 animate-fade-in relative z-10">
+                {configs.LOGO_URL ? (
+                  <img
+                    src={configs.LOGO_URL}
+                    alt="Logo"
+                    className="mx-auto mb-6 max-w-xs md:max-w-md max-h-48 object-contain drop-shadow-2xl"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="text-8xl mb-6 animate-bounce">🎸</div>
+                )}
+                <p className="text-5xl md:text-7xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent drop-shadow-lg">
+                  {configs.NOME_ESTABELECIMENTO || 'Espeto Music'}
+                </p>
+                <p className="text-2xl md:text-4xl text-white mb-3 drop-shadow-lg">
+                  Aguardando músicas...
+                </p>
+                <p className="text-base md:text-xl text-gray-200 drop-shadow-lg">
+                  {configs.SLOGAN_ESTABELECIMENTO || 'Adicione músicas pelo celular para começar!'}
+                </p>
+              </div>
+            </>
           )}
         </div>
 
         {/* Logo Marca D'água */}
         <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 z-10 opacity-40 pointer-events-none">
-          <p className="text-xl md:text-3xl font-bold text-white drop-shadow-2xl">Espeto Music</p>
-          <p className="text-xs md:text-sm text-purple-300 drop-shadow-lg">Seu pedido, sua música!</p>
+          <p className="text-xl md:text-3xl font-bold text-white drop-shadow-2xl">
+            {configs.NOME_ESTABELECIMENTO || 'Espeto Music'}
+          </p>
+          <p className="text-xs md:text-sm text-purple-300 drop-shadow-lg">
+            {configs.SLOGAN_ESTABELECIMENTO || 'Seu pedido, sua música!'}
+          </p>
         </div>
       </div>
     </div>
