@@ -189,7 +189,6 @@ function App() {
 
   useEffect(() => {
     if (!estadoPlayer?.musicaAtual) {
-      setIframeReady(false);
       return;
     }
 

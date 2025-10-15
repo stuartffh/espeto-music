@@ -395,7 +395,7 @@
                 this.setupKeyboardNavigation();
                 this.focusElement(this.btnPlayPause);
                 this.setAutoplayMutedState();
-                this.notifyPlayerReady();
+                // notifyPlayerReady() removed - only called on host-ready message
             }
 
             prepareForNewSource() {
