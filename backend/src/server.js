@@ -51,7 +51,11 @@ const path = require('path');
 const fs = require('fs');
 
 // Servir frontend unificado (Cliente, Admin e TV)
-const frontendPath = path.join(__dirname, '../../frontend/dist');
+// No Docker: /app/backend/src -> /app/frontend/dist (um nível acima de backend)
+// No dev local: backend/src -> frontend/dist (dois níveis acima)
+const frontendPath = path.join(__dirname, '../..', 'frontend', 'dist');
+console.log('Frontend path:', frontendPath);
+console.log('Frontend exists:', fs.existsSync(frontendPath));
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
 
