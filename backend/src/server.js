@@ -62,8 +62,8 @@ if (fs.existsSync(frontendPath)) {
   // Todas as rotas não-API servem o frontend React Router
   // React Router irá gerenciar as rotas: /, /tv, /admin, /admin/login, /pagamento
   app.get('*', (req, res, next) => {
-    // Pular rotas da API
-    if (req.path.startsWith('/api') || req.path === '/qrcode') {
+    // Pular rotas da API e arquivos estáticos
+    if (req.path.startsWith('/api') || req.path === '/qrcode' || req.path.startsWith('/assets/')) {
       return next();
     }
     res.sendFile(path.join(frontendPath, 'index.html'));
