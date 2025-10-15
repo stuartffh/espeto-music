@@ -84,6 +84,46 @@ async function volume(req, res) {
   }
 }
 
+/**
+ * Reset - Limpar músicas travadas com status "tocando"
+ */
+async function reset(req, res) {
+  try {
+    const prisma = require('../config/database');
+
+    console.log('🔧 [RESET] Limpando estado do player...');
+
+    // Limpar todas as músicas com status "tocando"
+    const musicasTocando = await prisma.pedidoMusica.findMany({
+      where: { status: 'tocando' }
+    });
+
+    console.log(`📋 [RESET] Encontradas ${musicasTocando.length} música(s) com status "tocando"`);
+
+    for (const musica of musicasTocando) {
+      console.log(`  - [RESET] ${musica.musicaTitulo} (ID: ${musica.id})`);
+      await prisma.pedidoMusica.update({
+        where: { id: musica.id },
+        data: { status: 'concluido' }
+      });
+    }
+
+    // Resetar estado do player service
+    playerService.parar();
+
+    console.log('✅ [RESET] Estado limpo!');
+
+    res.json({
+      success: true,
+      message: `${musicasTocando.length} música(s) limpas`,
+      musicasLimpas: musicasTocando.length
+    });
+  } catch (error) {
+    console.error('❌ [RESET] Erro ao resetar:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 module.exports = {
   obterEstado,
   play,
@@ -91,4 +131,5 @@ module.exports = {
   stop,
   skip,
   volume,
+  reset,
 };

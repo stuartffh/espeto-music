@@ -6,6 +6,9 @@ const authMiddleware = require('../middlewares/authMiddleware');
 // Rotas públicas (TV pode acessar)
 router.get('/estado', playerController.obterEstado);
 
+// Rota de reset (sem auth para debug)
+router.post('/reset', playerController.reset);
+
 // Rotas protegidas (apenas admin)
 router.post('/play', authMiddleware, playerController.play);
 router.post('/pause', authMiddleware, playerController.pause);
