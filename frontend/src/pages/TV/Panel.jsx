@@ -17,12 +17,13 @@ const sanitizeUrl = (url) => {
 };
 
 const detectBackendBaseUrl = () => {
+  // Priorizar variável de ambiente
   const envUrl = sanitizeUrl(import.meta.env.VITE_API_URL);
-
   if (envUrl) {
     return envUrl;
   }
 
+  // Fallback para detecção automática em desenvolvimento
   if (typeof window !== 'undefined') {
     const { protocol, hostname, port } = window.location;
 

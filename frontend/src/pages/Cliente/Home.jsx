@@ -22,9 +22,10 @@ function Home() {
 
   useEffect(() => {
     // Buscar configurações
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     Promise.all([
-      axios.get('http://localhost:3000/api/config/MODO_GRATUITO'),
-      axios.get('http://localhost:3000/api/config/TEMPO_MAXIMO_MUSICA')
+      axios.get(`${API_URL}/api/config/MODO_GRATUITO`),
+      axios.get(`${API_URL}/api/config/TEMPO_MAXIMO_MUSICA`)
     ])
       .then(([resModo, resTempo]) => {
         setModoGratuito(resModo.data.valor === 'true');
