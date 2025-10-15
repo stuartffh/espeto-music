@@ -151,6 +151,39 @@ function Panel() {
       setEstadoPlayer(data.estado);
     });
 
+    // Backend manda pausar
+    newSocket.on('player:pausar', (data) => {
+      console.log('⏸️ Backend: Pausar música');
+      setEstadoPlayer(data.estado);
+      // Pausar o player no iframe
+      const iframeWindow = videoRef.current?.contentWindow;
+      if (iframeWindow) {
+        iframeWindow.postMessage({ type: 'pause' }, '*');
+      }
+    });
+
+    // Backend manda retomar
+    newSocket.on('player:retomar', (data) => {
+      console.log('▶️ Backend: Retomar música');
+      setEstadoPlayer(data.estado);
+      // Retomar o player no iframe
+      const iframeWindow = videoRef.current?.contentWindow;
+      if (iframeWindow) {
+        iframeWindow.postMessage({ type: 'play' }, '*');
+      }
+    });
+
+    // Backend manda parar
+    newSocket.on('player:parar', (data) => {
+      console.log('⏹️ Backend: Parar player');
+      setEstadoPlayer(data.estado);
+      // Parar o player no iframe
+      const iframeWindow = videoRef.current?.contentWindow;
+      if (iframeWindow) {
+        iframeWindow.postMessage({ type: 'stop' }, '*');
+      }
+    });
+
     // ========== EVENTOS DA FILA ==========
 
     newSocket.on('fila:atualizada', (novaFila) => {
