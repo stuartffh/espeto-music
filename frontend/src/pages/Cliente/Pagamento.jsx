@@ -1,51 +1,128 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { CheckCircle, XCircle, Loader2, ArrowLeft } from 'lucide-react';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import ConfettiEffect from '../../components/ConfettiEffect';
 
 function Pagamento() {
   const { status } = useParams();
   const navigate = useNavigate();
+  const [countdown, setCountdown] = useState(5);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      navigate('/');
-    }, 5000);
+    if (status === 'sucesso') {
+      setShowConfetti(true);
+    }
 
-    return () => clearTimeout(timer);
-  }, [navigate]);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          navigate('/');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-  const mensagens = {
+    return () => clearInterval(timer);
+  }, [status, navigate]);
+
+  const statusConfig = {
     sucesso: {
-      titulo: '✅ Pagamento Aprovado!',
-      texto: 'Sua música foi adicionada à fila. Obrigado!',
-      cor: 'bg-green-500',
+      icon: CheckCircle,
+      title: 'Pagamento Aprovado!',
+      description: 'Sua música foi adicionada à fila. Obrigado!',
+      color: 'text-neon-green',
+      animation: { scale: [0, 1.2, 1], rotate: [0, 360] },
     },
     pendente: {
-      titulo: '⏳ Pagamento Pendente',
-      texto: 'Aguardando confirmação do pagamento...',
-      cor: 'bg-yellow-500',
+      icon: Loader2,
+      title: 'Pagamento Pendente',
+      description: 'Aguardando confirmação do pagamento...',
+      color: 'text-neon-cyan',
+      animation: { rotate: 360 },
     },
     falha: {
-      titulo: '❌ Pagamento Recusado',
-      texto: 'Não foi possível processar o pagamento. Tente novamente.',
-      cor: 'bg-red-500',
+      icon: XCircle,
+      title: 'Pagamento Recusado',
+      description: 'Não foi possível processar o pagamento.',
+      color: 'text-neon-pink',
+      animation: { x: [-10, 10, -10, 10, 0] },
     },
   };
 
-  const msg = mensagens[status] || mensagens.falha;
+  const config = statusConfig[status] || statusConfig.falha;
+  const Icon = config.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex items-center justify-center p-4">
-      <div className={`${msg.cor} rounded-lg shadow-2xl p-8 max-w-md w-full text-white text-center`}>
-        <h1 className="text-4xl font-bold mb-4">{msg.titulo}</h1>
-        <p className="text-xl mb-6">{msg.texto}</p>
-        <p className="text-sm opacity-90">Redirecionando em 5 segundos...</p>
-        <button
-          onClick={() => navigate('/')}
-          className="mt-6 px-6 py-3 bg-white text-gray-800 rounded-lg font-semibold hover:bg-gray-100"
-        >
-          Voltar Agora
-        </button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-dark-bg via-dark-surface to-dark-elevated dark:from-dark-bg dark:to-dark-surface flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 20 }}
+        className="max-w-md w-full"
+      >
+        <Card variant="glass" className="text-center">
+          {/* Icon */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={config.animation}
+            transition={{
+              duration: status === 'pendente' ? 1 : 0.6,
+              repeat: status === 'pendente' ? Infinity : 0,
+              ease: 'easeOut',
+            }}
+            className="mb-6"
+          >
+            <Icon className={`w-24 h-24 mx-auto ${config.color}`} />
+          </motion.div>
+
+          {/* Title */}
+          <h1 className="text-3xl font-bold text-white dark:text-white mb-2">
+            {config.title}
+          </h1>
+
+          {/* Description */}
+          <p className="text-gray-400 dark:text-gray-400 mb-6">
+            {config.description}
+          </p>
+
+          {/* Progress Bar */}
+          <div className="mb-6">
+            <div className="h-2 bg-gray-700 dark:bg-gray-800 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-neon-cyan to-neon-purple"
+                initial={{ width: '100%' }}
+                animate={{ width: '0%' }}
+                transition={{ duration: 5, ease: 'linear' }}
+              />
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+              Redirecionando em {countdown}s...
+            </p>
+          </div>
+
+          {/* Button */}
+          <Button
+            icon={ArrowLeft}
+            variant="ghost"
+            onClick={() => navigate('/')}
+            className="w-full"
+          >
+            Voltar Agora
+          </Button>
+        </Card>
+      </motion.div>
+
+      {/* Confetti */}
+      <ConfettiEffect
+        show={showConfetti}
+        onComplete={() => setShowConfetti(false)}
+      />
     </div>
   );
 }
