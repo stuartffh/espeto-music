@@ -78,6 +78,7 @@ function Panel() {
   const [iframeReady, setIframeReady] = useState(false);
   const [autoplayConsent, setAutoplayConsent] = useState(false);
   const videoRef = useRef(null);
+  const containerRef = useRef(null);
 
   const handleVideoEnd = useCallback(() => {
     if (estadoPlayer?.musicaAtual && socket) {
@@ -85,6 +86,38 @@ function Panel() {
       socket.emit('musica:terminou', { pedidoId: estadoPlayer.musicaAtual.id });
     }
   }, [estadoPlayer?.musicaAtual, socket]);
+
+  const toggleFullscreen = useCallback(() => {
+    const elem = containerRef.current;
+    if (!elem) return;
+
+    if (!document.fullscreenElement &&
+        !document.webkitFullscreenElement &&
+        !document.mozFullScreenElement &&
+        !document.msFullscreenElement) {
+      // Enter fullscreen
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      } else if (elem.mozRequestFullScreen) {
+        elem.mozRequestFullScreen();
+      } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen();
+      }
+    } else {
+      // Exit fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+  }, []);
 
   // Conectar WebSocket e buscar dados iniciais
   useEffect(() => {
@@ -158,6 +191,9 @@ function Panel() {
         case 'player-autoplay-muted':
           console.warn('ℹ️ Player da TV iniciou reprodução sem áudio. Aguarde interação para ativar o som.');
           break;
+        case 'toggle-fullscreen':
+          toggleFullscreen();
+          break;
         default:
           break;
       }
@@ -168,7 +204,7 @@ function Panel() {
     return () => {
       window.removeEventListener('message', messageHandler);
     };
-  }, [handleVideoEnd]);
+  }, [handleVideoEnd, toggleFullscreen]);
 
   const sendVideoToIframe = useCallback((musica) => {
     if (!musica) {
@@ -209,7 +245,7 @@ function Panel() {
   const musicaAtual = estadoPlayer?.musicaAtual;
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-black text-white overflow-hidden">
+    <div ref={containerRef} className="h-screen w-screen flex flex-col bg-black text-white overflow-hidden">
       {/* Área Principal - Player (Tela Cheia) */}
       <div className="flex-1 flex flex-col relative min-h-0">
         {/* Header - Tocando Agora */}
