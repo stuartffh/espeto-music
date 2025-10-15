@@ -1,0 +1,79 @@
+# Node modules
+node_modules
+**/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs (serão criados no container)
+**/dist
+**/build
+**/.next
+**/.nuxt
+
+# Environment files
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Git
+.git
+.gitignore
+.github
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+**/*.log
+
+# Database files (desenvolvimento)
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+backend/prisma/*.db
+backend/prisma/*.db-journal
+*.sqlite
+*.sqlite3
+
+# Temporários
+tmp
+temp
+*.tmp
+.cache
+
+# Downloads de desenvolvimento
+backend/downloads/*
+!backend/downloads/.gitkeep
+
+# Coverage & testes
+coverage
+.nyc_output
+**/.coverage
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentação e arquivos de projeto
+README.md
+README_NOVO.md
+LICENSE
+*.md
+!backend/prisma/schema.prisma
+
+# Build tools
+.eslintcache
+tsconfig.tsbuildinfo

@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  espeto-music:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: espeto-music
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=file:./prisma/dev.db
+    volumes:
+      # Persistir banco de dados
+      - ./data/prisma:/app/backend/prisma
+      # Persistir downloads
+      - ./data/downloads:/app/backend/downloads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Volumes nomeados (opcional - use se preferir volumes Docker ao invés de bind mounts)
+# volumes:
+#   prisma-data:
+#   downloads-data:

@@ -43,22 +43,46 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Rotas
+// Rotas da API
 app.use('/api', routes);
 
-// Rota raiz
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Espeto Music API',
-    version: '1.0.0',
-    endpoints: {
-      health: '/api/health',
-      mesas: '/api/mesas',
-      musicas: '/api/musicas',
-      pagamentos: '/api/pagamentos',
-      websocket: 'ws://localhost:' + PORT,
-    },
+// Servir frontends em produção
+const path = require('path');
+const fs = require('fs');
+
+// Servir frontend-tv em /tv
+const frontendTvPath = path.join(__dirname, '../../frontend-tv/dist');
+if (fs.existsSync(frontendTvPath)) {
+  app.use('/tv', express.static(frontendTvPath));
+  app.get('/tv/*', (req, res) => {
+    res.sendFile(path.join(frontendTvPath, 'index.html'));
   });
+}
+
+// Servir frontend-cliente na raiz
+const frontendClientePath = path.join(__dirname, '../../frontend-cliente/dist');
+if (fs.existsSync(frontendClientePath)) {
+  app.use(express.static(frontendClientePath));
+}
+
+// Rota raiz - redireciona para o frontend-cliente ou retorna info da API
+app.get('/', (req, res) => {
+  if (fs.existsSync(frontendClientePath)) {
+    res.sendFile(path.join(frontendClientePath, 'index.html'));
+  } else {
+    res.json({
+      message: 'Espeto Music API',
+      version: '1.0.0',
+      endpoints: {
+        health: '/api/health',
+        mesas: '/api/mesas',
+        musicas: '/api/musicas',
+        pagamentos: '/api/pagamentos',
+        websocket: 'ws://localhost:' + PORT,
+        tv: '/tv',
+      },
+    });
+  }
 });
 
 // Rota para gerar QR Code único (modelo "livepix")
