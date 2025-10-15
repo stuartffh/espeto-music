@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const moderacaoController = require('../controllers/moderacaoController');
-const { authMiddleware } = require('../middlewares/authMiddleware');
+const authMiddleware = require('../middlewares/authMiddleware');
 
 // Todas as rotas requerem autenticação de admin
 router.use(authMiddleware);
