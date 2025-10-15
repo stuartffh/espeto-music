@@ -93,23 +93,23 @@ function App() {
       {/* Área Principal - Player (Tela Cheia) */}
       <div className="flex-1 flex flex-col relative min-h-0">
         {/* Header - Tocando Agora */}
-        <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/95 via-black/75 to-transparent p-4 md:p-6 pointer-events-none">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-2xl md:text-4xl font-bold mb-2 flex items-center gap-3 drop-shadow-2xl">
-              <span className="text-3xl md:text-5xl animate-pulse">🎵</span>
+        <div className="absolute top-0 left-0 z-10 bg-gradient-to-br from-black/90 via-black/70 to-transparent p-3 md:p-4 pointer-events-none max-w-2xl">
+          <div>
+            <h2 className="text-sm md:text-lg font-bold mb-1 flex items-center gap-2 drop-shadow-2xl">
+              <span className="text-lg md:text-2xl">🎵</span>
               Tocando Agora
             </h2>
             {musicaAtual ? (
-              <div className="bg-white/15 backdrop-blur-lg rounded-lg p-3 md:p-4 inline-block border border-white/10 shadow-2xl max-w-full">
-                <p className="text-lg md:text-3xl font-bold text-white drop-shadow-2xl leading-tight truncate">
+              <div className="bg-white/10 backdrop-blur-md rounded-md p-2 md:p-3 border border-white/10 shadow-xl">
+                <p className="text-base md:text-xl font-bold text-white drop-shadow-lg leading-tight truncate">
                   {musicaAtual.musicaTitulo}
                 </p>
-                <p className="text-sm md:text-xl text-purple-200 mt-1">
+                <p className="text-xs md:text-sm text-purple-200 mt-0.5">
                   Pedido por: <span className="font-semibold text-yellow-300">{musicaAtual.nomeCliente || 'Anônimo'}</span>
                 </p>
               </div>
             ) : (
-              <p className="text-lg md:text-2xl text-purple-300 drop-shadow-lg">Aguardando próxima música...</p>
+              <p className="text-sm md:text-base text-purple-300 drop-shadow-lg">Aguardando próxima música...</p>
             )}
           </div>
         </div>
