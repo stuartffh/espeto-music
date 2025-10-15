@@ -3,6 +3,7 @@ import { useTheme } from '../hooks/useTheme';
 import { Button, Card, Input } from '../components/ui';
 import ColorPicker from '../components/admin/ColorPicker';
 import ThemePreview from '../components/admin/ThemePreview';
+import { API_URL } from '../config/api';
 
 const AdminTheme = () => {
   const { theme: currentTheme, loading, reloadTheme } = useTheme();
@@ -54,7 +55,7 @@ const AdminTheme = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/admin/theme', {
+      const response = await fetch(`${API_URL}/api/admin/theme`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +93,7 @@ const AdminTheme = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/admin/theme/reset', {
+      const response = await fetch(`${API_URL}/api/admin/theme/reset`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

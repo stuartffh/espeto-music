@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { API_URL } from '../config/api';
 
 export const ThemeContext = createContext();
 
@@ -11,7 +12,7 @@ export const ThemeProvider = ({ children }) => {
   const fetchTheme = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3001/api/theme');
+      const response = await fetch(`${API_URL}/api/theme`);
 
       if (!response.ok) {
         throw new Error('Erro ao carregar tema');
