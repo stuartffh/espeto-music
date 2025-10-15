@@ -17,10 +17,12 @@ model PedidoMusica {
   musicaYoutubeId String
   musicaThumbnail String?
   musicaDuracao   Int?     // em segundos
-  status          String   @default("pendente") // pendente, pago, tocando, concluida, cancelada
+  status          String   @default("pendente") // pendente, pago, tocando, concluida, cancelada, rejeitada
   valor           Float
   pagamentoId     String?  @unique
   posicaoFila     Int?
+  motivoRejeicao  String?  // Motivo da rejeição pela moderação
+  moderadoPor     String?  // "sistema" ou "admin"
   criadoEm        DateTime @default(now())
   atualizadoEm    DateTime @updatedAt
 
@@ -115,4 +117,19 @@ model EstadoPlayer {
   atualizadoEm      DateTime @updatedAt
 
   @@map("estado_player")
+}
+
+model PalavraProibida {
+  id                String   @id @default(uuid())
+  palavra           String
+  categoria         String   @default("AMBOS") // NOME_CLIENTE, TITULO_MUSICA, AMBOS
+  severidade        String   @default("MEDIA") // LEVE, MEDIA, SEVERA
+  ativo             Boolean  @default(true)
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("palavras_proibidas")
+  @@index([categoria])
+  @@index([severidade])
+  @@index([ativo])
 }

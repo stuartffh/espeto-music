@@ -2,6 +2,7 @@ const musicaService = require('../services/musicaService');
 const { buscarVideos, buscarDetalhesVideo } = require('../config/youtube');
 const { registrarBusca } = require('../services/trendingService');
 const downloadService = require('../services/downloadService');
+const moderationService = require('../services/moderationService');
 
 /**
  * Busca vídeos no YouTube
@@ -59,6 +60,22 @@ async function criar(req, res) {
     if (!musicaTitulo || !musicaYoutubeId) {
       return res.status(400).json({
         error: 'Título e ID do YouTube são obrigatórios',
+      });
+    }
+
+    // Validar conteúdo através do sistema de moderação
+    const validacao = await moderationService.validarPedido({
+      nomeCliente,
+      musicaTitulo,
+    });
+
+    if (!validacao.aprovado) {
+      console.log(`❌ Pedido rejeitado pela moderação: ${validacao.motivo}`);
+      console.log(`   Campo: ${validacao.campo}`);
+      console.log(`   Palavras encontradas: ${validacao.palavrasEncontradas.map(p => p.palavra).join(', ')}`);
+
+      return res.status(400).json({
+        error: validacao.motivo,
       });
     }
 
