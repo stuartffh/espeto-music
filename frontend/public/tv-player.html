@@ -340,6 +340,16 @@
                 </div>
 
                 <div class="controls-right">
+                    <div class="dropdown" id="volume-dropdown">
+                        <button id="btn-volume" tabindex="0">🔊</button>
+                        <div class="dropdown-menu" id="volume-menu">
+                            <div style="padding: 20px;">
+                                <input type="range" id="volume-slider" min="0" max="100" value="100"
+                                       style="width: 150px; height: 8px; cursor: pointer;">
+                                <div id="volume-percent" style="text-align: center; margin-top: 10px; font-size: 16px;">100%</div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="dropdown" id="quality-dropdown">
                         <button id="btn-quality" tabindex="0">Qualidade</button>
                         <div class="dropdown-menu" id="quality-menu"></div>
@@ -352,6 +362,7 @@
                         <button id="btn-subtitles" tabindex="0">Legendas</button>
                         <div class="dropdown-menu" id="subtitles-menu"></div>
                     </div>
+                    <button class="btn-icon" id="btn-fullscreen" tabindex="0">⛶</button>
                 </div>
             </div>
         </div>
@@ -541,6 +552,23 @@
                 this.progressBar.addEventListener('mousemove', (e) => this.showTimeTooltip(e));
                 this.progressBar.addEventListener('mouseleave', () => this.hideTimeTooltip());
 
+                // Volume controls
+                const volumeSlider = document.getElementById('volume-slider');
+                const volumeButton = document.getElementById('btn-volume');
+                if (volumeSlider) {
+                    volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value / 100));
+                    volumeSlider.addEventListener('change', (e) => this.setVolume(e.target.value / 100));
+                }
+                if (volumeButton) {
+                    volumeButton.addEventListener('click', () => this.toggleMute());
+                }
+
+                // Fullscreen button
+                const fullscreenButton = document.getElementById('btn-fullscreen');
+                if (fullscreenButton) {
+                    fullscreenButton.addEventListener('click', () => this.toggleFullscreen());
+                }
+
                 // Video events
                 this.video.addEventListener('timeupdate', () => this.updateProgress());
                 this.video.addEventListener('loadedmetadata', () => this.updateDuration());
@@ -566,9 +594,16 @@
                 this.video.addEventListener('pause', () => this.updatePlayButton());
                 this.video.addEventListener('error', (e) => this.handleError(e));
                 this.video.addEventListener('ended', () => this.handleEnded());
+                this.video.addEventListener('volumechange', () => this.updateVolumeDisplay());
 
                 // Show/hide OSD on mouse move
                 document.addEventListener('mousemove', () => this.showOSD());
+
+                // Listen for fullscreen changes
+                document.addEventListener('fullscreenchange', () => this.updateFullscreenButton());
+                document.addEventListener('webkitfullscreenchange', () => this.updateFullscreenButton());
+                document.addEventListener('mozfullscreenchange', () => this.updateFullscreenButton());
+                document.addEventListener('MSFullscreenChange', () => this.updateFullscreenButton());
             }
 
             setupKeyboardNavigation() {
@@ -679,10 +714,12 @@
                     this.btnPlayPause,
                     this.btnRewind,
                     this.btnForward,
+                    document.getElementById('btn-volume'),
                     document.getElementById('btn-quality'),
                     document.getElementById('btn-audio'),
-                    document.getElementById('btn-subtitles')
-                ];
+                    document.getElementById('btn-subtitles'),
+                    document.getElementById('btn-fullscreen')
+                ].filter(el => el !== null);
             }
 
             activateFocused() {
@@ -692,12 +729,16 @@
                     this.seek(-10);
                 } else if (this.focusedElement === this.btnForward) {
                     this.seek(10);
+                } else if (this.focusedElement.id === 'btn-volume') {
+                    this.toggleDropdown('volume-menu');
                 } else if (this.focusedElement.id === 'btn-quality') {
                     this.toggleDropdown('quality-menu');
                 } else if (this.focusedElement.id === 'btn-audio') {
                     this.toggleDropdown('audio-menu');
                 } else if (this.focusedElement.id === 'btn-subtitles') {
                     this.toggleDropdown('subtitles-menu');
+                } else if (this.focusedElement.id === 'btn-fullscreen') {
+                    this.toggleFullscreen();
                 }
             }
 
@@ -734,6 +775,7 @@
 
             adjustVolume(delta) {
                 this.video.volume = Math.max(0, Math.min(1, this.video.volume + delta));
+                this.updateVolumeDisplay();
                 this.showVolumeIndicator();
             }
 
@@ -746,6 +788,82 @@
                 this.volumeTimeout = setTimeout(() => {
                     this.volumeIndicator.classList.remove('visible');
                 }, 1500);
+            }
+
+            setVolume(level) {
+                this.video.volume = Math.max(0, Math.min(1, level));
+                this.updateVolumeDisplay();
+                this.showVolumeIndicator();
+            }
+
+            toggleMute() {
+                this.video.muted = !this.video.muted;
+                this.updateVolumeDisplay();
+            }
+
+            updateVolumeDisplay() {
+                const volumeSlider = document.getElementById('volume-slider');
+                const volumePercent = document.getElementById('volume-percent');
+                const volumeButton = document.getElementById('btn-volume');
+
+                if (volumeSlider && volumePercent) {
+                    const percent = Math.round(this.video.volume * 100);
+                    volumeSlider.value = percent;
+                    volumePercent.textContent = `${percent}%`;
+                }
+
+                if (volumeButton) {
+                    // Update icon based on volume level and mute state
+                    if (this.video.muted || this.video.volume === 0) {
+                        volumeButton.textContent = '🔇';
+                    } else if (this.video.volume < 0.5) {
+                        volumeButton.textContent = '🔉';
+                    } else {
+                        volumeButton.textContent = '🔊';
+                    }
+                }
+            }
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement &&
+                    !document.webkitFullscreenElement &&
+                    !document.mozFullScreenElement &&
+                    !document.msFullscreenElement) {
+                    // Enter fullscreen
+                    const elem = document.documentElement;
+                    if (elem.requestFullscreen) {
+                        elem.requestFullscreen();
+                    } else if (elem.webkitRequestFullscreen) {
+                        elem.webkitRequestFullscreen();
+                    } else if (elem.mozRequestFullScreen) {
+                        elem.mozRequestFullScreen();
+                    } else if (elem.msRequestFullscreen) {
+                        elem.msRequestFullscreen();
+                    }
+                } else {
+                    // Exit fullscreen
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+            }
+
+            updateFullscreenButton() {
+                const fullscreenButton = document.getElementById('btn-fullscreen');
+                if (fullscreenButton) {
+                    const isFullscreen = !!(document.fullscreenElement ||
+                                           document.webkitFullscreenElement ||
+                                           document.mozFullScreenElement ||
+                                           document.msFullscreenElement);
+                    fullscreenButton.textContent = isFullscreen ? '⛶' : '⛶';
+                    fullscreenButton.title = isFullscreen ? 'Sair da tela cheia (F)' : 'Tela cheia (F)';
+                }
             }
 
             updateProgress() {
