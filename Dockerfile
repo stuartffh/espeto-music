@@ -6,6 +6,16 @@
 # ============================================
 FROM node:20-alpine AS frontend-builder
 
+# Build args para variáveis VITE (serão injetadas durante o build)
+ARG VITE_API_URL
+ARG VITE_WEBSOCKET_URL
+ARG VITE_MERCADOPAGO_PUBLIC_KEY
+
+# Expor como variáveis de ambiente para o Vite
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WEBSOCKET_URL=$VITE_WEBSOCKET_URL
+ENV VITE_MERCADOPAGO_PUBLIC_KEY=$VITE_MERCADOPAGO_PUBLIC_KEY
+
 WORKDIR /app
 
 # Copiar package.json do frontend unificado
@@ -17,7 +27,7 @@ RUN cd frontend && npm install
 # Copiar código fonte do frontend
 COPY frontend/ ./frontend/
 
-# Build do frontend unificado
+# Build do frontend unificado (variáveis VITE_* serão "queimadas" no código)
 RUN cd frontend && npm run build
 
 # ============================================
