@@ -13,8 +13,8 @@ COPY frontend-cliente/package*.json ./frontend-cliente/
 COPY frontend-tv/package*.json ./frontend-tv/
 
 # Instalar dependências dos frontends
-RUN cd frontend-cliente && npm ci --only=production
-RUN cd frontend-tv && npm ci --only=production
+RUN cd frontend-cliente && npm install --production
+RUN cd frontend-tv && npm install --production
 
 # Copiar código fonte dos frontends
 COPY frontend-cliente/ ./frontend-cliente/
@@ -39,7 +39,7 @@ COPY backend/package*.json ./backend/
 
 # Instalar dependências do backend
 WORKDIR /app/backend
-RUN npm ci --only=production
+RUN npm install --production
 
 # Copiar código fonte do backend
 COPY backend/ ./
