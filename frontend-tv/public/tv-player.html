@@ -384,6 +384,7 @@
                 this.currentDropdown = null;
                 this.awaitingManualStart = false;
                 this.wasMutedForAutoplay = false;
+                this.autoplayConsent = this.loadAutoplayConsent();
                 this.smartTVEnvironment = this.detectSmartTVEnvironment();
 
                 this.init();
@@ -393,6 +394,8 @@
                 this.setupEventListeners();
                 this.setupKeyboardNavigation();
                 this.focusElement(this.btnPlayPause);
+                this.setAutoplayMutedState();
+                this.notifyPlayerReady();
             }
 
             prepareForNewSource() {
@@ -414,6 +417,85 @@
                 this.video.setAttribute('autoplay', '');
                 this.video.setAttribute('playsinline', '');
                 this.video.preload = 'auto';
+                this.setAutoplayMutedState();
+            }
+
+            notifyPlayerReady() {
+                window.parent.postMessage({
+                    type: 'player-ready',
+                    autoplayConsent: this.autoplayConsent
+                }, '*');
+            }
+
+            loadAutoplayConsent() {
+                try {
+                    return localStorage.getItem('tv-autoplay-consent') === 'true';
+                } catch (error) {
+                    console.warn('Não foi possível ler consentimento de autoplay salvo:', error);
+                    return false;
+                }
+            }
+
+            persistAutoplayConsent(value) {
+                try {
+                    if (value) {
+                        localStorage.setItem('tv-autoplay-consent', 'true');
+                    } else {
+                        localStorage.removeItem('tv-autoplay-consent');
+                    }
+                } catch (error) {
+                    console.warn('Não foi possível persistir consentimento de autoplay:', error);
+                }
+            }
+
+            updateAutoplayConsent(value, { persist = true, notify = true } = {}) {
+                const normalized = Boolean(value);
+
+                if (this.autoplayConsent === normalized) {
+                    this.setAutoplayMutedState();
+
+                    if (notify) {
+                        window.parent.postMessage({
+                            type: 'autoplay-consent-changed',
+                            value: this.autoplayConsent
+                        }, '*');
+                    }
+
+                    return;
+                }
+
+                this.autoplayConsent = normalized;
+
+                if (persist) {
+                    this.persistAutoplayConsent(this.autoplayConsent);
+                }
+
+                if (notify) {
+                    window.parent.postMessage({
+                        type: 'autoplay-consent-changed',
+                        value: this.autoplayConsent
+                    }, '*');
+                }
+
+                if (this.autoplayConsent) {
+                    console.log('✅ Usuário já deu consentimento para autoplay');
+                }
+
+                this.setAutoplayMutedState();
+            }
+
+            grantAutoplayConsent() {
+                this.updateAutoplayConsent(true, { persist: true, notify: true });
+            }
+
+            setAutoplayMutedState() {
+                if (this.autoplayConsent) {
+                    this.video.muted = false;
+                    this.video.removeAttribute('muted');
+                } else {
+                    this.video.muted = true;
+                    this.video.setAttribute('muted', '');
+                }
             }
 
             detectSmartTVEnvironment() {
@@ -470,11 +552,15 @@
                     this.awaitingManualStart = false;
 
                     if (this.wasMutedForAutoplay) {
-                        setTimeout(() => {
-                            this.video.muted = false;
-                            this.video.removeAttribute('muted');
-                            this.wasMutedForAutoplay = false;
-                        }, 200);
+                        const estavaSilenciado = this.wasMutedForAutoplay;
+                        this.wasMutedForAutoplay = false;
+
+                        if (this.autoplayConsent) {
+                            this.tryUnmuteAfterConsent();
+                        } else if (estavaSilenciado) {
+                            this.showInteractionPrompt('Pressione OK/Enter para ativar o áudio.');
+                            window.parent.postMessage({ type: 'player-autoplay-muted' }, '*');
+                        }
                     }
                 });
                 this.video.addEventListener('pause', () => this.updatePlayButton());
@@ -617,10 +703,17 @@
 
             togglePlayPause() {
                 if (this.video.paused) {
-                    this.awaitingManualStart = false;
                     this.hideInteractionPrompt();
+                    this.awaitingManualStart = false;
+                    this.grantAutoplayConsent();
                     this.playWithFallback({ allowMutedFallback: true, triggeredByUser: true });
                 } else {
+                    if (this.video.muted) {
+                        this.grantAutoplayConsent();
+                        this.tryUnmuteAfterConsent(true);
+                        return;
+                    }
+
                     this.video.pause();
                 }
             }
@@ -716,9 +809,9 @@
                 this.loadingSpinner.classList.remove('visible');
             }
 
-            showInteractionPrompt() {
+            showInteractionPrompt(message = 'Pressione OK/Enter para iniciar o vídeo com áudio.') {
                 if (!this.interactionPrompt) return;
-                this.interactionPrompt.textContent = 'Pressione OK/Enter para iniciar o vídeo com áudio.';
+                this.interactionPrompt.textContent = message;
                 this.interactionPrompt.classList.add('visible');
                 this.showOSD();
                 this.focusElement(this.btnPlayPause);
@@ -753,8 +846,9 @@
 
                     if (!triggeredByUser) {
                         this.awaitingManualStart = true;
-                        this.showInteractionPrompt();
+                        this.showInteractionPrompt('Pressione OK/Enter para iniciar a reprodução.');
                         this.hideLoading();
+                        window.parent.postMessage({ type: 'player-autoplay-blocked' }, '*');
                     } else {
                         this.errorMessage.textContent = 'Não foi possível iniciar a reprodução automática.';
                         this.errorMessage.classList.add('visible');
@@ -843,8 +937,6 @@
             loadVideo(url, type = 'auto') {
                 this.prepareForNewSource();
                 this.showLoading();
-                this.video.muted = false;
-                this.video.removeAttribute('muted');
 
                 // Detect type from URL if auto
                 if (type === 'auto') {
@@ -925,6 +1017,33 @@
                 });
             }
 
+            async tryUnmuteAfterConsent(triggeredByUser = false) {
+                try {
+                    this.video.muted = false;
+                    this.video.removeAttribute('muted');
+                    const playResult = this.video.play();
+
+                    if (playResult && typeof playResult.then === 'function') {
+                        await playResult;
+                    }
+
+                    this.hideInteractionPrompt();
+                    this.wasMutedForAutoplay = false;
+                } catch (error) {
+                    console.warn('Não foi possível ativar áudio automaticamente:', error);
+                    this.video.muted = true;
+                    this.video.setAttribute('muted', '');
+
+                    if (!triggeredByUser) {
+                        this.showInteractionPrompt('Pressione OK/Enter para ativar o áudio.');
+                        window.parent.postMessage({ type: 'player-autoplay-blocked' }, '*');
+                    } else {
+                        this.errorMessage.textContent = 'Não foi possível ativar o áudio automaticamente.';
+                        this.errorMessage.classList.add('visible');
+                    }
+                }
+            }
+
             setNativeSource(url, mimeType) {
                 this.video.src = url;
 
@@ -991,8 +1110,26 @@
 
         // Listen for messages from parent
         window.addEventListener('message', (e) => {
-            if (e.data.type === 'load-video') {
-                player.loadVideo(e.data.url, e.data.format || 'auto');
+            if (!e.data || !e.data.type) {
+                return;
+            }
+
+            switch (e.data.type) {
+                case 'load-video':
+                    if (typeof e.data.autoplayConsent === 'boolean') {
+                        player.updateAutoplayConsent(e.data.autoplayConsent, { persist: false, notify: true });
+                    }
+
+                    player.loadVideo(e.data.url, e.data.format || 'auto');
+                    break;
+                case 'host-ready':
+                    player.notifyPlayerReady();
+                    break;
+                case 'set-autoplay-consent':
+                    player.updateAutoplayConsent(e.data.value, { persist: true, notify: true });
+                    break;
+                default:
+                    break;
             }
         });
 

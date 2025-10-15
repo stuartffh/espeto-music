@@ -158,11 +158,15 @@ async function criar(req, res) {
           });
           console.log('🎵 [MODO GRATUITO] Música marcada como tocando:', musicaTocando.id, musicaTocando.musicaTitulo);
 
-          playerService.iniciarMusica(musicaTocando);
+          await playerService.iniciarMusica(musicaTocando);
           console.log('✅ [MODO GRATUITO] playerService.iniciarMusica() chamado com sucesso');
         } else {
           console.log('⏭️ [MODO GRATUITO] Já existe música tocando, adicionando à fila');
         }
+      }
+
+      if (io) {
+        io.emit('pedido:pago', { pedidoId: pedidoPago.id });
       }
 
       return res.status(201).json(pedidoPago);

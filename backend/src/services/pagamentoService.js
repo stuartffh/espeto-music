@@ -73,7 +73,7 @@ async function processarWebhook(data) {
 
   if (data.type !== 'payment') {
     console.log('⚠️ Tipo de notificação ignorado:', data.type);
-    return;
+    return { ignorado: true };
   }
 
   try {
@@ -92,7 +92,7 @@ async function processarWebhook(data) {
 
     if (!pedido || !pedido.pagamento) {
       console.error('❌ Pedido não encontrado:', pedidoId);
-      return;
+      return { paymentInfo, erro: 'Pedido não encontrado' };
     }
 
     // Atualizar pagamento
@@ -106,36 +106,51 @@ async function processarWebhook(data) {
       },
     });
 
+    let pedidoAtualizado = null;
+    let deveIniciarReproducao = false;
+
     // Se pagamento aprovado, atualizar status do pedido
     if (paymentInfo.status === 'approved') {
-      await prisma.pedidoMusica.update({
+      pedidoAtualizado = await prisma.pedidoMusica.update({
         where: { id: pedidoId },
         data: { status: 'pago' },
+        include: {
+          pagamento: true,
+        },
       });
 
       console.log('✅ Pagamento aprovado! Pedido atualizado:', pedidoId);
 
-      // Se não houver música tocando, tocar esta
-      const musicaTocando = await prisma.pedidoMusica.findFirst({
-        where: { status: 'tocando' },
+      const outraMusicaTocando = await prisma.pedidoMusica.findFirst({
+        where: {
+          status: 'tocando',
+          id: { not: pedidoId },
+        },
       });
 
-      if (!musicaTocando) {
-        await prisma.pedidoMusica.update({
+      if (!outraMusicaTocando) {
+        pedidoAtualizado = await prisma.pedidoMusica.update({
           where: { id: pedidoId },
           data: { status: 'tocando' },
+          include: {
+            pagamento: true,
+          },
         });
+        deveIniciarReproducao = true;
         console.log('🎵 Música iniciada automaticamente:', pedidoId);
       }
     } else if (paymentInfo.status === 'rejected' || paymentInfo.status === 'cancelled') {
-      await prisma.pedidoMusica.update({
+      pedidoAtualizado = await prisma.pedidoMusica.update({
         where: { id: pedidoId },
         data: { status: 'cancelada' },
+        include: {
+          pagamento: true,
+        },
       });
       console.log('❌ Pagamento rejeitado/cancelado. Pedido cancelado:', pedidoId);
     }
 
-    return paymentInfo;
+    return { paymentInfo, pedido: pedidoAtualizado, deveIniciarReproducao };
   } catch (error) {
     console.error('❌ Erro ao processar webhook:', error);
     throw error;

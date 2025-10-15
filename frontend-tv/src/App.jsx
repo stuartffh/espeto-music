@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 
@@ -9,7 +9,16 @@ function App() {
   const [fila, setFila] = useState([]);
   const [socket, setSocket] = useState(null);
   const [estadoPlayer, setEstadoPlayer] = useState(null);
+  const [iframeReady, setIframeReady] = useState(false);
+  const [autoplayConsent, setAutoplayConsent] = useState(false);
   const videoRef = useRef(null);
+
+  const handleVideoEnd = useCallback(() => {
+    if (estadoPlayer?.musicaAtual && socket) {
+      console.log('🔚 Finalizando música:', estadoPlayer.musicaAtual.id);
+      socket.emit('musica:terminou', { pedidoId: estadoPlayer.musicaAtual.id });
+    }
+  }, [estadoPlayer?.musicaAtual, socket]);
 
   // Conectar WebSocket e buscar dados iniciais
   useEffect(() => {
@@ -41,25 +50,6 @@ function App() {
     newSocket.on('player:iniciar', (data) => {
       console.log('▶️ Backend: Iniciar música', data.musica.musicaTitulo);
       setEstadoPlayer(data.estado);
-
-      if (videoRef.current) {
-        const videoUrl = `${API_URL}/api/stream/video/${data.musica.musicaYoutubeId}`;
-        console.log('🎵 Carregando vídeo:', videoUrl);
-
-        // Enviar mensagem para o player dentro do iframe
-        videoRef.current.contentWindow.postMessage({
-          type: 'load-video',
-          url: videoUrl,
-          format: 'mp4'
-        }, '*');
-      }
-    });
-
-    // Listener para mensagens do player (quando vídeo termina)
-    window.addEventListener('message', (event) => {
-      if (event.data.type === 'video-ended') {
-        handleVideoEnd();
-      }
     });
 
     // ========== EVENTOS DA FILA ==========
@@ -75,15 +65,80 @@ function App() {
       setFila([]);
     });
 
-    return () => newSocket.close();
+    return () => {
+      newSocket.close();
+    };
   }, []);
 
-  const handleVideoEnd = () => {
-    if (estadoPlayer?.musicaAtual && socket) {
-      console.log('🔚 Finalizando música:', estadoPlayer.musicaAtual.id);
-      socket.emit('musica:terminou', { pedidoId: estadoPlayer.musicaAtual.id });
+  useEffect(() => {
+    const messageHandler = (event) => {
+      const { type, autoplayConsent: consentValue } = event.data || {};
+
+      switch (type) {
+        case 'video-ended':
+          handleVideoEnd();
+          break;
+        case 'player-ready':
+          console.log('✅ Player da TV sinalizou que está pronto');
+          setIframeReady(true);
+          setAutoplayConsent(Boolean(consentValue));
+          break;
+        case 'autoplay-consent-changed':
+          setAutoplayConsent(Boolean(event.data?.value));
+          break;
+        case 'player-autoplay-blocked':
+          console.warn('⚠️ Player da TV sinalizou bloqueio de autoplay. Aguardando interação do usuário.');
+          break;
+        case 'player-autoplay-muted':
+          console.warn('ℹ️ Player da TV iniciou reprodução sem áudio. Aguarde interação para ativar o som.');
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('message', messageHandler);
+
+    return () => {
+      window.removeEventListener('message', messageHandler);
+    };
+  }, [handleVideoEnd]);
+
+  const sendVideoToIframe = useCallback((musica) => {
+    if (!musica) {
+      return;
     }
-  };
+
+    const iframeWindow = videoRef.current?.contentWindow;
+
+    if (!iframeWindow) {
+      console.warn('ℹ️ Player da TV ainda não está pronto para receber vídeos.');
+      return;
+    }
+
+    const videoUrl = `${API_URL}/api/stream/video/${musica.musicaYoutubeId}`;
+    console.log('🎵 Enviando vídeo para o player:', videoUrl);
+
+    iframeWindow.postMessage({
+      type: 'load-video',
+      url: videoUrl,
+      format: 'mp4',
+      autoplayConsent
+    }, '*');
+  }, [autoplayConsent]);
+
+  useEffect(() => {
+    if (!estadoPlayer?.musicaAtual) {
+      setIframeReady(false);
+      return;
+    }
+
+    if (!iframeReady) {
+      return;
+    }
+
+    sendVideoToIframe(estadoPlayer.musicaAtual);
+  }, [estadoPlayer?.musicaAtual, iframeReady, sendVideoToIframe]);
 
   const proximaMusica = fila.length > 0 ? fila[0] : null;
   const musicaAtual = estadoPlayer?.musicaAtual;
@@ -122,6 +177,14 @@ function App() {
               src="/tv-player.html"
               className="w-full h-full border-0"
               allow="autoplay; fullscreen"
+              onLoad={() => {
+                console.log('✅ Player da TV carregado');
+
+                const iframeWindow = videoRef.current?.contentWindow;
+                if (iframeWindow) {
+                  iframeWindow.postMessage({ type: 'host-ready' }, '*');
+                }
+              }}
             />
           ) : (
             <div className="text-center px-4 animate-fade-in">

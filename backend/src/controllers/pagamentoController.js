@@ -1,4 +1,7 @@
 const pagamentoService = require('../services/pagamentoService');
+const musicaService = require('../services/musicaService');
+const playerService = require('../services/playerService');
+const downloadService = require('../services/downloadService');
 
 /**
  * Cria um pagamento para um pedido
@@ -33,10 +36,44 @@ async function webhook(req, res) {
     // Mercado Pago pode enviar via body ou query
     const data = req.body.type ? req.body : req.query;
 
-    await pagamentoService.processarWebhook(data);
+    const resultado = await pagamentoService.processarWebhook(data);
 
-    // Emitir evento via WebSocket
     const io = req.app.get('io');
+
+    if (resultado?.pedido) {
+      // Garantir que o vídeo esteja disponível antes de iniciar
+      if (resultado.deveIniciarReproducao) {
+        try {
+          await downloadService.baixarVideo(resultado.pedido.musicaYoutubeId);
+        } catch (error) {
+          console.error('❌ Erro ao garantir download antes da reprodução:', error);
+        }
+
+        try {
+          const estadoAtual = playerService.obterEstado();
+          const precisaReiniciar =
+            !estadoAtual.musicaAtual ||
+            estadoAtual.musicaAtual.id !== resultado.pedido.id ||
+            estadoAtual.status !== 'playing';
+
+          if (precisaReiniciar) {
+            await playerService.iniciarMusica(resultado.pedido);
+          }
+        } catch (error) {
+          console.error('❌ Erro ao iniciar reprodução automática:', error);
+        }
+      }
+
+      if (io) {
+        const fila = await musicaService.buscarFilaMusicas();
+        io.emit('fila:atualizada', fila);
+
+        if (resultado.paymentInfo?.status === 'approved') {
+          io.emit('pedido:pago', { pedidoId: resultado.pedido.id });
+        }
+      }
+    }
+
     if (io) {
       io.emit('pagamento:atualizado', data);
     }
