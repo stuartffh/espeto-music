@@ -1,19 +1,51 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import {
+  Play,
+  Pause,
+  SkipForward,
+  Music,
+  TrendingUp,
+  RefreshCw,
+  Trash2,
+  Edit2,
+  Shield,
+  CheckCircle,
+  XCircle,
+  Filter,
+  Plus,
+  X,
+  AlertCircle,
+} from 'lucide-react';
 import useAuthStore from '../../store/authStore';
+import AdminSidebar from '../../components/AdminSidebar';
+import StatsCard from '../../components/StatsCard';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import Badge from '../../components/ui/Badge';
+import QueueItem from '../../components/QueueItem';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function AdminDashboard() {
   const { admin, logout, token } = useAuthStore();
   const navigate = useNavigate();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  // Estado da sidebar
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
+
+  // Estados gerais
   const [configs, setConfigs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [abaAtiva, setAbaAtiva] = useState('configuracoes');
+  const [abaAtiva, setAbaAtiva] = useState('overview');
   const [atualizandoSugestoes, setAtualizandoSugestoes] = useState(false);
 
   // Alterar senha
@@ -37,11 +69,47 @@ function AdminDashboard() {
   const [textoTeste, setTextoTeste] = useState('');
   const [resultadoTeste, setResultadoTeste] = useState(null);
 
+  // Estados do Overview
+  const [statsOverview, setStatsOverview] = useState({
+    totalMusicas: 0,
+    musicasTocadas: 0,
+    tempoTotal: '0h',
+    configuracoes: 0,
+  });
+
   useEffect(() => {
     carregarConfiguracoes();
     carregarEstadoPlayer();
     carregarFilaPlayer();
+    carregarOverview();
   }, []);
+
+  // Atualizar collapsed da sidebar quando a tela mudar
+  useEffect(() => {
+    setSidebarCollapsed(isMobile);
+  }, [isMobile]);
+
+  const carregarOverview = async () => {
+    try {
+      const [musicaAtual, fila, configsData] = await Promise.all([
+        axios.get(`${API_URL}/api/musicas/atual`),
+        axios.get(`${API_URL}/api/musicas/fila`),
+        axios.get(`${API_URL}/api/config`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+
+      const totalMusicas = fila.data.length + (musicaAtual.data ? 1 : 0);
+      const musicasTocadas = fila.data.filter(m => m.status === 'tocada').length;
+
+      setStatsOverview({
+        totalMusicas,
+        musicasTocadas,
+        tempoTotal: '2h 30m', // Pode ser calculado depois
+        configuracoes: configsData.data.length,
+      });
+    } catch (err) {
+      console.error('Erro ao carregar overview:', err);
+    }
+  };
 
   const carregarEstadoPlayer = async () => {
     try {
@@ -72,6 +140,7 @@ function AdminDashboard() {
       });
       setSuccess('Player tocando!');
       setTimeout(() => setSuccess(''), 2000);
+      carregarEstadoPlayer();
     } catch (err) {
       setError('Erro ao tocar');
     }
@@ -84,6 +153,7 @@ function AdminDashboard() {
       });
       setSuccess('Player pausado!');
       setTimeout(() => setSuccess(''), 2000);
+      carregarEstadoPlayer();
     } catch (err) {
       setError('Erro ao pausar');
     }
@@ -291,11 +361,6 @@ function AdminDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/admin/login');
-  };
-
   const renderCampoConfig = (config) => {
     const handleChange = (newValue) => {
       atualizarConfig(config.chave, newValue);
@@ -312,600 +377,745 @@ function AdminDashboard() {
               disabled={saving}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            <div className="w-11 h-6 bg-gray-700 peer-focus:ring-4 peer-focus:ring-neon-cyan/30 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-neon-cyan peer-checked:to-neon-purple"></div>
           </label>
         );
 
       case 'number':
         return (
-          <input
+          <Input
             type="number"
             value={config.valor}
             onChange={(e) => handleChange(e.target.value)}
             disabled={saving}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none w-32"
+            className="w-32"
           />
         );
 
       case 'password':
         return (
-          <input
+          <Input
             type="password"
             value={config.valor}
             onChange={(e) => handleChange(e.target.value)}
             disabled={saving}
             placeholder="••••••••"
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none flex-1"
+            className="flex-1"
           />
         );
 
       default: // text
         return (
-          <input
+          <Input
             type="text"
             value={config.valor}
             onChange={(e) => handleChange(e.target.value)}
             disabled={saving}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none flex-1"
+            className="flex-1"
           />
         );
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-xl text-gray-600">Carregando...</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">Espeto Music - Admin</h1>
-              <p className="text-purple-100 text-sm">Bem-vindo, {admin?.nome}</p>
-            </div>
-            <div className="flex gap-4">
-              <a
-                href="/"
-                className="px-4 py-2 bg-purple-700 hover:bg-purple-800 rounded-lg transition"
-              >
-                Ver Site
-              </a>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg transition"
-              >
-                Sair
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Mensagens */}
-      {error && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        </div>
-      )}
-
-      {success && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-            {success}
-          </div>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setAbaAtiva('configuracoes')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                abaAtiva === 'configuracoes'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Configurações do Sistema
-            </button>
-            <button
-              onClick={() => setAbaAtiva('senha')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                abaAtiva === 'senha'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Alterar Senha
-            </button>
-            <button
-              onClick={() => setAbaAtiva('sugestoes')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                abaAtiva === 'sugestoes'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Sugestões Trending
-            </button>
-            <button
-              onClick={() => { setAbaAtiva('player'); carregarFilaPlayer(); }}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                abaAtiva === 'player'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Controle do Player
-            </button>
-            <button
-              onClick={() => { setAbaAtiva('moderacao'); carregarPalavras(); }}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                abaAtiva === 'moderacao'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Moderação de Conteúdo
-            </button>
-          </nav>
-        </div>
+  // Render functions para cada aba
+  const renderOverview = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      <div>
+        <h2 className="text-3xl font-bold gradient-text mb-2">Dashboard Overview</h2>
+        <p className="text-gray-500 dark:text-gray-400">Visão geral do sistema</p>
       </div>
 
-      {/* Conteúdo */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {abaAtiva === 'configuracoes' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">
-              Configurações do Sistema
-            </h2>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatsCard
+          title="Músicas na Fila"
+          value={statsOverview.totalMusicas}
+          icon={Music}
+          trend={5}
+          color="cyan"
+        />
+        <StatsCard
+          title="Músicas Tocadas"
+          value={statsOverview.musicasTocadas}
+          icon={Play}
+          trend={12}
+          color="purple"
+        />
+        <StatsCard
+          title="Tempo Total"
+          value={statsOverview.tempoTotal}
+          icon={TrendingUp}
+          color="pink"
+        />
+        <StatsCard
+          title="Configurações"
+          value={statsOverview.configuracoes}
+          icon={Shield}
+          color="green"
+        />
+      </div>
 
-            <div className="space-y-4">
-              {configs.map((config) => (
-                <div
-                  key={config.chave}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-                >
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">
-                      {config.chave.replace(/_/g, ' ')}
-                    </h3>
-                    {config.descricao && (
-                      <p className="text-sm text-gray-500 mt-1">{config.descricao}</p>
-                    )}
-                  </div>
-                  <div className="ml-4">{renderCampoConfig(config)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Quick Actions */}
+      <Card variant="glass">
+        <h3 className="text-xl font-bold text-white mb-4">Ações Rápidas</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Button
+            variant="primary"
+            icon={Play}
+            onClick={() => setAbaAtiva('player')}
+            className="w-full"
+          >
+            Controlar Player
+          </Button>
+          <Button
+            variant="secondary"
+            icon={Shield}
+            onClick={() => setAbaAtiva('moderacao')}
+            className="w-full"
+          >
+            Moderação
+          </Button>
+          <Button
+            variant="neon"
+            icon={RefreshCw}
+            onClick={handleAtualizarSugestoes}
+            loading={atualizandoSugestoes}
+            className="w-full"
+          >
+            Atualizar Sugestões
+          </Button>
+        </div>
+      </Card>
 
-        {abaAtiva === 'senha' && (
-          <div className="bg-white rounded-lg shadow-md p-6 max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Alterar Senha</h2>
-
-            <form onSubmit={handleAlterarSenha} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Senha Atual
-                </label>
-                <input
-                  type="password"
-                  value={senhaAtual}
-                  onChange={(e) => setSenhaAtual(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-                  required
-                  disabled={saving}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nova Senha
-                </label>
-                <input
-                  type="password"
-                  value={senhaNova}
-                  onChange={(e) => setSenhaNova(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-                  required
-                  minLength={6}
-                  disabled={saving}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirmar Nova Senha
-                </label>
-                <input
-                  type="password"
-                  value={senhaConfirm}
-                  onChange={(e) => setSenhaConfirm(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-                  required
-                  minLength={6}
-                  disabled={saving}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white font-semibold py-3 px-6 rounded-lg transition"
+      {/* Player Status */}
+      {musicaAtualPlayer && (
+        <Card variant="glass">
+          <h3 className="text-xl font-bold text-white mb-4">Tocando Agora</h3>
+          <div className="flex items-center gap-4">
+            <img
+              src={musicaAtualPlayer.musicaThumbnail}
+              alt=""
+              className="w-24 h-24 rounded-lg object-cover neon-border"
+            />
+            <div className="flex-1">
+              <p className="text-lg font-semibold text-white">{musicaAtualPlayer.musicaTitulo}</p>
+              <p className="text-sm text-gray-400">Pedido por: {musicaAtualPlayer.nomeCliente || 'Anônimo'}</p>
+              <Badge
+                variant={estadoPlayer.status === 'playing' ? 'success' : 'warning'}
+                className="mt-2"
               >
-                {saving ? 'Salvando...' : 'Alterar Senha'}
-              </button>
-            </form>
+                {estadoPlayer.status === 'playing' ? 'Tocando' : estadoPlayer.status === 'paused' ? 'Pausado' : 'Parado'}
+              </Badge>
+            </div>
           </div>
-        )}
+        </Card>
+      )}
+    </motion.div>
+  );
 
-        {abaAtiva === 'sugestoes' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              Atualizar Sugestões de Músicas
-            </h2>
+  const renderConfiguracoes = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      <div>
+        <h2 className="text-3xl font-bold gradient-text mb-2">Configurações do Sistema</h2>
+        <p className="text-gray-500 dark:text-gray-400">Gerencie as configurações do aplicativo</p>
+      </div>
 
-            <p className="text-gray-600 mb-6">
-              Busca as músicas mais populares do YouTube para cada categoria e atualiza as sugestões.
-            </p>
-
-            <button
-              onClick={handleAtualizarSugestoes}
-              disabled={atualizandoSugestoes}
-              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:from-purple-300 disabled:to-indigo-300 text-white font-semibold py-4 px-6 rounded-lg transition text-lg shadow-md"
+      <Card variant="glass">
+        <div className="space-y-4">
+          {configs.map((config) => (
+            <motion.div
+              key={config.chave}
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 glass rounded-lg hover:bg-neon-cyan/5 transition gap-4"
+              whileHover={{ scale: 1.01 }}
             >
-              {atualizandoSugestoes ? 'Atualizando...' : '🔄 Atualizar Sugestões Agora'}
-            </button>
+              <div className="flex-1">
+                <h3 className="font-semibold text-white">
+                  {config.chave.replace(/_/g, ' ')}
+                </h3>
+                {config.descricao && (
+                  <p className="text-sm text-gray-400 mt-1">{config.descricao}</p>
+                )}
+              </div>
+              <div className="sm:ml-4">{renderCampoConfig(config)}</div>
+            </motion.div>
+          ))}
+        </div>
+      </Card>
+    </motion.div>
+  );
 
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-sm text-gray-600">
-                <span className="font-semibold">Última atualização:</span> Em breve
-              </p>
+  const renderPlayer = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      <div>
+        <h2 className="text-3xl font-bold gradient-text mb-2">Controle do Player</h2>
+        <p className="text-gray-500 dark:text-gray-400">Gerencie o player da TV</p>
+      </div>
+
+      {/* Controles */}
+      <Card variant="glass">
+        <div className="flex flex-col items-center gap-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="primary"
+              icon={Play}
+              onClick={handlePlayerPlay}
+              size="lg"
+            >
+              Play
+            </Button>
+            <Button
+              variant="secondary"
+              icon={Pause}
+              onClick={handlePlayerPause}
+              size="lg"
+            >
+              Pause
+            </Button>
+            <Button
+              variant="danger"
+              icon={SkipForward}
+              onClick={handlePlayerSkip}
+              size="lg"
+            >
+              Skip
+            </Button>
+          </div>
+
+          <div className="w-full p-4 glass rounded-lg text-center">
+            <p className="text-sm text-gray-400 mb-1">Estado do Player</p>
+            <Badge
+              variant={estadoPlayer.status === 'playing' ? 'success' : estadoPlayer.status === 'paused' ? 'warning' : 'default'}
+              size="lg"
+            >
+              {estadoPlayer.status === 'playing' ? 'Tocando' : estadoPlayer.status === 'paused' ? 'Pausado' : 'Parado'}
+            </Badge>
+          </div>
+        </div>
+      </Card>
+
+      {/* Música Atual */}
+      {musicaAtualPlayer && (
+        <Card variant="glass">
+          <h3 className="text-xl font-bold gradient-text mb-4">Música Atual</h3>
+          <div className="flex items-center gap-4">
+            <img
+              src={musicaAtualPlayer.musicaThumbnail}
+              alt=""
+              className="w-24 h-24 rounded-lg object-cover neon-border"
+            />
+            <div className="flex-1">
+              <p className="text-lg font-semibold text-white">{musicaAtualPlayer.musicaTitulo}</p>
+              <p className="text-sm text-gray-400">Pedido por: {musicaAtualPlayer.nomeCliente || 'Anônimo'}</p>
             </div>
           </div>
-        )}
+        </Card>
+      )}
 
-        {abaAtiva === 'player' && (
-          <div className="space-y-6">
-            {/* Controles do Player */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Controle do Player da TV</h2>
-
-              <div className="flex gap-4 justify-center mb-6">
-                <button
-                  onClick={handlePlayerPlay}
-                  className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"
-                >
-                  ▶️ Play
-                </button>
-                <button
-                  onClick={handlePlayerPause}
-                  className="flex items-center gap-2 px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition"
-                >
-                  ⏸️ Pause
-                </button>
-                <button
-                  onClick={handlePlayerSkip}
-                  className="flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition"
-                >
-                  ⏭️ Pular Música
-                </button>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">Estado do Player:</span> {estadoPlayer.status === 'playing' ? '▶️ Tocando' : estadoPlayer.status === 'paused' ? '⏸️ Pausado' : '⏹️ Parado'}
-                </p>
-              </div>
-            </div>
-
-            {/* Música Atual */}
-            {musicaAtualPlayer && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">🎵 Música Atual</h3>
-                <div className="flex items-center gap-4">
-                  <img
-                    src={musicaAtualPlayer.musicaThumbnail}
-                    alt=""
-                    className="w-24 h-24 rounded-lg object-cover shadow-md"
-                  />
-                  <div>
-                    <p className="font-semibold text-gray-900">{musicaAtualPlayer.musicaTitulo}</p>
-                    <p className="text-sm text-gray-600">Pedido por: {musicaAtualPlayer.nomeCliente || 'Anônimo'}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Fila */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Fila de Músicas ({filaPlayer.length})</h3>
-              {filaPlayer.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">Nenhuma música na fila</p>
-              ) : (
-                <div className="space-y-3">
-                  {filaPlayer.map((musica, index) => (
-                    <div key={musica.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50">
-                      <span className="font-bold text-purple-600 text-lg">#{index + 1}</span>
-                      <img
-                        src={musica.musicaThumbnail}
-                        alt=""
-                        className="w-16 h-16 rounded object-cover"
-                      />
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm">{musica.musicaTitulo}</p>
-                        <p className="text-xs text-gray-600">Por: {musica.nomeCliente || 'Anônimo'}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+      {/* Fila */}
+      <Card variant="glass">
+        <h3 className="text-xl font-bold gradient-text mb-4">
+          Fila de Músicas ({filaPlayer.length})
+        </h3>
+        {filaPlayer.length === 0 ? (
+          <div className="text-center py-8">
+            <Music className="w-16 h-16 mx-auto text-gray-600 mb-2" />
+            <p className="text-gray-500">Nenhuma música na fila</p>
           </div>
-        )}
-
-        {abaAtiva === 'moderacao' && (
-          <div className="space-y-6">
-            {/* Card de Filtros e Adicionar */}
-            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Palavras Proibidas</h2>
-                <button
-                  onClick={() => {
-                    setNovaPalavra({ palavra: '', categoria: 'AMBOS', severidade: 'MEDIA' });
-                    setPalavraEditando(null);
-                    setMostrarFormulario(!mostrarFormulario);
+        ) : (
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            <AnimatePresence>
+              {filaPlayer.map((musica, index) => (
+                <QueueItem
+                  key={musica.id}
+                  musica={{
+                    ...musica,
+                    titulo: musica.musicaTitulo,
+                    thumbnail: musica.musicaThumbnail,
+                    nomeCliente: musica.nomeCliente,
                   }}
-                  className="w-full sm:w-auto px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition"
-                >
-                  {mostrarFormulario ? '✕ Cancelar' : '+ Nova Palavra'}
-                </button>
-              </div>
+                  posicao={index + 1}
+                  isPlaying={false}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </Card>
+    </motion.div>
+  );
 
-              {/* Filtros */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+  const renderModeracao = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      <div>
+        <h2 className="text-3xl font-bold gradient-text mb-2">Moderação de Conteúdo</h2>
+        <p className="text-gray-500 dark:text-gray-400">Gerencie palavras proibidas e teste conteúdo</p>
+      </div>
+
+      {/* Filtros e Adicionar */}
+      <Card variant="glass">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h3 className="text-xl font-bold text-white">Palavras Proibidas</h3>
+          <Button
+            variant={mostrarFormulario ? 'danger' : 'primary'}
+            icon={mostrarFormulario ? X : Plus}
+            onClick={() => {
+              setNovaPalavra({ palavra: '', categoria: 'AMBOS', severidade: 'MEDIA' });
+              setPalavraEditando(null);
+              setMostrarFormulario(!mostrarFormulario);
+            }}
+          >
+            {mostrarFormulario ? 'Cancelar' : 'Nova Palavra'}
+          </Button>
+        </div>
+
+        {/* Filtros */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Categoria</label>
+            <select
+              value={filtroCategoria}
+              onChange={(e) => { setFiltroCategoria(e.target.value); carregarPalavras(); }}
+              className="w-full px-4 py-3 glass rounded-lg border border-dark-border focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/50 outline-none text-white"
+            >
+              <option value="">Todas</option>
+              <option value="NOME_CLIENTE">Nome do Cliente</option>
+              <option value="TITULO_MUSICA">Título da Música</option>
+              <option value="AMBOS">Ambos</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Severidade</label>
+            <select
+              value={filtroSeveridade}
+              onChange={(e) => { setFiltroSeveridade(e.target.value); carregarPalavras(); }}
+              className="w-full px-4 py-3 glass rounded-lg border border-dark-border focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/50 outline-none text-white"
+            >
+              <option value="">Todas</option>
+              <option value="LEVE">Leve</option>
+              <option value="MEDIA">Média</option>
+              <option value="SEVERA">Severa</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <Button
+              variant="ghost"
+              icon={Filter}
+              onClick={() => { setFiltroCategoria(''); setFiltroSeveridade(''); carregarPalavras(); }}
+              className="w-full"
+            >
+              Limpar Filtros
+            </Button>
+          </div>
+        </div>
+
+        {/* Formulário de Adicionar/Editar */}
+        <AnimatePresence>
+          {mostrarFormulario && (
+            <motion.form
+              onSubmit={handleSalvarPalavra}
+              className="p-6 neon-border bg-neon-cyan/5 rounded-lg mb-6"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <h3 className="text-lg font-bold gradient-text mb-4">
+                {palavraEditando ? 'Editar Palavra' : 'Adicionar Nova Palavra'}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <Input
+                  label="Palavra"
+                  type="text"
+                  value={novaPalavra.palavra}
+                  onChange={(e) => setNovaPalavra({ ...novaPalavra, palavra: e.target.value })}
+                  required
+                  disabled={saving}
+                />
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Categoria</label>
                   <select
-                    value={filtroCategoria}
-                    onChange={(e) => { setFiltroCategoria(e.target.value); carregarPalavras(); }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    value={novaPalavra.categoria}
+                    onChange={(e) => setNovaPalavra({ ...novaPalavra, categoria: e.target.value })}
+                    className="w-full px-4 py-3 glass rounded-lg border border-dark-border focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/50 outline-none text-white"
+                    required
+                    disabled={saving}
                   >
-                    <option value="">Todas</option>
                     <option value="NOME_CLIENTE">Nome do Cliente</option>
                     <option value="TITULO_MUSICA">Título da Música</option>
                     <option value="AMBOS">Ambos</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Severidade</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Severidade</label>
                   <select
-                    value={filtroSeveridade}
-                    onChange={(e) => { setFiltroSeveridade(e.target.value); carregarPalavras(); }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    value={novaPalavra.severidade}
+                    onChange={(e) => setNovaPalavra({ ...novaPalavra, severidade: e.target.value })}
+                    className="w-full px-4 py-3 glass rounded-lg border border-dark-border focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/50 outline-none text-white"
+                    required
+                    disabled={saving}
                   >
-                    <option value="">Todas</option>
                     <option value="LEVE">Leve</option>
                     <option value="MEDIA">Média</option>
                     <option value="SEVERA">Severa</option>
                   </select>
                 </div>
-                <div className="flex items-end">
-                  <button
-                    onClick={() => { setFiltroCategoria(''); setFiltroSeveridade(''); carregarPalavras(); }}
-                    className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition"
-                  >
-                    Limpar Filtros
-                  </button>
-                </div>
               </div>
-
-              {/* Formulário de Adicionar/Editar */}
-              {mostrarFormulario && (
-                <form onSubmit={handleSalvarPalavra} className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200 mb-6">
-                  <h3 className="font-bold text-lg text-purple-900 mb-4">
-                    {palavraEditando ? 'Editar Palavra' : 'Adicionar Nova Palavra'}
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Palavra *</label>
-                      <input
-                        type="text"
-                        value={novaPalavra.palavra}
-                        onChange={(e) => setNovaPalavra({ ...novaPalavra, palavra: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                        required
-                        disabled={saving}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Categoria *</label>
-                      <select
-                        value={novaPalavra.categoria}
-                        onChange={(e) => setNovaPalavra({ ...novaPalavra, categoria: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                        required
-                        disabled={saving}
-                      >
-                        <option value="NOME_CLIENTE">Nome do Cliente</option>
-                        <option value="TITULO_MUSICA">Título da Música</option>
-                        <option value="AMBOS">Ambos</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Severidade *</label>
-                      <select
-                        value={novaPalavra.severidade}
-                        onChange={(e) => setNovaPalavra({ ...novaPalavra, severidade: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                        required
-                        disabled={saving}
-                      >
-                        <option value="LEVE">Leve</option>
-                        <option value="MEDIA">Média</option>
-                        <option value="SEVERA">Severa</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex gap-3">
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white font-semibold rounded-lg transition"
-                    >
-                      {saving ? 'Salvando...' : (palavraEditando ? 'Atualizar' : 'Adicionar')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setMostrarFormulario(false); setPalavraEditando(null); }}
-                      className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold rounded-lg transition"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* Lista de Palavras */}
-              {loadingPalavras ? (
-                <div className="text-center py-8 text-gray-600">Carregando...</div>
-              ) : palavras.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">Nenhuma palavra encontrada</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[600px]">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Palavra</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase hidden sm:table-cell">Categoria</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Severidade</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {palavras.map((palavra) => (
-                        <tr key={palavra.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 font-medium text-gray-900">{palavra.palavra}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">
-                            <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                              {palavra.categoria === 'NOME_CLIENTE' ? 'Nome' : palavra.categoria === 'TITULO_MUSICA' ? 'Música' : 'Ambos'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              palavra.severidade === 'SEVERA' ? 'bg-red-100 text-red-800' :
-                              palavra.severidade === 'MEDIA' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {palavra.severidade}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => handleTogglePalavra(palavra.id)}
-                              className={`px-3 py-1 text-xs rounded-full font-semibold ${
-                                palavra.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                              }`}
-                            >
-                              {palavra.ativo ? 'Ativo' : 'Inativo'}
-                            </button>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => {
-                                  setPalavraEditando(palavra);
-                                  setNovaPalavra({ palavra: palavra.palavra, categoria: palavra.categoria, severidade: palavra.severidade });
-                                  setMostrarFormulario(true);
-                                }}
-                                className="px-3 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition"
-                              >
-                                Editar
-                              </button>
-                              <button
-                                onClick={() => handleDeletarPalavra(palavra.id)}
-                                className="px-3 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition"
-                              >
-                                Deletar
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* Card de Teste de Texto */}
-            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Testar Moderação</h3>
-              <form onSubmit={handleTestarTexto} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Digite um texto para testar</label>
-                  <textarea
-                    value={textoTeste}
-                    onChange={(e) => setTextoTeste(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                    rows="3"
-                    placeholder="Ex: João Silva quer ouvir música legal"
-                    required
-                  />
-                </div>
-                <button
+              <div className="flex gap-3">
+                <Button
                   type="submit"
-                  disabled={saving}
-                  className="w-full sm:w-auto px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold rounded-lg transition"
+                  variant="primary"
+                  loading={saving}
+                  className="flex-1"
                 >
-                  {saving ? 'Testando...' : 'Testar Texto'}
-                </button>
-              </form>
+                  {palavraEditando ? 'Atualizar' : 'Adicionar'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => { setMostrarFormulario(false); setPalavraEditando(null); }}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </motion.form>
+          )}
+        </AnimatePresence>
 
-              {resultadoTeste && (
-                <div className={`mt-4 p-4 rounded-lg border-2 ${
-                  resultadoTeste.bloqueado ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
-                }`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">{resultadoTeste.bloqueado ? '🚫' : '✅'}</span>
-                    <h4 className={`font-bold ${resultadoTeste.bloqueado ? 'text-red-900' : 'text-green-900'}`}>
-                      {resultadoTeste.bloqueado ? 'BLOQUEADO' : 'APROVADO'}
-                    </h4>
-                  </div>
-                  {resultadoTeste.encontradas.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-sm font-semibold text-gray-700 mb-2">Palavras encontradas:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {resultadoTeste.encontradas.map((p, i) => (
-                          <span key={i} className="px-3 py-1 bg-red-200 text-red-900 text-sm rounded-full">
-                            {p.palavra} ({p.severidade})
-                          </span>
-                        ))}
+        {/* Lista de Palavras */}
+        {loadingPalavras ? (
+          <div className="text-center py-8 text-gray-400">Carregando...</div>
+        ) : palavras.length === 0 ? (
+          <div className="text-center py-8">
+            <Shield className="w-16 h-16 mx-auto text-gray-600 mb-2" />
+            <p className="text-gray-500">Nenhuma palavra encontrada</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-dark-border">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Palavra</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase hidden sm:table-cell">Categoria</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Severidade</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Status</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dark-border">
+                {palavras.map((palavra) => (
+                  <motion.tr
+                    key={palavra.id}
+                    className="hover:bg-neon-cyan/5 transition"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <td className="px-4 py-3 font-medium text-white">{palavra.palavra}</td>
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      <Badge variant="info" size="sm">
+                        {palavra.categoria === 'NOME_CLIENTE' ? 'Nome' : palavra.categoria === 'TITULO_MUSICA' ? 'Música' : 'Ambos'}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge
+                        variant={
+                          palavra.severidade === 'SEVERA' ? 'danger' :
+                          palavra.severidade === 'MEDIA' ? 'warning' :
+                          'success'
+                        }
+                        size="sm"
+                      >
+                        {palavra.severidade}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleTogglePalavra(palavra.id)}
+                        className="group"
+                      >
+                        <Badge
+                          variant={palavra.ativo ? 'success' : 'default'}
+                          size="sm"
+                          className="group-hover:scale-110 transition"
+                        >
+                          {palavra.ativo ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon={Edit2}
+                          onClick={() => {
+                            setPalavraEditando(palavra);
+                            setNovaPalavra({ palavra: palavra.palavra, categoria: palavra.categoria, severidade: palavra.severidade });
+                            setMostrarFormulario(true);
+                          }}
+                        />
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          icon={Trash2}
+                          onClick={() => handleDeletarPalavra(palavra.id)}
+                        />
                       </div>
-                      <p className="text-sm text-gray-600 mt-2">
-                        Severidade máxima: <strong>{resultadoTeste.severidadeMaxima}</strong>
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
+      </Card>
+
+      {/* Card de Teste de Texto */}
+      <Card variant="glass">
+        <h3 className="text-xl font-bold gradient-text mb-4">Testar Moderação</h3>
+        <form onSubmit={handleTestarTexto} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Digite um texto para testar</label>
+            <textarea
+              value={textoTeste}
+              onChange={(e) => setTextoTeste(e.target.value)}
+              className="w-full px-4 py-3 glass rounded-lg border border-dark-border focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/50 outline-none text-white resize-none"
+              rows="3"
+              placeholder="Ex: João Silva quer ouvir música legal"
+              required
+            />
+          </div>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={saving}
+          >
+            Testar Texto
+          </Button>
+        </form>
+
+        <AnimatePresence>
+          {resultadoTeste && (
+            <motion.div
+              className={`mt-4 p-4 rounded-lg border-2 ${
+                resultadoTeste.bloqueado ? 'bg-red-500/10 border-red-500/50' : 'bg-green-500/10 border-green-500/50'
+              }`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                {resultadoTeste.bloqueado ? (
+                  <XCircle className="w-8 h-8 text-red-500" />
+                ) : (
+                  <CheckCircle className="w-8 h-8 text-green-500" />
+                )}
+                <h4 className={`text-xl font-bold ${resultadoTeste.bloqueado ? 'text-red-500' : 'text-green-500'}`}>
+                  {resultadoTeste.bloqueado ? 'BLOQUEADO' : 'APROVADO'}
+                </h4>
+              </div>
+              {resultadoTeste.encontradas.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-semibold text-gray-400 mb-2">Palavras encontradas:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {resultadoTeste.encontradas.map((p, i) => (
+                      <Badge key={i} variant="danger">
+                        {p.palavra} ({p.severidade})
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Severidade máxima: <strong className="text-white">{resultadoTeste.severidadeMaxima}</strong>
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
+    </motion.div>
+  );
+
+  const renderSugestoes = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      <div>
+        <h2 className="text-3xl font-bold gradient-text mb-2">Sugestões Trending</h2>
+        <p className="text-gray-500 dark:text-gray-400">Atualize as sugestões de músicas populares</p>
+      </div>
+
+      <Card variant="glass">
+        <div className="text-center">
+          <TrendingUp className="w-16 h-16 mx-auto text-neon-cyan mb-4" />
+          <h3 className="text-xl font-bold text-white mb-4">Atualizar Sugestões de Músicas</h3>
+          <p className="text-gray-400 mb-6">
+            Busca as músicas mais populares do YouTube para cada categoria e atualiza as sugestões.
+          </p>
+
+          <Button
+            onClick={handleAtualizarSugestoes}
+            variant="neon"
+            size="lg"
+            icon={RefreshCw}
+            loading={atualizandoSugestoes}
+            className="w-full sm:w-auto"
+          >
+            {atualizandoSugestoes ? 'Atualizando...' : 'Atualizar Sugestões Agora'}
+          </Button>
+
+          <div className="mt-6 p-4 glass rounded-lg">
+            <p className="text-sm text-gray-400">
+              <span className="font-semibold text-white">Última atualização:</span> Em breve
+            </p>
+          </div>
+        </div>
+      </Card>
+    </motion.div>
+  );
+
+  const renderSenha = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      <div>
+        <h2 className="text-3xl font-bold gradient-text mb-2">Alterar Senha</h2>
+        <p className="text-gray-500 dark:text-gray-400">Atualize sua senha de acesso</p>
+      </div>
+
+      <Card variant="glass" className="max-w-md mx-auto">
+        <form onSubmit={handleAlterarSenha} className="space-y-4">
+          <Input
+            label="Senha Atual"
+            type="password"
+            value={senhaAtual}
+            onChange={(e) => setSenhaAtual(e.target.value)}
+            required
+            disabled={saving}
+          />
+
+          <Input
+            label="Nova Senha"
+            type="password"
+            value={senhaNova}
+            onChange={(e) => setSenhaNova(e.target.value)}
+            required
+            disabled={saving}
+          />
+
+          <Input
+            label="Confirmar Nova Senha"
+            type="password"
+            value={senhaConfirm}
+            onChange={(e) => setSenhaConfirm(e.target.value)}
+            required
+            disabled={saving}
+            error={senhaNova !== senhaConfirm && senhaConfirm.length > 0 ? 'As senhas não coincidem' : ''}
+          />
+
+          <Button
+            type="submit"
+            variant="primary"
+            loading={saving}
+            className="w-full"
+          >
+            Alterar Senha
+          </Button>
+        </form>
+      </Card>
+    </motion.div>
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dark-bg via-dark-surface to-dark-bg">
+        <div className="text-center">
+          <motion.div
+            className="w-16 h-16 border-4 border-neon-cyan border-t-transparent rounded-full mx-auto mb-4"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          />
+          <p className="text-xl text-gray-400">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-dark-bg via-dark-surface to-dark-bg">
+      <AdminSidebar
+        activeTab={abaAtiva}
+        onTabChange={setAbaAtiva}
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+
+      {/* Main Content */}
+      <div
+        className={`transition-all duration-300 ${
+          sidebarCollapsed ? 'ml-20' : 'ml-64'
+        }`}
+      >
+        <div className="p-6 lg:p-8">
+          {/* Mensagens */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                className="mb-6 p-4 glass rounded-lg border-2 border-red-500/50 bg-red-500/10"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                  <p className="text-red-500">{error}</p>
+                </div>
+              </motion.div>
+            )}
+
+            {success && (
+              <motion.div
+                className="mb-6 p-4 glass rounded-lg border-2 border-green-500/50 bg-green-500/10"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                  <p className="text-green-500">{success}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Conteúdo das Abas */}
+          <AnimatePresence mode="wait">
+            {abaAtiva === 'overview' && renderOverview()}
+            {abaAtiva === 'configuracoes' && renderConfiguracoes()}
+            {abaAtiva === 'player' && renderPlayer()}
+            {abaAtiva === 'moderacao' && renderModeracao()}
+            {abaAtiva === 'sugestoes' && renderSugestoes()}
+            {abaAtiva === 'senha' && renderSenha()}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
