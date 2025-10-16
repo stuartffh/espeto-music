@@ -304,7 +304,8 @@ exports.usarCarrinho = async (req, res) => {
 
     // Calcular total do carrinho
     const totalMusicas = carrinho.quantidadeItens;
-    const valorTotalCarrinho = carrinho.musicas.reduce((acc, m) => acc + (m.preco || 0), 0);
+    // O carrinho já vem com valorTotal calculado, não precisa somar
+    const valorTotalCarrinho = carrinho.valorTotal || 0;
 
     console.log('💰 [GIFT CARD CARRINHO] Valores:', {
       totalMusicas,
@@ -343,17 +344,24 @@ exports.usarCarrinho = async (req, res) => {
     console.log('📝 [GIFT CARD CARRINHO] Criando pedidos de música...');
 
     for (const musica of carrinho.musicas) {
-      console.log(`🎵 Criando pedido: ${musica.musicaTitulo} (${musica.musicaYoutubeId})`);
+      // Mapear campos do carrinho para campos do pedido
+      const musicaTitulo = musica.musicaTitulo || musica.titulo;
+      const musicaYoutubeId = musica.musicaYoutubeId || musica.youtubeId;
+      const musicaThumbnail = musica.musicaThumbnail || musica.thumbnail || '';
+      const musicaDuracao = musica.musicaDuracao || musica.duracao || 0;
+      const musicaArtista = musica.musicaArtista || musica.artista || 'Artista Desconhecido';
+
+      console.log(`🎵 Criando pedido: ${musicaTitulo} (${musicaYoutubeId})`);
 
       // Criar pedido
       const pedido = await prisma.pedidoMusica.create({
         data: {
           nomeCliente: nomeCliente.trim(),
-          musicaTitulo: musica.musicaTitulo,
-          musicaArtista: musica.musicaArtista || 'Artista Desconhecido',
-          musicaThumbnail: musica.musicaThumbnail || '',
-          musicaYoutubeId: musica.musicaYoutubeId,
-          musicaDuracao: musica.musicaDuracao || 0,
+          musicaTitulo,
+          musicaArtista,
+          musicaThumbnail,
+          musicaYoutubeId,
+          musicaDuracao,
           status: 'pago', // Já marcar como pago
           modoGratuito: false,
           metodoPagamento: 'gift_card',
@@ -364,9 +372,9 @@ exports.usarCarrinho = async (req, res) => {
       console.log(`✅ Pedido criado: ${pedido.id}`);
 
       // Iniciar download do vídeo (não esperar)
-      downloadService.baixarVideo(musica.musicaYoutubeId)
-        .then(() => console.log(`✅ [GIFT CARD CARRINHO] Download completo: ${musica.musicaTitulo}`))
-        .catch((error) => console.error(`❌ [GIFT CARD CARRINHO] Erro ao baixar ${musica.musicaTitulo}:`, error.message));
+      downloadService.baixarVideo(musicaYoutubeId)
+        .then(() => console.log(`✅ [GIFT CARD CARRINHO] Download completo: ${musicaTitulo}`))
+        .catch((error) => console.error(`❌ [GIFT CARD CARRINHO] Erro ao baixar ${musicaTitulo}:`, error.message));
     }
 
     console.log(`✅ [GIFT CARD CARRINHO] ${pedidosCriados.length} pedido(s) criado(s)`);
