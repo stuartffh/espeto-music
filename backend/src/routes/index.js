@@ -13,6 +13,7 @@ const streamRoutes = require('./stream');
 const moderacaoRoutes = require('./moderacaoRoutes');
 const themeRoutes = require('./themeRoutes');
 const giftCardRoutes = require('./giftCardRoutes');
+const webhookRoutes = require('./webhookRoutes');
 
 // Health check
 router.get('/health', (req, res) => {
@@ -25,6 +26,9 @@ router.get('/health', (req, res) => {
 
 // Rotas públicas (sem autenticação)
 router.use('/public', publicRoutes);
+
+// Webhooks (sem autenticação - recebe de servidores externos)
+router.use('/webhooks', webhookRoutes);
 
 // Rotas protegidas
 router.use('/mesas', mesaRoutes);
