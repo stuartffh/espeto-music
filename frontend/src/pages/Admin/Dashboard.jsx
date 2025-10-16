@@ -529,22 +529,24 @@ function AdminDashboard() {
       </div>
 
       <Card variant="glass">
-        <div className="space-y-4">
+        <div className="space-y-3">
           {configs.map((config) => (
             <motion.div
               key={config.chave}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 glass rounded-lg hover:bg-neon-cyan/5 transition gap-4"
-              whileHover={{ scale: 1.01 }}
+              className="flex flex-col lg:flex-row lg:items-start lg:justify-between p-4 glass rounded-lg hover:bg-neon-cyan/5 transition gap-3"
+              whileHover={{ scale: 1.005 }}
             >
-              <div className="flex-1">
-                <h3 className="font-semibold text-white">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-white text-sm md:text-base break-words">
                   {config.chave.replace(/_/g, ' ')}
                 </h3>
                 {config.descricao && (
-                  <p className="text-sm text-gray-400 mt-1">{config.descricao}</p>
+                  <p className="text-xs md:text-sm text-gray-400 mt-1 break-words">{config.descricao}</p>
                 )}
               </div>
-              <div className="sm:ml-4">{renderCampoConfig(config)}</div>
+              <div className="lg:ml-4 lg:min-w-[200px] lg:max-w-[300px] w-full lg:w-auto flex-shrink-0">
+                {renderCampoConfig(config)}
+              </div>
             </motion.div>
           ))}
         </div>
@@ -566,12 +568,13 @@ function AdminDashboard() {
       {/* Controles */}
       <Card variant="glass">
         <div className="flex flex-col items-center gap-6">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-3 w-full">
             <Button
               variant="primary"
               icon={Play}
               onClick={handlePlayerPlay}
               size="lg"
+              className="flex-1 min-w-[120px] max-w-[180px]"
             >
               Play
             </Button>
@@ -580,6 +583,7 @@ function AdminDashboard() {
               icon={Pause}
               onClick={handlePlayerPause}
               size="lg"
+              className="flex-1 min-w-[120px] max-w-[180px]"
             >
               Pause
             </Button>
@@ -588,13 +592,14 @@ function AdminDashboard() {
               icon={SkipForward}
               onClick={handlePlayerSkip}
               size="lg"
+              className="flex-1 min-w-[120px] max-w-[180px]"
             >
               Skip
             </Button>
           </div>
 
-          <div className="w-full p-4 glass rounded-lg text-center">
-            <p className="text-sm text-gray-400 mb-1">Estado do Player</p>
+          <div className="w-full max-w-md p-4 glass rounded-lg text-center">
+            <p className="text-sm text-gray-400 mb-2">Estado do Player</p>
             <Badge
               variant={estadoPlayer.status === 'playing' ? 'success' : estadoPlayer.status === 'paused' ? 'warning' : 'default'}
               size="lg"
@@ -805,81 +810,83 @@ function AdminDashboard() {
             <p className="text-gray-500">Nenhuma palavra encontrada</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-dark-border">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Palavra</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase hidden sm:table-cell">Categoria</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Severidade</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Status</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-dark-border">
-                {palavras.map((palavra) => (
-                  <motion.tr
-                    key={palavra.id}
-                    className="hover:bg-neon-cyan/5 transition"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <td className="px-4 py-3 font-medium text-white">{palavra.palavra}</td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <Badge variant="info" size="sm">
-                        {palavra.categoria === 'NOME_CLIENTE' ? 'Nome' : palavra.categoria === 'TITULO_MUSICA' ? 'Música' : 'Ambos'}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        variant={
-                          palavra.severidade === 'SEVERA' ? 'danger' :
-                          palavra.severidade === 'MEDIA' ? 'warning' :
-                          'success'
-                        }
-                        size="sm"
-                      >
-                        {palavra.severidade}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleTogglePalavra(palavra.id)}
-                        className="group"
-                      >
-                        <Badge
-                          variant={palavra.ativo ? 'success' : 'default'}
-                          size="sm"
-                          className="group-hover:scale-110 transition"
-                        >
-                          {palavra.ativo ? 'Ativo' : 'Inativo'}
+          <div className="overflow-x-auto -mx-4 px-4">
+            <div className="inline-block min-w-full align-middle">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-dark-border">
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Palavra</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase hidden md:table-cell whitespace-nowrap">Categoria</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Severidade</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Status</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-dark-border">
+                  {palavras.map((palavra) => (
+                    <motion.tr
+                      key={palavra.id}
+                      className="hover:bg-neon-cyan/5 transition"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <td className="px-3 py-3 font-medium text-white text-sm break-all max-w-[150px]">{palavra.palavra}</td>
+                      <td className="px-3 py-3 hidden md:table-cell">
+                        <Badge variant="info" size="sm">
+                          {palavra.categoria === 'NOME_CLIENTE' ? 'Nome' : palavra.categoria === 'TITULO_MUSICA' ? 'Música' : 'Ambos'}
                         </Badge>
-                      </button>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
+                      </td>
+                      <td className="px-3 py-3">
+                        <Badge
+                          variant={
+                            palavra.severidade === 'SEVERA' ? 'danger' :
+                            palavra.severidade === 'MEDIA' ? 'warning' :
+                            'success'
+                          }
                           size="sm"
-                          icon={Edit2}
-                          onClick={() => {
-                            setPalavraEditando(palavra);
-                            setNovaPalavra({ palavra: palavra.palavra, categoria: palavra.categoria, severidade: palavra.severidade });
-                            setMostrarFormulario(true);
-                          }}
-                        />
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          icon={Trash2}
-                          onClick={() => handleDeletarPalavra(palavra.id)}
-                        />
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+                        >
+                          {palavra.severidade}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button
+                          onClick={() => handleTogglePalavra(palavra.id)}
+                          className="group"
+                        >
+                          <Badge
+                            variant={palavra.ativo ? 'success' : 'default'}
+                            size="sm"
+                            className="group-hover:scale-110 transition"
+                          >
+                            {palavra.ativo ? 'Ativo' : 'Inativo'}
+                          </Badge>
+                        </button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={Edit2}
+                            onClick={() => {
+                              setPalavraEditando(palavra);
+                              setNovaPalavra({ palavra: palavra.palavra, categoria: palavra.categoria, severidade: palavra.severidade });
+                              setMostrarFormulario(true);
+                            }}
+                          />
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            icon={Trash2}
+                            onClick={() => handleDeletarPalavra(palavra.id)}
+                          />
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </Card>
