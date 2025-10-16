@@ -21,17 +21,17 @@ function CarrinhoButton() {
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0, opacity: 0 }}
-      className="fixed bottom-6 right-6 z-40"
+      className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-40"
     >
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={abrirCarrinho}
-        className="relative bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-full shadow-2xl transition-all p-4 sm:p-5 flex items-center gap-3 group"
+        className="relative bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-full shadow-2xl transition-all p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 group"
       >
         {/* Ícone do Carrinho */}
         <div className="relative">
-          <ShoppingCart className="w-6 h-6 sm:w-7 sm:h-7" />
+          <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
 
           {/* Badge com quantidade */}
           <AnimatePresence>
@@ -50,8 +50,8 @@ function CarrinhoButton() {
 
         {/* Valor Total (sempre visível) */}
         <div className="flex flex-col items-start">
-          <span className="text-xs text-white/80 hidden sm:block">Total</span>
-          <span className="text-base sm:text-lg font-bold">
+          <span className="text-[10px] sm:text-xs text-white/80 hidden sm:block">Total</span>
+          <span className="text-sm sm:text-base md:text-lg font-bold">
             R$ {valorTotal.toFixed(2).replace('.', ',')}
           </span>
         </div>
