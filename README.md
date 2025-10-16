@@ -82,7 +82,11 @@ cd espeto-music
 pip install yt-dlp
 ```
 
-### 3. Baixar FFmpeg Portable
+### 3. Instalar FFmpeg
+
+FFmpeg é **essencial** para combinar streams de vídeo e áudio do YouTube. O yt-dlp baixa vídeo e áudio separadamente e usa FFmpeg para juntá-los.
+
+#### No Windows (Desenvolvimento):
 
 Baixe o FFmpeg essentials build e extraia para `backend/ffmpeg/`:
 ```
@@ -96,6 +100,27 @@ backend/ffmpeg/ffmpeg-8.0-essentials_build/bin/
 ├── ffprobe.exe
 └── ffplay.exe
 ```
+
+#### No Linux (Produção):
+
+Instale FFmpeg via package manager:
+
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install ffmpeg
+
+# CentOS/RHEL
+sudo yum install ffmpeg
+
+# Arch Linux
+sudo pacman -S ffmpeg
+
+# Verificar instalação
+ffmpeg -version
+```
+
+**Nota**: O código detecta automaticamente o sistema operacional e usa o FFmpeg do PATH no Linux.
 
 ### 4. Configurar Backend
 

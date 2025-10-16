@@ -105,15 +105,35 @@ async function baixarVideo(youtubeId) {
   // Criar a Promise de download
   const downloadPromise = new Promise((resolve, reject) => {
     try {
-      // Detectar ambiente e usar o caminho apropriado do yt-dlp
+      // Detectar ambiente e usar o caminho apropriado do yt-dlp e FFmpeg
       const isWindows = process.platform === 'win32';
+
+      // yt-dlp path
       const ytdlpPath = isWindows
         ? 'C:\\Users\\User\\AppData\\Roaming\\Python\\Python313\\Scripts\\yt-dlp.exe'
         : 'yt-dlp'; // No Linux/Docker, yt-dlp estará no PATH
 
+      // FFmpeg path - usar caminho absoluto para garantir que seja encontrado
+      const ffmpegDir = path.join(__dirname, '../../ffmpeg/ffmpeg-8.0-essentials_build/bin');
       const ffmpegPath = isWindows
-        ? path.join(__dirname, '../../ffmpeg/ffmpeg-8.0-essentials_build/bin/ffmpeg.exe')
-        : 'ffmpeg'; // No Linux/Docker, ffmpeg estará no PATH
+        ? path.join(ffmpegDir, 'ffmpeg.exe')
+        : 'ffmpeg'; // No Linux/Docker, ffmpeg estará no PATH ou será instalado
+
+      const ffprobePath = isWindows
+        ? path.join(ffmpegDir, 'ffprobe.exe')
+        : 'ffprobe';
+
+      // Verificar se FFmpeg existe (apenas em Windows, pois em Linux assume-se que está no PATH)
+      if (isWindows && !fs.existsSync(ffmpegPath)) {
+        console.error('❌ FFmpeg não encontrado em:', ffmpegPath);
+        console.error('💡 Certifique-se de que FFmpeg está instalado no projeto');
+        throw new Error('FFmpeg não encontrado');
+      }
+
+      console.log('🔧 Configuração de ferramentas:');
+      console.log(`   yt-dlp: ${ytdlpPath}`);
+      console.log(`   FFmpeg: ${ffmpegPath}`);
+      console.log(`   FFprobe: ${ffprobePath}`);
 
       // Sistema inteligente de seleção de qualidade em ordem decrescente
       // Tenta obter a melhor qualidade possível, fazendo fallback se não disponível
@@ -141,16 +161,19 @@ async function baixarVideo(youtubeId) {
         'best'                                          // Qualquer formato (último recurso)
       ].join('/');
 
-      // Adicionar flags para evitar bugs do yt-dlp com merge
-      // --no-check-formats: evita verificação que pode causar erro
-      // --compat-options no-live-chat: evita processar live chat que pode causar bugs
-      const command = `"${ytdlpPath}" "${videoUrl}" -f "${formatString}" --merge-output-format mp4 --no-check-formats --compat-options no-live-chat --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --progress --newline`;
+      // Flags do yt-dlp explicadas:
+      // -t mp4: Preset para garantir formato MP4 compatível (recomendado para players)
+      // --merge-output-format mp4: Força saída em MP4 após merge de áudio+vídeo
+      // --no-check-formats: Evita verificação que pode causar erro 'NoneType'
+      // --compat-options no-live-chat: Evita processar live chat (pode causar bugs)
+      // --ffmpeg-location: Caminho absoluto do FFmpeg para merge correto
+      const command = `"${ytdlpPath}" "${videoUrl}" -f "${formatString}" -t mp4 --merge-output-format mp4 --no-check-formats --compat-options no-live-chat --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --progress --newline`;
 
       console.log(`🎬 Executando yt-dlp:`);
       console.log(`   URL: ${videoUrl}`);
       console.log(`   Output: ${tempOutputTemplate}.mp4`);
-      console.log(`   Formato: Qualidade inteligente (720p pre-merged → 1080p → 360p)`);
-      console.log(`   Strategy: Prioriza formatos estáveis, fallback para melhor qualidade`);
+      console.log(`   Formato: 720p pre-merged → 1080p merge → 360p (fallback)`);
+      console.log(`   Preset: MP4 (compatível com players de vídeo)`);
 
       const ytdlp = spawn(command, {
         shell: true,
