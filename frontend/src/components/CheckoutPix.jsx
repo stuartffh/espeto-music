@@ -28,11 +28,16 @@ function CheckoutPix({ pedido, onClose, onSuccess }) {
       console.log('📋 Pedido:', pedido);
       console.log('🆔 CPF:', cpf || 'Não fornecido');
 
-      const response = await criarPagamentoPix(pedido.id, {
+      const dadosPagador = {
         nome: pedido.nomeCliente,
-        cpf: cpf || undefined,
-        email: `cliente.${pedido.id.substring(0, 8)}@espetomusic.com.br`,
-      });
+      };
+
+      // Adicionar CPF apenas se fornecido
+      if (cpf && cpf.trim()) {
+        dadosPagador.cpf = cpf.replace(/\D/g, ''); // Remove formatação
+      }
+
+      const response = await criarPagamentoPix(pedido.id, dadosPagador);
 
       console.log('✅ [CHECKOUT] Pagamento criado:', response.data);
       setPagamento(response.data);

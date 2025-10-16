@@ -117,6 +117,48 @@ async function buscarPagamento(paymentId) {
 }
 
 /**
+ * Gera um CPF aleatório válido
+ * @returns {string} CPF no formato XXX.XXX.XXX-XX
+ */
+function gerarCPFAleatorio() {
+  // Gera 9 dígitos aleatórios
+  const randomNine = () => Math.floor(100000000 + Math.random() * 900000000).toString();
+
+  const cpfBase = randomNine();
+
+  // Calcula primeiro dígito verificador
+  let soma = 0;
+  for (let i = 0; i < 9; i++) {
+    soma += parseInt(cpfBase[i]) * (10 - i);
+  }
+  let digito1 = 11 - (soma % 11);
+  if (digito1 >= 10) digito1 = 0;
+
+  // Calcula segundo dígito verificador
+  soma = 0;
+  for (let i = 0; i < 9; i++) {
+    soma += parseInt(cpfBase[i]) * (11 - i);
+  }
+  soma += digito1 * 2;
+  let digito2 = 11 - (soma % 11);
+  if (digito2 >= 10) digito2 = 0;
+
+  const cpfCompleto = cpfBase + digito1 + digito2;
+
+  // Formata: XXX.XXX.XXX-XX
+  return cpfCompleto.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+
+/**
+ * Gera um email aleatório único
+ * @returns {string} Email no formato cliente.XXXXXXXX@espetomusic.com.br
+ */
+function gerarEmailAleatorio() {
+  const randomId = Math.random().toString(36).substring(2, 10).toUpperCase();
+  return `cliente.${randomId}@espetomusic.com.br`;
+}
+
+/**
  * Cria um pagamento PIX direto no Mercado Pago
  * @param {Object} params - Parâmetros do pagamento PIX
  * @returns {Promise<Object>} Pagamento criado com QR Code
@@ -138,6 +180,13 @@ async function criarPagamentoPix({
 
     console.log('🟣 [MP CONFIG] Cliente Mercado Pago inicializado');
 
+    // Gerar email e CPF aleatórios se não fornecidos
+    const emailFinal = emailPagador || gerarEmailAleatorio();
+    const cpfFinal = cpfPagador || gerarCPFAleatorio();
+
+    console.log('🟣 [MP CONFIG] Email usado:', emailFinal);
+    console.log('🟣 [MP CONFIG] CPF usado:', cpfFinal);
+
     // Data de expiração: 15 dias a partir de agora
     const expirationDate = new Date();
     expirationDate.setDate(expirationDate.getDate() + 15);
@@ -150,11 +199,11 @@ async function criarPagamentoPix({
       notification_url: `${process.env.BASE_URL || 'http://localhost:3000'}/api/webhooks/mercadopago`,
       date_of_expiration: expirationDate.toISOString(),
       payer: {
-        email: emailPagador || 'cliente@espetomusic.com.br',
-        identification: cpfPagador ? {
+        email: emailFinal,
+        identification: {
           type: 'CPF',
-          number: cpfPagador,
-        } : undefined,
+          number: cpfFinal.replace(/\D/g, ''), // Remove formatação para enviar apenas números
+        },
         first_name: nomePagador || 'Cliente',
       },
     };
