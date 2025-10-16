@@ -257,3 +257,176 @@ exports.deletar = async (req, res) => {
     res.status(500).json({ erro: 'Erro ao deletar gift card' });
   }
 };
+
+// Usar gift card para carrinho (múltiplas músicas)
+exports.usarCarrinho = async (req, res) => {
+  try {
+    const { codigo, nomeCliente, carrinho } = req.body;
+
+    console.log('🎁 [GIFT CARD CARRINHO] Iniciando processamento...');
+    console.log('📦 Carrinho:', { quantidadeItens: carrinho?.quantidadeItens, musicas: carrinho?.musicas?.length });
+
+    // Validações básicas
+    if (!codigo || !nomeCliente || !carrinho || !carrinho.musicas || carrinho.musicas.length === 0) {
+      return res.status(400).json({ erro: 'Dados inválidos para usar gift card no carrinho' });
+    }
+
+    // Buscar gift card
+    const gift = await prisma.giftCard.findUnique({
+      where: { codigo: codigo.toUpperCase() }
+    });
+
+    if (!gift) {
+      return res.status(404).json({ erro: 'Gift card não encontrado' });
+    }
+
+    if (!gift.ativo) {
+      return res.status(400).json({ erro: 'Gift card desativado' });
+    }
+
+    if (gift.usado) {
+      return res.status(400).json({
+        erro: 'Gift card já utilizado',
+        usadoEm: gift.usadoEm,
+        usadoPor: gift.usadoPor
+      });
+    }
+
+    if (gift.dataExpiracao && new Date(gift.dataExpiracao) < new Date()) {
+      return res.status(400).json({ erro: 'Gift card expirado' });
+    }
+
+    console.log('✅ [GIFT CARD CARRINHO] Gift card válido:', {
+      codigo: gift.codigo,
+      quantidadeMusicas: gift.quantidadeMusicas,
+      valor: gift.valor
+    });
+
+    // Calcular total do carrinho
+    const totalMusicas = carrinho.quantidadeItens;
+    const valorTotalCarrinho = carrinho.musicas.reduce((acc, m) => acc + (m.preco || 0), 0);
+
+    console.log('💰 [GIFT CARD CARRINHO] Valores:', {
+      totalMusicas,
+      valorTotalCarrinho,
+      giftQuantidade: gift.quantidadeMusicas,
+      giftValor: gift.valor
+    });
+
+    // Verificar se o gift card cobre o carrinho
+    // Gift card pode ser por QUANTIDADE ou por VALOR
+    let coberto = false;
+    let tipoCoberto = '';
+
+    if (gift.quantidadeMusicas > 0 && totalMusicas <= gift.quantidadeMusicas) {
+      coberto = true;
+      tipoCoberto = 'quantidade';
+      console.log(`✅ [GIFT CARD CARRINHO] Gift card cobre por QUANTIDADE (${gift.quantidadeMusicas} músicas >= ${totalMusicas} músicas)`);
+    } else if (gift.valor > 0 && valorTotalCarrinho <= gift.valor) {
+      coberto = true;
+      tipoCoberto = 'valor';
+      console.log(`✅ [GIFT CARD CARRINHO] Gift card cobre por VALOR (R$ ${gift.valor} >= R$ ${valorTotalCarrinho})`);
+    }
+
+    if (!coberto) {
+      return res.status(400).json({
+        erro: gift.quantidadeMusicas > 0
+          ? `Gift card insuficiente. Seu carrinho tem ${totalMusicas} música(s), mas o gift card cobre apenas ${gift.quantidadeMusicas} música(s).`
+          : `Gift card insuficiente. Seu carrinho custa R$ ${valorTotalCarrinho.toFixed(2)}, mas o gift card vale apenas R$ ${gift.valor.toFixed(2)}.`
+      });
+    }
+
+    // Criar pedidos de música para cada item do carrinho
+    const pedidosCriados = [];
+    const downloadService = require('../services/downloadService');
+
+    console.log('📝 [GIFT CARD CARRINHO] Criando pedidos de música...');
+
+    for (const musica of carrinho.musicas) {
+      console.log(`🎵 Criando pedido: ${musica.musicaTitulo} (${musica.musicaYoutubeId})`);
+
+      // Criar pedido
+      const pedido = await prisma.pedidoMusica.create({
+        data: {
+          nomeCliente: nomeCliente.trim(),
+          musicaTitulo: musica.musicaTitulo,
+          musicaArtista: musica.musicaArtista || 'Artista Desconhecido',
+          musicaThumbnail: musica.musicaThumbnail || '',
+          musicaYoutubeId: musica.musicaYoutubeId,
+          musicaDuracao: musica.musicaDuracao || 0,
+          status: 'pago', // Já marcar como pago
+          modoGratuito: false,
+          metodoPagamento: 'gift_card',
+        }
+      });
+
+      pedidosCriados.push(pedido);
+      console.log(`✅ Pedido criado: ${pedido.id}`);
+
+      // Iniciar download do vídeo (não esperar)
+      downloadService.baixarVideo(musica.musicaYoutubeId)
+        .then(() => console.log(`✅ [GIFT CARD CARRINHO] Download completo: ${musica.musicaTitulo}`))
+        .catch((error) => console.error(`❌ [GIFT CARD CARRINHO] Erro ao baixar ${musica.musicaTitulo}:`, error.message));
+    }
+
+    console.log(`✅ [GIFT CARD CARRINHO] ${pedidosCriados.length} pedido(s) criado(s)`);
+
+    // Marcar gift como usado (vincular ao primeiro pedido)
+    const giftAtualizado = await prisma.giftCard.update({
+      where: { id: gift.id },
+      data: {
+        usado: true,
+        usadoEm: new Date(),
+        usadoPor: nomeCliente,
+        pedidoMusicaId: pedidosCriados[0].id // Vincular ao primeiro pedido
+      }
+    });
+
+    console.log('✅ [GIFT CARD CARRINHO] Gift card marcado como usado');
+
+    // Emitir evento WebSocket para atualizar fila
+    const io = req.app.get('io');
+    if (io) {
+      const musicaService = require('../services/musicaService');
+      const fila = await musicaService.buscarFilaMusicas();
+      console.log('📋 [GIFT CARD CARRINHO] Fila atual:', fila.length, 'músicas');
+      io.emit('fila:atualizada', fila);
+
+      // Se não houver música tocando, iniciar automaticamente
+      const playerService = require('../services/playerService');
+      const estadoPlayer = playerService.obterEstado();
+
+      if (!estadoPlayer.musicaAtual) {
+        console.log('▶️ [GIFT CARD CARRINHO] Nenhuma música tocando, iniciando primeira do carrinho...');
+
+        // Marcar primeira música como tocando
+        const primeiraMusicaTocando = await prisma.pedidoMusica.update({
+          where: { id: pedidosCriados[0].id },
+          data: { status: 'tocando' }
+        });
+
+        await playerService.iniciarMusica(primeiraMusicaTocando);
+        console.log('✅ [GIFT CARD CARRINHO] Primeira música iniciada');
+      } else {
+        console.log('⏭️ [GIFT CARD CARRINHO] Já existe música tocando, carrinho adicionado à fila');
+      }
+
+      // Emitir eventos para cada pedido
+      pedidosCriados.forEach(pedido => {
+        io.emit('pedido:pago', { pedidoId: pedido.id });
+      });
+    }
+
+    res.json({
+      sucesso: true,
+      gift: giftAtualizado,
+      pedidos: pedidosCriados,
+      tipoCoberto,
+      mensagem: `Gift card aplicado com sucesso! ${totalMusicas} música(s) adicionada(s) à fila.`
+    });
+
+  } catch (error) {
+    console.error('❌ [GIFT CARD CARRINHO] Erro:', error);
+    res.status(500).json({ erro: 'Erro ao usar gift card no carrinho' });
+  }
+};

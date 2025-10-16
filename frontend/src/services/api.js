@@ -36,6 +36,8 @@ export const carrinho = {
 export const validarGiftCard = (codigo) => api.get(`/public/gifts/validar/${codigo}`);
 export const usarGiftCard = (codigo, pedidoMusicaId, nomeCliente) =>
   api.post('/public/gifts/usar', { codigo, pedidoMusicaId, nomeCliente });
+export const usarGiftCardCarrinho = (dados) =>
+  api.post('/public/gifts/usar-carrinho', dados);
 
 // Gift Cards (Admin)
 export const listarGiftCards = (token) =>

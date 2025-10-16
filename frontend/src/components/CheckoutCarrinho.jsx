@@ -5,7 +5,7 @@ import useCarrinhoStore from '../store/carrinhoStore';
 import socket from '../services/socket';
 import Button from './ui/Button';
 import Input from './ui/Input';
-import { usarGiftCard } from '../services/api';
+import { usarGiftCardCarrinho } from '../services/api';
 
 /**
  * Componente de Checkout do Carrinho (Múltiplas Músicas)
@@ -148,7 +148,7 @@ function CheckoutCarrinho({ carrinho, onClose, onSuccess }) {
       // Atualizar nome no carrinho primeiro
       await definirNomeCliente(nomeCliente.trim());
 
-      const response = await usarGiftCard({
+      const response = await usarGiftCardCarrinho({
         codigo: codigoGift.trim().toUpperCase(),
         nomeCliente: nomeCliente.trim(),
         carrinho: {

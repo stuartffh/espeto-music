@@ -58,8 +58,14 @@ router.get('/gifts/validar/:codigo', giftCardController.validar);
 
 /**
  * POST /api/public/gifts/usar
- * Usa um gift card (acesso público)
+ * Usa um gift card para uma música (acesso público)
  */
 router.post('/gifts/usar', giftCardController.usar);
+
+/**
+ * POST /api/public/gifts/usar-carrinho
+ * Usa um gift card para um carrinho com múltiplas músicas (acesso público)
+ */
+router.post('/gifts/usar-carrinho', giftCardController.usarCarrinho);
 
 module.exports = router;
