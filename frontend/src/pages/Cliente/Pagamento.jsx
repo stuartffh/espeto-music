@@ -59,7 +59,7 @@ function Pagamento() {
   const Icon = config.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dark-bg via-dark-surface to-dark-elevated dark:from-dark-bg dark:to-dark-surface flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-dark-bg via-dark-surface to-dark-elevated dark:from-dark-bg dark:to-dark-surface flex items-center justify-center p-3 sm:p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -76,18 +76,18 @@ function Pagamento() {
               repeat: status === 'pendente' ? Infinity : 0,
               ease: 'easeOut',
             }}
-            className="mb-6"
+            className="mb-4 sm:mb-6"
           >
-            <Icon className={`w-24 h-24 mx-auto ${config.color}`} />
+            <Icon className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto ${config.color}`} />
           </motion.div>
 
           {/* Title */}
-          <h1 className="text-3xl font-bold text-white dark:text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white dark:text-white mb-2">
             {config.title}
           </h1>
 
           {/* Description */}
-          <p className="text-gray-400 dark:text-gray-400 mb-6">
+          <p className="text-sm sm:text-base text-gray-400 dark:text-gray-400 mb-4 sm:mb-6">
             {config.description}
           </p>
 
