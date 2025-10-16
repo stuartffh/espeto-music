@@ -99,7 +99,7 @@ async function criarPagamentoPix({
       description: descricao || titulo,
       payment_method_id: 'pix',
       external_reference: pedidoId,
-      notification_url: `${process.env.BASE_URL || 'http://localhost:3000'}/api/webhooks/mercadopago',
+      notification_url: `${process.env.BASE_URL || 'http://localhost:3000'}/api/webhooks/mercadopago`,
       date_of_expiration: expirationDate.toISOString(),
       payer: {
         email: emailPagador || 'cliente@espeto.music',

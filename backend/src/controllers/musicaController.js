@@ -88,11 +88,12 @@ async function criar(req, res) {
     ]);
 
     // Validar duração da música
-    const tempoMaximo = configTempoMaximo ? parseInt(configTempoMaximo.valor) : 480;
-    if (musicaDuracao && musicaDuracao > tempoMaximo) {
-      const minutosMaximo = Math.floor(tempoMaximo / 60);
+    // TEMPO_MAXIMO_MUSICA está em minutos, converter para segundos
+    const tempoMaximoMinutos = configTempoMaximo ? parseInt(configTempoMaximo.valor) : 8;
+    const tempoMaximoSegundos = tempoMaximoMinutos * 60;
+    if (musicaDuracao && musicaDuracao > tempoMaximoSegundos) {
       return res.status(400).json({
-        error: `Música muito longa! O tempo máximo permitido é de ${minutosMaximo} minutos.`,
+        error: `Música muito longa! O tempo máximo permitido é de ${tempoMaximoMinutos} minutos.`,
       });
     }
 
