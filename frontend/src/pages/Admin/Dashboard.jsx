@@ -101,12 +101,37 @@ function AdminDashboard() {
     configuracoes: 0,
   });
 
+  // Lazy loading: carregar dados apenas quando a aba for acessada
   useEffect(() => {
-    carregarConfiguracoes();
-    carregarEstadoPlayer();
-    carregarFilaPlayer();
-    carregarOverview();
-  }, []);
+    switch (abaAtiva) {
+      case 'overview':
+        carregarOverview();
+        carregarEstadoPlayer();
+        carregarFilaPlayer();
+        break;
+      case 'configuracoes':
+        if (configs.length === 0) {
+          carregarConfiguracoes();
+        }
+        break;
+      case 'player':
+        carregarEstadoPlayer();
+        carregarFilaPlayer();
+        break;
+      case 'moderacao':
+        if (palavras.length === 0) {
+          carregarPalavras();
+        }
+        break;
+      case 'giftcards':
+        if (giftCards.length === 0) {
+          carregarGiftCards();
+        }
+        break;
+      default:
+        break;
+    }
+  }, [abaAtiva]);
 
   // WebSocket para sincronização em tempo real
   useEffect(() => {
@@ -1012,33 +1037,103 @@ function AdminDashboard() {
             <p className="text-gray-500">Nenhuma palavra encontrada</p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-4 px-4">
-            <div className="inline-block min-w-full align-middle">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b border-dark-border">
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Palavra</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase hidden md:table-cell whitespace-nowrap">Categoria</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Severidade</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Status</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-dark-border">
-                  {palavras.map((palavra) => (
-                    <motion.tr
-                      key={palavra.id}
-                      className="hover:bg-neon-cyan/5 transition"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <td className="px-3 py-3 font-medium text-white text-sm break-all max-w-[150px]">{palavra.palavra}</td>
-                      <td className="px-3 py-3 hidden md:table-cell">
+          <>
+            {/* Desktop: Table */}
+            <div className="hidden md:block overflow-x-auto -mx-4 px-4">
+              <div className="inline-block min-w-full align-middle">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b border-dark-border">
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Palavra</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Categoria</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Severidade</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Status</th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-dark-border">
+                    {palavras.map((palavra) => (
+                      <motion.tr
+                        key={palavra.id}
+                        className="hover:bg-neon-cyan/5 transition"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                      >
+                        <td className="px-3 py-3 font-medium text-white text-sm break-all max-w-[150px]">{palavra.palavra}</td>
+                        <td className="px-3 py-3">
+                          <Badge variant="info" size="sm">
+                            {palavra.categoria === 'NOME_CLIENTE' ? 'Nome' : palavra.categoria === 'TITULO_MUSICA' ? 'Música' : 'Ambos'}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-3">
+                          <Badge
+                            variant={
+                              palavra.severidade === 'SEVERA' ? 'danger' :
+                              palavra.severidade === 'MEDIA' ? 'warning' :
+                              'success'
+                            }
+                            size="sm"
+                          >
+                            {palavra.severidade}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-3">
+                          <button
+                            onClick={() => handleTogglePalavra(palavra.id)}
+                            className="group"
+                          >
+                            <Badge
+                              variant={palavra.ativo ? 'success' : 'default'}
+                              size="sm"
+                              className="group-hover:scale-110 transition"
+                            >
+                              {palavra.ativo ? 'Ativo' : 'Inativo'}
+                            </Badge>
+                          </button>
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              icon={Edit2}
+                              onClick={() => {
+                                setPalavraEditando(palavra);
+                                setNovaPalavra({ palavra: palavra.palavra, categoria: palavra.categoria, severidade: palavra.severidade });
+                                setMostrarFormulario(true);
+                              }}
+                            />
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              icon={Trash2}
+                              onClick={() => handleDeletarPalavra(palavra.id)}
+                            />
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile: Cards */}
+            <div className="md:hidden space-y-3">
+              {palavras.map((palavra) => (
+                <motion.div
+                  key={palavra.id}
+                  className="glass p-4 rounded-lg hover:bg-neon-cyan/5 transition"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-white text-base mb-2 break-words">{palavra.palavra}</p>
+                      <div className="flex flex-wrap gap-2">
                         <Badge variant="info" size="sm">
                           {palavra.categoria === 'NOME_CLIENTE' ? 'Nome' : palavra.categoria === 'TITULO_MUSICA' ? 'Música' : 'Ambos'}
                         </Badge>
-                      </td>
-                      <td className="px-3 py-3">
                         <Badge
                           variant={
                             palavra.severidade === 'SEVERA' ? 'danger' :
@@ -1049,47 +1144,48 @@ function AdminDashboard() {
                         >
                           {palavra.severidade}
                         </Badge>
-                      </td>
-                      <td className="px-3 py-3">
                         <button
                           onClick={() => handleTogglePalavra(palavra.id)}
-                          className="group"
+                          className="touch-manipulation"
                         >
                           <Badge
                             variant={palavra.ativo ? 'success' : 'default'}
                             size="sm"
-                            className="group-hover:scale-110 transition"
                           >
                             {palavra.ativo ? 'Ativo' : 'Inativo'}
                           </Badge>
                         </button>
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            icon={Edit2}
-                            onClick={() => {
-                              setPalavraEditando(palavra);
-                              setNovaPalavra({ palavra: palavra.palavra, categoria: palavra.categoria, severidade: palavra.severidade });
-                              setMostrarFormulario(true);
-                            }}
-                          />
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            icon={Trash2}
-                            onClick={() => handleDeletarPalavra(palavra.id)}
-                          />
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={Edit2}
+                      onClick={() => {
+                        setPalavraEditando(palavra);
+                        setNovaPalavra({ palavra: palavra.palavra, categoria: palavra.categoria, severidade: palavra.severidade });
+                        setMostrarFormulario(true);
+                      }}
+                      className="flex-1 touch-manipulation"
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      icon={Trash2}
+                      onClick={() => handleDeletarPalavra(palavra.id)}
+                      className="flex-1 touch-manipulation"
+                    >
+                      Deletar
+                    </Button>
+                  </div>
+                </motion.div>
+              ))}
             </div>
-          </div>
+          </>
         )}
       </Card>
 
@@ -1608,13 +1704,23 @@ function AdminDashboard() {
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
+      {/* Hamburger menu mobile */}
+      <button
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        className="fixed top-4 left-4 z-20 md:hidden p-2 glass rounded-lg hover:bg-neon-cyan/10 transition-colors"
+      >
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
       {/* Main Content */}
       <div
         className={`transition-all duration-300 ${
-          sidebarCollapsed ? 'ml-20' : 'ml-64'
-        }`}
+          sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'
+        } ml-0`}
       >
-        <div className="p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8 pt-16 md:pt-6">
           {/* Mensagens */}
           <AnimatePresence>
             {error && (

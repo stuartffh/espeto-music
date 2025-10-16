@@ -28,24 +28,46 @@ export default function AdminSidebar({ activeTab, onTabChange, collapsed, onTogg
   const { admin, logout } = useAuthStore();
 
   return (
-    <motion.aside
-      className={clsx(
-        'fixed left-0 top-0 h-full glass border-r border-dark-border z-40 transition-all duration-300',
-        collapsed ? 'w-20' : 'w-64'
+    <>
+      {/* Overlay mobile */}
+      {!collapsed && (
+        <motion.div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 md:hidden"
+          onClick={onToggle}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        />
       )}
-      initial={{ x: -100 }}
-      animate={{ x: 0 }}
-    >
+
+      <motion.aside
+        className={clsx(
+          'fixed left-0 top-0 h-full glass border-r border-dark-border z-40 transition-all duration-300 flex flex-col',
+          'md:translate-x-0',
+          collapsed ? 'w-20 -translate-x-full md:translate-x-0' : 'w-64 translate-x-0'
+        )}
+        initial={{ x: -100 }}
+        animate={{ x: 0 }}
+      >
       {/* Logo */}
-      <div className="p-6 border-b border-dark-border">
+      <div className="p-4 md:p-6 border-b border-dark-border flex-shrink-0">
         {collapsed ? (
-          <div className="text-2xl font-bold gradient-text text-center">
+          <div className="text-xl md:text-2xl font-bold gradient-text text-center">
             EM
           </div>
         ) : (
-          <h1 className="text-2xl font-bold gradient-text">
-            Espeto Music
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl md:text-2xl font-bold gradient-text">
+              Espeto Music
+            </h1>
+            {/* Close button mobile */}
+            <button
+              onClick={onToggle}
+              className="md:hidden p-2 hover:bg-neon-cyan/10 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -59,19 +81,25 @@ export default function AdminSidebar({ activeTab, onTabChange, collapsed, onTogg
             <motion.button
               key={item.id}
               className={clsx(
-                'w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all',
+                'w-full flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-lg mb-2 transition-all touch-manipulation',
                 isActive
                   ? 'neon-border bg-neon-cyan/10 text-neon-cyan'
                   : 'text-gray-400 hover:bg-neon-cyan/5 hover:text-white',
-                collapsed && 'justify-center'
+                collapsed && 'justify-center md:justify-center'
               )}
-              onClick={() => onTabChange(item.id)}
+              onClick={() => {
+                onTabChange(item.id);
+                // Fechar sidebar em mobile ao selecionar aba
+                if (window.innerWidth < 768 && !collapsed) {
+                  onToggle();
+                }
+              }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
               {!collapsed && (
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium text-sm md:text-base">{item.label}</span>
               )}
             </motion.button>
           );
@@ -79,18 +107,18 @@ export default function AdminSidebar({ activeTab, onTabChange, collapsed, onTogg
       </nav>
 
       {/* User Info & Logout */}
-      <div className="p-4 border-t border-dark-border">
+      <div className="p-3 md:p-4 border-t border-dark-border flex-shrink-0">
         {!collapsed && admin && (
-          <div className="mb-3 px-4 py-2 glass rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neon-cyan to-neon-purple flex items-center justify-center text-white font-bold">
+          <div className="mb-3 px-3 md:px-4 py-2 glass rounded-lg">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-neon-cyan to-neon-purple flex items-center justify-center text-white font-bold text-sm md:text-base">
                 {admin.nome?.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">
+                <p className="text-xs md:text-sm font-semibold text-white truncate">
                   {admin.nome}
                 </p>
-                <p className="text-xs text-gray-400 truncate">
+                <p className="text-[10px] md:text-xs text-gray-400 truncate">
                   {admin.username}
                 </p>
               </div>
@@ -101,18 +129,18 @@ export default function AdminSidebar({ activeTab, onTabChange, collapsed, onTogg
         <button
           onClick={logout}
           className={clsx(
-            'w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-all',
+            'w-full flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-all touch-manipulation',
             collapsed && 'justify-center'
           )}
         >
           <LogOut className="w-5 h-5" />
-          {!collapsed && <span>Sair</span>}
+          {!collapsed && <span className="text-sm md:text-base">Sair</span>}
         </button>
 
-        {/* Collapse Toggle */}
+        {/* Collapse Toggle - Desktop only */}
         <button
           onClick={onToggle}
-          className="mt-2 w-full flex items-center justify-center px-4 py-2 rounded-lg glass hover:bg-neon-cyan/10 transition-all"
+          className="hidden md:flex mt-2 w-full items-center justify-center px-4 py-2 rounded-lg glass hover:bg-neon-cyan/10 transition-all"
         >
           {collapsed ? (
             <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -122,5 +150,6 @@ export default function AdminSidebar({ activeTab, onTabChange, collapsed, onTogg
         </button>
       </div>
     </motion.aside>
+    </>
   );
 }
