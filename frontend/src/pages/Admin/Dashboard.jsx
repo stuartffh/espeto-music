@@ -18,6 +18,7 @@ import {
   Plus,
   X,
   AlertCircle,
+  Save,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import AdminSidebar from '../../components/AdminSidebar';
@@ -47,6 +48,7 @@ function AdminDashboard() {
   const [success, setSuccess] = useState('');
   const [abaAtiva, setAbaAtiva] = useState('overview');
   const [atualizandoSugestoes, setAtualizandoSugestoes] = useState(false);
+  const [configsModificadas, setConfigsModificadas] = useState({});
 
   // Alterar senha
   const [senhaAtual, setSenhaAtual] = useState('');
@@ -185,26 +187,48 @@ function AdminDashboard() {
     }
   };
 
-  const atualizarConfig = async (chave, valor) => {
+  const handleConfigChange = (chave, valor) => {
+    // Atualizar state local temporariamente
+    setConfigs(
+      configs.map((c) => (c.chave === chave ? { ...c, valor: String(valor) } : c))
+    );
+
+    // Marcar como modificada
+    setConfigsModificadas({
+      ...configsModificadas,
+      [chave]: String(valor)
+    });
+  };
+
+  const salvarTodasConfiguracoes = async () => {
+    if (Object.keys(configsModificadas).length === 0) {
+      setError('Nenhuma alteração para salvar');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
     setSaving(true);
     setError('');
     setSuccess('');
 
     try {
-      await axios.put(
-        `${API_URL}/api/config/${chave}`,
-        { valor },
-        { headers: { Authorization: `Bearer ${token}` } }
+      // Salvar todas as configurações modificadas em paralelo
+      const promises = Object.entries(configsModificadas).map(([chave, valor]) =>
+        axios.put(
+          `${API_URL}/api/config/${chave}`,
+          { valor },
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
       );
 
-      setConfigs(
-        configs.map((c) => (c.chave === chave ? { ...c, valor: String(valor) } : c))
-      );
+      await Promise.all(promises);
 
-      setSuccess('Configuração atualizada!');
+      setSuccess(`${Object.keys(configsModificadas).length} configurações salvas com sucesso!`);
+      setConfigsModificadas({});
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Erro ao atualizar configuração');
+      setError('Erro ao salvar configurações. Tente novamente.');
+      console.error('Erro ao salvar:', err);
     } finally {
       setSaving(false);
     }
@@ -363,8 +387,10 @@ function AdminDashboard() {
 
   const renderCampoConfig = (config) => {
     const handleChange = (newValue) => {
-      atualizarConfig(config.chave, newValue);
+      handleConfigChange(config.chave, newValue);
     };
+
+    const isModified = configsModificadas.hasOwnProperty(config.chave);
 
     // Tratamento especial para MODO_FILA
     if (config.chave === 'MODO_FILA') {
@@ -541,42 +567,112 @@ function AdminDashboard() {
     </motion.div>
   );
 
-  const renderConfiguracoes = () => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
-      <div>
-        <h2 className="text-3xl font-bold gradient-text mb-2">Configurações do Sistema</h2>
-        <p className="text-gray-500 dark:text-gray-400">Gerencie as configurações do aplicativo</p>
-      </div>
+  const renderConfiguracoes = () => {
+    const hasChanges = Object.keys(configsModificadas).length > 0;
 
-      <Card variant="glass">
-        <div className="space-y-3">
-          {configs.map((config) => (
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-6"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold gradient-text mb-2">Configurações do Sistema</h2>
+            <p className="text-gray-500 dark:text-gray-400">Gerencie as configurações do aplicativo</p>
+          </div>
+          {hasChanges && (
             <motion.div
-              key={config.chave}
-              className="flex flex-col lg:flex-row lg:items-start lg:justify-between p-4 glass rounded-lg hover:bg-neon-cyan/5 transition gap-3"
-              whileHover={{ scale: 1.005 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm font-semibold"
             >
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-white text-sm md:text-base break-words">
-                  {config.chave.replace(/_/g, ' ')}
-                </h3>
-                {config.descricao && (
-                  <p className="text-xs md:text-sm text-gray-400 mt-1 break-words">{config.descricao}</p>
-                )}
-              </div>
-              <div className="lg:ml-4 lg:min-w-[200px] lg:max-w-[300px] w-full lg:w-auto flex-shrink-0">
-                {renderCampoConfig(config)}
-              </div>
+              {Object.keys(configsModificadas).length} alteração(ões) não salva(s)
             </motion.div>
-          ))}
+          )}
         </div>
-      </Card>
-    </motion.div>
-  );
+
+        <Card variant="glass">
+          <div className="space-y-3">
+            {configs.map((config) => {
+              const isModified = configsModificadas.hasOwnProperty(config.chave);
+              return (
+                <motion.div
+                  key={config.chave}
+                  className={`flex flex-col lg:flex-row lg:items-start lg:justify-between p-4 glass rounded-lg hover:bg-neon-cyan/5 transition gap-3 ${
+                    isModified ? 'border-2 border-yellow-500/50 bg-yellow-500/5' : ''
+                  }`}
+                  whileHover={{ scale: 1.005 }}
+                >
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-white text-sm md:text-base break-words flex items-center gap-2">
+                      {config.chave.replace(/_/g, ' ')}
+                      {isModified && (
+                        <span className="text-xs text-yellow-400">*</span>
+                      )}
+                    </h3>
+                    {config.descricao && (
+                      <p className="text-xs md:text-sm text-gray-400 mt-1 break-words">{config.descricao}</p>
+                    )}
+                  </div>
+                  <div className="lg:ml-4 lg:min-w-[200px] lg:max-w-[300px] w-full lg:w-auto flex-shrink-0">
+                    {renderCampoConfig(config)}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Botão Salvar fixo no final */}
+        <AnimatePresence>
+          {hasChanges && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="sticky bottom-6 z-10"
+            >
+              <Card variant="glass" className="border-2 border-neon-cyan/50">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-center sm:text-left">
+                    <p className="text-white font-semibold">
+                      Você tem {Object.keys(configsModificadas).length} alteração(ões) não salva(s)
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      Clique em "Salvar Configurações" para aplicar as mudanças
+                    </p>
+                  </div>
+                  <div className="flex gap-3 w-full sm:w-auto">
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setConfigsModificadas({});
+                        carregarConfiguracoes();
+                      }}
+                      disabled={saving}
+                      className="flex-1 sm:flex-none"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="primary"
+                      icon={Save}
+                      onClick={salvarTodasConfiguracoes}
+                      loading={saving}
+                      className="flex-1 sm:flex-none"
+                    >
+                      Salvar Configurações
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    );
+  };
 
   const renderPlayer = () => (
     <motion.div
