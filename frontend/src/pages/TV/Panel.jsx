@@ -100,6 +100,50 @@ function Panel() {
   const videoDescansoRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
 
+  // 🧹 LIMPEZA AUTOMÁTICA: Sempre começar com conexão limpa na TV
+  useEffect(() => {
+    console.log('🧹 [TV] Limpando cookies e storage para conexão limpa...');
+
+    // Limpar todos os cookies
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+
+    // Limpar localStorage
+    try {
+      localStorage.clear();
+      console.log('✅ [TV] localStorage limpo');
+    } catch (e) {
+      console.warn('⚠️  [TV] Não foi possível limpar localStorage:', e);
+    }
+
+    // Limpar sessionStorage
+    try {
+      sessionStorage.clear();
+      console.log('✅ [TV] sessionStorage limpo');
+    } catch (e) {
+      console.warn('⚠️  [TV] Não foi possível limpar sessionStorage:', e);
+    }
+
+    // Limpar IndexedDB (se houver)
+    try {
+      if (window.indexedDB) {
+        window.indexedDB.databases().then((dbs) => {
+          dbs.forEach((db) => {
+            window.indexedDB.deleteDatabase(db.name);
+          });
+        });
+        console.log('✅ [TV] IndexedDB limpo');
+      }
+    } catch (e) {
+      console.warn('⚠️  [TV] Não foi possível limpar IndexedDB:', e);
+    }
+
+    console.log('✅ [TV] Conexão limpa estabelecida - sem cookies, sem cache');
+  }, []); // Executa apenas uma vez ao montar
+
   const handleVideoEnd = useCallback(() => {
     if (estadoPlayer?.musicaAtual && socket) {
       console.log('🔚 Finalizando música:', estadoPlayer.musicaAtual.id);

@@ -19,9 +19,19 @@ const corsOptions = {
   credentials: true,
 };
 
-// Configurar Socket.io
+// Configurar Socket.io (SEM cookies, SEM sessão, conexão limpa)
 const io = new Server(server, {
   cors: corsOptions,
+  // Configurações para conexão limpa (sem cookies, sem persistência)
+  cookie: false, // NÃO usar cookies
+  transports: ['websocket', 'polling'], // WebSocket primeiro, depois polling
+  allowEIO3: true, // Compatibilidade com engine.io v3
+  pingTimeout: 60000, // 60 segundos antes de considerar desconectado
+  pingInterval: 25000, // Ping a cada 25 segundos
+  upgradeTimeout: 10000, // Timeout para upgrade de polling para websocket
+  maxHttpBufferSize: 1e6, // 1MB buffer máximo
+  allowUpgrades: true, // Permitir upgrade de polling para websocket
+  perMessageDeflate: false, // Desabilitar compressão (melhor performance)
 });
 
 // Middlewares

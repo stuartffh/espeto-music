@@ -2,16 +2,44 @@ const musicaService = require('../services/musicaService');
 const playerService = require('../services/playerService');
 
 /**
- * Configura os handlers do Socket.io
+ * 🔌 CONFIGURAÇÃO DE WEBSOCKET
+ *
+ * Sistema centralizado de eventos WebSocket.
+ * Uma única conexão, organizada e eficiente.
+ *
+ * Eventos disponíveis:
+ * - request:estado-inicial - Cliente solicita estado completo ao conectar
+ * - request:fila - Cliente solicita atualização da fila
+ * - request:musica-atual - Cliente solicita música atual
+ * - musica:terminou - TV notifica que música terminou
+ * - pedido:pago - Cliente notifica pagamento aprovado
+ *
+ * Emissões do servidor:
+ * - estado:inicial - Estado completo (fila + música atual)
+ * - fila:atualizada - Fila atualizada
+ * - fila:vazia - Fila ficou vazia
+ * - musica:atual - Música que está tocando
+ * - player:iniciar - Iniciar reprodução
+ * - player:pausar - Pausar reprodução
+ * - player:retomar - Retomar reprodução
+ * - player:parar - Parar reprodução
+ * - config:atualizada - Configuração alterada
+ * - pedido:pago - Confirmação de pagamento
  */
 function setupSocketHandlers(io) {
   // Inicializar playerService com io
   playerService.inicializar(io);
 
-  io.on('connection', (socket) => {
-    console.log(`✅ Cliente conectado: ${socket.id}`);
+  console.log('🔌 [WEBSOCKET] Configurando handlers...');
 
-    // Envia estado atual ao conectar
+  io.on('connection', (socket) => {
+    console.log(`✅ [WEBSOCKET] Cliente conectado: ${socket.id}`);
+    console.log(`📊 [WEBSOCKET] Total de clientes: ${io.engine.clientsCount}`);
+    console.log(`🔧 [WEBSOCKET] Transport: ${socket.conn.transport.name}`);
+
+    // ========== REQUESTS DO CLIENTE ==========
+
+    // Envia estado completo ao conectar
     socket.on('request:estado-inicial', async () => {
       try {
         const musicaAtual = await musicaService.buscarMusicaAtual();
@@ -88,12 +116,26 @@ function setupSocketHandlers(io) {
       }
     });
 
-    socket.on('disconnect', () => {
-      console.log(`❌ Cliente desconectado: ${socket.id}`);
+    // ========== DESCONEXÃO ==========
+
+    socket.on('disconnect', (reason) => {
+      console.log(`❌ [WEBSOCKET] Cliente desconectado: ${socket.id}`);
+      console.log(`📋 [WEBSOCKET] Razão: ${reason}`);
+      console.log(`📊 [WEBSOCKET] Total de clientes: ${io.engine.clientsCount}`);
+    });
+
+    socket.on('error', (error) => {
+      console.error(`❌ [WEBSOCKET] Erro no socket ${socket.id}:`, error);
     });
   });
 
-  console.log('🔌 WebSocket handlers configurados');
+  console.log('✅ [WEBSOCKET] Handlers configurados com sucesso');
+  console.log('📋 [WEBSOCKET] Eventos registrados:');
+  console.log('   - request:estado-inicial');
+  console.log('   - request:fila');
+  console.log('   - request:musica-atual');
+  console.log('   - musica:terminou');
+  console.log('   - pedido:pago');
 }
 
 module.exports = { setupSocketHandlers };
