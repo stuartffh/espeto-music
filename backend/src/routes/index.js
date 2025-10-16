@@ -12,6 +12,7 @@ const playerRoutes = require('./playerRoutes');
 const streamRoutes = require('./stream');
 const moderacaoRoutes = require('./moderacaoRoutes');
 const themeRoutes = require('./themeRoutes');
+const giftCardRoutes = require('./giftCardRoutes');
 
 // Health check
 router.get('/health', (req, res) => {
@@ -37,5 +38,6 @@ router.use('/stream', streamRoutes);
 router.use('/admin/moderacao', moderacaoRoutes);
 router.use('/theme', themeRoutes);
 router.use('/admin/theme', themeRoutes);
+router.use('/gifts', giftCardRoutes);
 
 module.exports = router;

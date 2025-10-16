@@ -8,7 +8,8 @@ import {
   Lock,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Gift
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '../store/authStore';
@@ -19,6 +20,7 @@ const menuItems = [
   { id: 'player', label: 'Player', icon: Music },
   { id: 'moderacao', label: 'Moderação', icon: Shield },
   { id: 'sugestoes', label: 'Sugestões', icon: TrendingUp },
+  { id: 'giftcards', label: 'Gift Cards', icon: Gift },
   { id: 'senha', label: 'Alterar Senha', icon: Lock },
 ];
 

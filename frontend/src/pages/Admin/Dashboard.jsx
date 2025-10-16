@@ -20,6 +20,10 @@ import {
   X,
   AlertCircle,
   Save,
+  Gift,
+  Calendar,
+  Copy,
+  Check,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import AdminSidebar from '../../components/AdminSidebar';
@@ -30,6 +34,7 @@ import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import QueueItem from '../../components/QueueItem';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { listarGiftCards, criarGiftCard, deletarGiftCard, desativarGiftCard } from '../../services/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -74,6 +79,19 @@ function AdminDashboard() {
   const [novaPalavra, setNovaPalavra] = useState({ palavra: '', categoria: 'AMBOS', severidade: 'MEDIA' });
   const [textoTeste, setTextoTeste] = useState('');
   const [resultadoTeste, setResultadoTeste] = useState(null);
+
+  // Gift Cards
+  const [giftCards, setGiftCards] = useState([]);
+  const [loadingGifts, setLoadingGifts] = useState(false);
+  const [mostrarFormGift, setMostrarFormGift] = useState(false);
+  const [novoGift, setNovoGift] = useState({
+    quantidadeMusicas: 1,
+    valor: 0,
+    dataExpiracao: '',
+    observacao: '',
+  });
+  const [copiado, setCopiado] = useState(null);
+  const [filtroStatusGift, setFiltroStatusGift] = useState('');
 
   // Estados do Overview
   const [statsOverview, setStatsOverview] = useState({
@@ -1181,6 +1199,337 @@ function AdminDashboard() {
     </motion.div>
   );
 
+  // Funções de Gift Cards
+  const carregarGiftCards = async () => {
+    setLoadingGifts(true);
+    try {
+      const response = await listarGiftCards(token);
+      setGiftCards(response.data);
+    } catch (err) {
+      setError('Erro ao carregar gift cards');
+    } finally {
+      setLoadingGifts(false);
+    }
+  };
+
+  const handleCriarGift = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await criarGiftCard(novoGift, token);
+      setSuccess('Gift card criado com sucesso!');
+      setNovoGift({ quantidadeMusicas: 1, valor: 0, dataExpiracao: '', observacao: '' });
+      setMostrarFormGift(false);
+      carregarGiftCards();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.erro || 'Erro ao criar gift card');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletarGift = async (id) => {
+    if (!confirm('Tem certeza que deseja deletar este gift card?')) return;
+
+    try {
+      await deletarGiftCard(id, token);
+      setSuccess('Gift card deletado com sucesso!');
+      carregarGiftCards();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Erro ao deletar gift card');
+    }
+  };
+
+  const handleDesativarGift = async (id) => {
+    try {
+      await desativarGiftCard(id, token);
+      setSuccess('Gift card desativado com sucesso!');
+      carregarGiftCards();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Erro ao desativar gift card');
+    }
+  };
+
+  const handleCopiarCodigo = (codigo) => {
+    navigator.clipboard.writeText(codigo);
+    setCopiado(codigo);
+    setTimeout(() => setCopiado(null), 2000);
+  };
+
+  const giftCardsFiltrados = filtroStatusGift
+    ? giftCards.filter(g => {
+        if (filtroStatusGift === 'usado') return g.usado;
+        if (filtroStatusGift === 'ativo') return g.ativo && !g.usado;
+        if (filtroStatusGift === 'inativo') return !g.ativo;
+        if (filtroStatusGift === 'expirado') {
+          if (!g.dataExpiracao) return false;
+          return new Date(g.dataExpiracao) < new Date();
+        }
+        return true;
+      })
+    : giftCards;
+
+  const renderGiftCards = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      <div>
+        <h2 className="text-3xl font-bold gradient-text mb-2">Gerenciar Gift Cards</h2>
+        <p className="text-gray-500 dark:text-gray-400">Crie e gerencie códigos de presente</p>
+      </div>
+
+      {/* Filtros e Adicionar */}
+      <Card variant="glass">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h3 className="text-xl font-bold text-white">Gift Cards</h3>
+          <Button
+            variant={mostrarFormGift ? 'danger' : 'primary'}
+            icon={mostrarFormGift ? X : Plus}
+            onClick={() => {
+              setNovoGift({ quantidadeMusicas: 1, valor: 0, dataExpiracao: '', observacao: '' });
+              setMostrarFormGift(!mostrarFormGift);
+            }}
+          >
+            {mostrarFormGift ? 'Cancelar' : 'Novo Gift Card'}
+          </Button>
+        </div>
+
+        {/* Filtro de Status */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-400 mb-2">Filtrar por Status</label>
+          <select
+            value={filtroStatusGift}
+            onChange={(e) => setFiltroStatusGift(e.target.value)}
+            className="w-full sm:w-64 px-4 py-3 glass rounded-lg border border-dark-border focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/50 outline-none text-white"
+          >
+            <option value="">Todos</option>
+            <option value="ativo">Ativos (não usados)</option>
+            <option value="usado">Usados</option>
+            <option value="inativo">Desativados</option>
+            <option value="expirado">Expirados</option>
+          </select>
+        </div>
+
+        {/* Formulário de Criar */}
+        <AnimatePresence>
+          {mostrarFormGift && (
+            <motion.form
+              onSubmit={handleCriarGift}
+              className="p-6 neon-border bg-neon-purple/5 rounded-lg mb-6"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <h3 className="text-lg font-bold gradient-text mb-4">Criar Novo Gift Card</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <Input
+                  label="Quantidade de Músicas"
+                  type="number"
+                  min="1"
+                  value={novoGift.quantidadeMusicas}
+                  onChange={(e) => setNovoGift({ ...novoGift, quantidadeMusicas: parseInt(e.target.value) })}
+                  required
+                  disabled={saving}
+                />
+                <Input
+                  label="Valor (R$)"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={novoGift.valor}
+                  onChange={(e) => setNovoGift({ ...novoGift, valor: parseFloat(e.target.value) })}
+                  required
+                  disabled={saving}
+                />
+                <Input
+                  label="Data de Expiração (opcional)"
+                  type="date"
+                  value={novoGift.dataExpiracao}
+                  onChange={(e) => setNovoGift({ ...novoGift, dataExpiracao: e.target.value })}
+                  disabled={saving}
+                />
+                <Input
+                  label="Observação (opcional)"
+                  type="text"
+                  value={novoGift.observacao}
+                  onChange={(e) => setNovoGift({ ...novoGift, observacao: e.target.value })}
+                  disabled={saving}
+                  placeholder="Ex: Presente de Natal"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  loading={saving}
+                  className="flex-1"
+                >
+                  Criar Gift Card
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setMostrarFormGift(false)}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </motion.form>
+          )}
+        </AnimatePresence>
+
+        {/* Lista de Gift Cards */}
+        {loadingGifts ? (
+          <div className="text-center py-8 text-gray-400">Carregando...</div>
+        ) : giftCardsFiltrados.length === 0 ? (
+          <div className="text-center py-8">
+            <Gift className="w-16 h-16 mx-auto text-gray-600 mb-2" />
+            <p className="text-gray-500">
+              {filtroStatusGift ? 'Nenhum gift card encontrado com este filtro' : 'Nenhum gift card criado ainda'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto -mx-4 px-4">
+            <div className="inline-block min-w-full align-middle">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-dark-border">
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Código</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase hidden md:table-cell whitespace-nowrap">Músicas</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase hidden md:table-cell whitespace-nowrap">Valor</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Status</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase hidden lg:table-cell whitespace-nowrap">Expiração</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-400 uppercase hidden lg:table-cell whitespace-nowrap">Usado por</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-dark-border">
+                  {giftCardsFiltrados.map((gift) => {
+                    const expirado = gift.dataExpiracao && new Date(gift.dataExpiracao) < new Date();
+                    return (
+                      <motion.tr
+                        key={gift.id}
+                        className="hover:bg-neon-cyan/5 transition"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                      >
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-2">
+                            <code className="text-sm font-mono text-neon-cyan">{gift.codigo}</code>
+                            <button
+                              onClick={() => handleCopiarCodigo(gift.codigo)}
+                              className="text-gray-400 hover:text-neon-cyan transition"
+                              title="Copiar código"
+                            >
+                              {copiado === gift.codigo ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 text-white hidden md:table-cell">{gift.quantidadeMusicas}</td>
+                        <td className="px-3 py-3 text-white hidden md:table-cell">R$ {gift.valor.toFixed(2)}</td>
+                        <td className="px-3 py-3">
+                          <div className="flex flex-col gap-1">
+                            {gift.usado ? (
+                              <Badge variant="success" size="sm">Usado</Badge>
+                            ) : !gift.ativo ? (
+                              <Badge variant="default" size="sm">Desativado</Badge>
+                            ) : expirado ? (
+                              <Badge variant="danger" size="sm">Expirado</Badge>
+                            ) : (
+                              <Badge variant="info" size="sm">Disponível</Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 text-sm text-gray-400 hidden lg:table-cell">
+                          {gift.dataExpiracao ? (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(gift.dataExpiracao).toLocaleDateString('pt-BR')}
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-sm text-gray-400 hidden lg:table-cell">
+                          {gift.usado ? (
+                            <div>
+                              <div className="font-medium text-white">{gift.usadoPor || 'Desconhecido'}</div>
+                              <div className="text-xs">{new Date(gift.usadoEm).toLocaleString('pt-BR')}</div>
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex justify-end gap-1">
+                            {!gift.usado && gift.ativo && (
+                              <Button
+                                variant="warning"
+                                size="sm"
+                                onClick={() => handleDesativarGift(gift.id)}
+                                title="Desativar"
+                              >
+                                Desativar
+                              </Button>
+                            )}
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              icon={Trash2}
+                              onClick={() => handleDeletarGift(gift.id)}
+                              title="Deletar"
+                            />
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Card de Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card variant="glass">
+          <div className="text-center">
+            <Gift className="w-12 h-12 mx-auto text-neon-cyan mb-2" />
+            <p className="text-2xl font-bold text-white">{giftCards.length}</p>
+            <p className="text-sm text-gray-400">Total de Gift Cards</p>
+          </div>
+        </Card>
+        <Card variant="glass">
+          <div className="text-center">
+            <CheckCircle className="w-12 h-12 mx-auto text-green-500 mb-2" />
+            <p className="text-2xl font-bold text-white">{giftCards.filter(g => g.usado).length}</p>
+            <p className="text-sm text-gray-400">Gift Cards Usados</p>
+          </div>
+        </Card>
+        <Card variant="glass">
+          <div className="text-center">
+            <Shield className="w-12 h-12 mx-auto text-neon-purple mb-2" />
+            <p className="text-2xl font-bold text-white">{giftCards.filter(g => g.ativo && !g.usado).length}</p>
+            <p className="text-sm text-gray-400">Disponíveis</p>
+          </div>
+        </Card>
+      </div>
+    </motion.div>
+  );
+
   const renderSenha = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -1304,6 +1653,7 @@ function AdminDashboard() {
             {abaAtiva === 'player' && renderPlayer()}
             {abaAtiva === 'moderacao' && renderModeracao()}
             {abaAtiva === 'sugestoes' && renderSugestoes()}
+            {abaAtiva === 'giftcards' && renderGiftCards()}
             {abaAtiva === 'senha' && renderSenha()}
           </AnimatePresence>
         </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Music, User, Clock, ChevronLeft, ChevronRight, Info } from 'lucide-react';
-import { buscarMusicas, criarPedidoMusica, criarPagamento, buscarFila } from '../../services/api';
+import { Search, Music, User, Clock, ChevronLeft, ChevronRight, Info, CreditCard, Gift, X, Loader2 } from 'lucide-react';
+import { buscarMusicas, criarPedidoMusica, criarPagamento, buscarFila, validarGiftCard, usarGiftCard } from '../../services/api';
 import socket from '../../services/socket';
 import useStore from '../../store/useStore';
 import { categorias, getSugestoesDinamicas } from '../../data/musicSuggestions';
@@ -43,6 +43,11 @@ function Home() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showFilaModal, setShowFilaModal] = useState(false);
   const [showNomeModal, setShowNomeModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [giftCode, setGiftCode] = useState('');
+  const [validandoGift, setValidandoGift] = useState(false);
+  const [usandoGift, setUsandoGift] = useState(false);
+  const [pedidoPendente, setPedidoPendente] = useState(null);
 
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { toast, showToast, hideToast } = useToast();
@@ -141,14 +146,72 @@ function Home() {
         setResultados([]);
         setCategoriaAtiva(null);
       } else {
-        const pagamento = await criarPagamento(pedido.data.id);
-        window.location.href = pagamento.data.initPoint;
+        setPedidoPendente(pedido.data);
+        setShowPaymentModal(true);
       }
     } catch (error) {
       console.error('Erro:', error);
       showToast(error.response?.data?.error || 'Erro ao processar pedido', 'error');
     } finally {
       setAdicionando(false);
+    }
+  };
+
+  const handlePayWithPix = async () => {
+    if (!pedidoPendente) return;
+
+    try {
+      const pagamento = await criarPagamento(pedidoPendente.id);
+      window.location.href = pagamento.data.initPoint;
+    } catch (error) {
+      console.error('Erro:', error);
+      showToast('Erro ao processar pagamento', 'error');
+    }
+  };
+
+  const handleValidateGiftCard = async () => {
+    if (!giftCode.trim()) {
+      showToast('Digite um código de gift card', 'error');
+      return;
+    }
+
+    setValidandoGift(true);
+    try {
+      const response = await validarGiftCard(giftCode.trim().toUpperCase());
+      showToast(`Gift card válido! ${response.data.quantidadeMusicas} música(s)`, 'success');
+    } catch (error) {
+      console.error('Erro:', error);
+      showToast(error.response?.data?.erro || 'Gift card inválido', 'error');
+    } finally {
+      setValidandoGift(false);
+    }
+  };
+
+  const handlePayWithGift = async () => {
+    if (!giftCode.trim()) {
+      showToast('Digite um código de gift card', 'error');
+      return;
+    }
+
+    if (!pedidoPendente) return;
+
+    setUsandoGift(true);
+    try {
+      await usarGiftCard(giftCode.trim().toUpperCase(), pedidoPendente.id, nomeCliente.trim());
+      setShowPaymentModal(false);
+      setShowConfetti(true);
+      showToast('Gift card usado com sucesso! Música adicionada à fila! 🎵', 'success');
+      await buscarFila().then(res => setFila(res.data));
+      setBusca('');
+      setResultados([]);
+      setCategoriaAtiva(null);
+      setGiftCode('');
+      setPedidoPendente(null);
+    } catch (error) {
+      console.error('Erro:', error);
+      showToast(error.response?.data?.erro || 'Erro ao usar gift card', 'error');
+    } finally {
+      setUsandoGift(false);
     }
   };
 
@@ -464,6 +527,112 @@ function Home() {
             />
           ))}
         </BottomSheet>
+
+        {/* Modal Método de Pagamento */}
+        <Modal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setGiftCode('');
+          }}
+          title="Como você quer pagar?"
+          size="md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+              Escolha o método de pagamento para adicionar sua música à fila
+            </p>
+
+            {/* Opção PIX */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <button
+                onClick={handlePayWithPix}
+                className="w-full p-4 glass rounded-xl border-2 border-neon-cyan/20 hover:border-neon-cyan transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-neon-cyan/10 rounded-lg">
+                    <CreditCard className="w-6 h-6 text-neon-cyan" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <h3 className="font-bold text-white">Pagar com PIX</h3>
+                    <p className="text-sm text-gray-400">Pagamento via QR Code do Mercado Pago</p>
+                  </div>
+                </div>
+              </button>
+            </motion.div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent" />
+              <span className="text-sm text-gray-500">OU</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent" />
+            </div>
+
+            {/* Opção Gift Card */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="p-4 glass rounded-xl border-2 border-neon-purple/20 hover:border-neon-purple transition-all"
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-neon-purple/10 rounded-lg">
+                  <Gift className="w-6 h-6 text-neon-purple" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="font-bold text-white">Usar Gift Card</h3>
+                  <p className="text-sm text-gray-400">Digite seu código de presente</p>
+                </div>
+              </div>
+
+              <Input
+                value={giftCode}
+                onChange={(e) => setGiftCode(e.target.value.toUpperCase())}
+                placeholder="GIFT-XXXX-XXXX"
+                className="mb-2"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && giftCode.trim()) {
+                    handlePayWithGift();
+                  }
+                }}
+              />
+
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={handleValidateGiftCard}
+                  disabled={validandoGift || !giftCode.trim()}
+                  className="flex-1"
+                >
+                  {validandoGift ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Validando...
+                    </>
+                  ) : (
+                    'Validar'
+                  )}
+                </Button>
+                <Button
+                  onClick={handlePayWithGift}
+                  disabled={usandoGift || !giftCode.trim()}
+                  className="flex-1"
+                >
+                  {usandoGift ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Usando...
+                    </>
+                  ) : (
+                    'Usar Gift Card'
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </Modal>
 
         {/* Modal Nome */}
         <Modal
