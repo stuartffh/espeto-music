@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Music, User, Clock } from 'lucide-react';
 import axios from 'axios';
+import socket from '../../services/socket';
 import EqualizerAnimation from '../../components/EqualizerAnimation';
 
 const sanitizeUrl = (url) => {
@@ -76,7 +76,6 @@ const api = axios.create({
 
 function Panel() {
   const [fila, setFila] = useState([]);
-  const [socket, setSocket] = useState(null);
   const [estadoPlayer, setEstadoPlayer] = useState(null);
   const [iframeReady, setIframeReady] = useState(false);
   const [autoplayConsent, setAutoplayConsent] = useState(false);
@@ -154,10 +153,7 @@ function Panel() {
 
   // Conectar WebSocket e buscar dados iniciais
   useEffect(() => {
-    const newSocket = io(SOCKET_URL);
-    setSocket(newSocket);
-
-    console.log('🔌 Conectando ao backend...');
+    console.log('🔌 Usando socket global compartilhado...');
 
     // Buscar fila inicial
     api.get('/api/musicas/fila')
@@ -179,13 +175,13 @@ function Panel() {
     // ========== EVENTOS DO PLAYER (iframe TV Player) ==========
 
     // Backend manda iniciar/trocar música
-    newSocket.on('player:iniciar', (data) => {
+    const handlePlayerIniciar = (data) => {
       console.log('▶️ Backend: Iniciar música', data.musica.musicaTitulo);
       setEstadoPlayer(data.estado);
-    });
+    };
 
     // Backend manda pausar
-    newSocket.on('player:pausar', (data) => {
+    const handlePlayerPausar = (data) => {
       console.log('⏸️ Backend: Pausar música');
       setEstadoPlayer(data.estado);
       // Pausar o player no iframe
@@ -193,10 +189,10 @@ function Panel() {
       if (iframeWindow) {
         iframeWindow.postMessage({ type: 'pause' }, '*');
       }
-    });
+    };
 
     // Backend manda retomar
-    newSocket.on('player:retomar', (data) => {
+    const handlePlayerRetomar = (data) => {
       console.log('▶️ Backend: Retomar música');
       setEstadoPlayer(data.estado);
       // Retomar o player no iframe
@@ -204,10 +200,10 @@ function Panel() {
       if (iframeWindow) {
         iframeWindow.postMessage({ type: 'play' }, '*');
       }
-    });
+    };
 
     // Backend manda parar
-    newSocket.on('player:parar', (data) => {
+    const handlePlayerParar = (data) => {
       console.log('⏹️ Backend: Parar player');
       setEstadoPlayer(data.estado);
       // Parar o player no iframe
@@ -215,33 +211,49 @@ function Panel() {
       if (iframeWindow) {
         iframeWindow.postMessage({ type: 'stop' }, '*');
       }
-    });
+    };
 
     // ========== EVENTOS DA FILA ==========
 
-    newSocket.on('fila:atualizada', (novaFila) => {
+    const handleFilaAtualizada = (novaFila) => {
       const filaFiltrada = novaFila.filter(m => m.status !== 'tocando');
       console.log('📋 Fila atualizada:', filaFiltrada.length, 'músicas');
       setFila(filaFiltrada);
-    });
+    };
 
-    newSocket.on('fila:vazia', () => {
+    const handleFilaVazia = () => {
       console.log('📭 Fila vazia');
       setFila([]);
-    });
+    };
 
     // ========== EVENTOS DE CONFIGURAÇÃO ==========
 
-    newSocket.on('config:atualizada', (data) => {
+    const handleConfigAtualizada = (data) => {
       console.log(`🔄 Configuração atualizada: ${data.chave} = ${data.valor}`);
       setConfigs(prevConfigs => ({
         ...prevConfigs,
         [data.chave]: data.valor
       }));
-    });
+    };
 
+    // Registrar event listeners
+    socket.on('player:iniciar', handlePlayerIniciar);
+    socket.on('player:pausar', handlePlayerPausar);
+    socket.on('player:retomar', handlePlayerRetomar);
+    socket.on('player:parar', handlePlayerParar);
+    socket.on('fila:atualizada', handleFilaAtualizada);
+    socket.on('fila:vazia', handleFilaVazia);
+    socket.on('config:atualizada', handleConfigAtualizada);
+
+    // Cleanup: remover event listeners quando componente desmontar
     return () => {
-      newSocket.close();
+      socket.off('player:iniciar', handlePlayerIniciar);
+      socket.off('player:pausar', handlePlayerPausar);
+      socket.off('player:retomar', handlePlayerRetomar);
+      socket.off('player:parar', handlePlayerParar);
+      socket.off('fila:atualizada', handleFilaAtualizada);
+      socket.off('fila:vazia', handleFilaVazia);
+      socket.off('config:atualizada', handleConfigAtualizada);
     };
   }, []);
 
