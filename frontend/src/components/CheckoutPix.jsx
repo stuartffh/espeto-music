@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, Loader2, QrCode as QrCodeIcon, CreditCard } from 'lucide-react';
+import { X, Copy, Check, Loader2, QrCode as QrCodeIcon, CreditCard, CheckCircle } from 'lucide-react';
 import { criarPagamentoPix } from '../services/api';
+import socket from '../services/socket';
 import Button from './ui/Button';
 import Input from './ui/Input';
 
@@ -17,6 +18,34 @@ function CheckoutPix({ pedido, onClose, onSuccess }) {
   const [pagamento, setPagamento] = useState(null);
   const [copiado, setCopiado] = useState(false);
   const [erro, setErro] = useState('');
+  const [pagamentoAprovado, setPagamentoAprovado] = useState(false);
+
+  // Escutar evento de pagamento aprovado via WebSocket
+  useEffect(() => {
+    const handlePagamentoPago = (data) => {
+      console.log('💰 [CHECKOUT] Pagamento aprovado via WebSocket:', data);
+
+      // Verificar se é o pagamento deste pedido
+      if (data.pedidoId === pedido.id) {
+        console.log('✅ [CHECKOUT] Pagamento confirmado para este pedido!');
+        setPagamentoAprovado(true);
+
+        // Aguardar 2 segundos para mostrar feedback visual
+        setTimeout(() => {
+          if (onSuccess) {
+            onSuccess();
+          }
+        }, 2000);
+      }
+    };
+
+    socket.on('pedido:pago', handlePagamentoPago);
+
+    // Cleanup ao desmontar
+    return () => {
+      socket.off('pedido:pago', handlePagamentoPago);
+    };
+  }, [pedido.id, onSuccess]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -239,14 +268,32 @@ function CheckoutPix({ pedido, onClose, onSuccess }) {
                 </div>
 
                 {/* Status */}
-                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                  <p className="text-sm text-amber-800 dark:text-amber-200">
-                    ⏳ Aguardando pagamento...
-                  </p>
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    Após o pagamento, sua música será adicionada automaticamente à fila!
-                  </p>
-                </div>
+                {pagamentoAprovado ? (
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+                      <CheckCircle className="animate-bounce" size={20} />
+                      <p className="text-sm font-semibold">
+                        ✅ Pagamento Confirmado!
+                      </p>
+                    </div>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                      Sua música será adicionada à fila em instantes!
+                    </p>
+                  </motion.div>
+                ) : (
+                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      ⏳ Aguardando pagamento...
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      Após o pagamento, sua música será adicionada automaticamente à fila!
+                    </p>
+                  </div>
+                )}
 
                 {/* Info Adicional */}
                 <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
