@@ -27,6 +27,7 @@ model PedidoMusica {
   atualizadoEm    DateTime @updatedAt
 
   pagamento       Pagamento? @relation(fields: [pagamentoId], references: [id])
+  giftCard        GiftCard?
 
   @@map("pedidos_musica")
   @@index([status])
@@ -179,4 +180,32 @@ model Tema {
   atualizadoEm        DateTime @updatedAt
 
   @@map("temas")
+}
+
+model GiftCard {
+  id                String   @id @default(uuid())
+  codigo            String   @unique // Código único do gift card (ex: GIFT-XXXX-XXXX)
+  valor             Float    // Valor em R$ que o gift card representa
+  quantidadeMusicas Int      // Quantidade de músicas que o gift card permite
+  usado             Boolean  @default(false) // Se o gift card já foi usado
+  ativo             Boolean  @default(true) // Se o gift card está ativo
+  dataExpiracao     DateTime? // Data de expiração (opcional)
+
+  // Informações de uso
+  usadoEm           DateTime? // Quando foi usado
+  usadoPor          String?   // Nome do cliente que usou
+  pedidoMusicaId    String?   @unique // ID do pedido associado
+
+  // Observações
+  observacao        String?   // Observação do admin ao criar
+
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  pedidoMusica      PedidoMusica? @relation(fields: [pedidoMusicaId], references: [id])
+
+  @@map("gift_cards")
+  @@index([codigo])
+  @@index([usado])
+  @@index([ativo])
 }
