@@ -11,27 +11,30 @@ datasource db {
 }
 
 model PedidoMusica {
-  id              String   @id @default(uuid())
-  nomeCliente     String?
-  musicaTitulo    String
-  musicaYoutubeId String
-  musicaThumbnail String?
-  musicaDuracao   Int?     // em segundos
-  status          String   @default("pendente") // pendente, pago, tocando, concluida, cancelada, rejeitada
-  valor           Float
-  pagamentoId     String?  @unique
-  posicaoFila     Int?
-  motivoRejeicao  String?  // Motivo da rejeição pela moderação
-  moderadoPor     String?  // "sistema" ou "admin"
-  criadoEm        DateTime @default(now())
-  atualizadoEm    DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  nomeCliente         String?
+  musicaTitulo        String
+  musicaYoutubeId     String
+  musicaThumbnail     String?
+  musicaDuracao       Int?     // em segundos
+  status              String   @default("pendente") // pendente, pago, tocando, concluida, cancelada, rejeitada
+  valor               Float
+  pagamentoId         String?  @unique
+  pagamentoCarrinhoId String?  // ID do pagamento quando múltiplas músicas
+  posicaoFila         Int?
+  motivoRejeicao      String?  // Motivo da rejeição pela moderação
+  moderadoPor         String?  // "sistema" ou "admin"
+  criadoEm            DateTime @default(now())
+  atualizadoEm        DateTime @updatedAt
 
-  pagamento       Pagamento? @relation(fields: [pagamentoId], references: [id])
-  giftCard        GiftCard?
+  pagamento        Pagamento? @relation(fields: [pagamentoId], references: [id])
+  pagamentoCarrinho Pagamento? @relation("PagamentoCarrinho", fields: [pagamentoCarrinhoId], references: [id])
+  giftCard         GiftCard?
 
   @@map("pedidos_musica")
   @@index([status])
   @@index([criadoEm])
+  @@index([pagamentoCarrinhoId])
 }
 
 model Pagamento {
@@ -60,6 +63,7 @@ model Pagamento {
   atualizadoEm            DateTime @updatedAt
 
   pedidoMusica  PedidoMusica?
+  pedidosMusica PedidoMusica[] @relation("PagamentoCarrinho")
 
   @@map("pagamentos")
   @@index([status])
@@ -208,4 +212,40 @@ model GiftCard {
   @@index([codigo])
   @@index([usado])
   @@index([ativo])
+}
+
+model Carrinho {
+  id              String   @id @default(uuid())
+  sessionId       String   // ID único da sessão (pode ser IP + fingerprint)
+  nomeCliente     String?  // Nome do cliente (opcional até finalizar)
+  musicasTitulos  String   // JSON array com títulos das músicas
+  musicasIds      String   // JSON array com IDs do YouTube
+  musicasThumbs   String   // JSON array com thumbnails
+  musicasDuracoes String   // JSON array com durações
+  valorTotal      Float    // Valor total do carrinho
+  quantidadeItens Int      // Quantidade de músicas no carrinho
+
+  // Controle de expiração
+  expiraEm        DateTime // Carrinho expira após 30 minutos
+
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  @@map("carrinhos")
+  @@index([sessionId])
+  @@index([expiraEm])
+}
+
+model RateLimit {
+  id              String   @id @default(uuid())
+  ip              String   // IP do cliente
+  contador        Int      @default(1) // Contador de pedidos
+  resetaEm        DateTime // Quando o contador reseta (30 minutos)
+
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  @@map("rate_limits")
+  @@index([ip])
+  @@index([resetaEm])
 }
