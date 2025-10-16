@@ -359,9 +359,123 @@ async function verificarStatusPagamento(pagamentoId) {
   }
 }
 
+/**
+ * Cria pagamento PIX para carrinho (múltiplas músicas)
+ */
+async function criarPagamentoPIXCarrinho(sessionId, dadosPagador = {}) {
+  console.log('🛒 [SERVICE] Iniciando pagamento de carrinho');
+  console.log(`🛒 [SERVICE] SessionId: ${sessionId}`);
+
+  const carrinhoService = require('./carrinhoService');
+  const carrinho = await carrinhoService.listarCarrinho(sessionId);
+
+  if (carrinho.quantidadeItens === 0) {
+    throw new Error('Carrinho está vazio');
+  }
+
+  console.log(`🛒 [SERVICE] Carrinho com ${carrinho.quantidadeItens} músicas`);
+  console.log(`🛒 [SERVICE] Valor total: R$ ${carrinho.valorTotal.toFixed(2)}`);
+
+  // Criar registro de pagamento
+  const pagamento = await prisma.pagamento.create({
+    data: {
+      valor: carrinho.valorTotal,
+      status: 'pending',
+      emailPagador: dadosPagador.email,
+      cpfPagador: dadosPagador.cpf,
+      nomePagador: dadosPagador.nome || carrinho.nomeCliente,
+      metodoPagamento: 'pix',
+    },
+  });
+
+  console.log(`✅ [SERVICE] Pagamento criado no banco com ID: ${pagamento.id}`);
+
+  // Criar pedidos para cada música do carrinho
+  const pedidosCriados = [];
+
+  for (const musica of carrinho.musicas) {
+    const pedido = await prisma.pedidoMusica.create({
+      data: {
+        nomeCliente: carrinho.nomeCliente || dadosPagador.nome || 'Cliente',
+        musicaTitulo: musica.titulo,
+        musicaYoutubeId: musica.youtubeId,
+        musicaThumbnail: musica.thumbnail,
+        musicaDuracao: musica.duracao,
+        status: 'pendente',
+        valor: carrinho.valorTotal / carrinho.quantidadeItens, // Valor unitário
+        pagamentoCarrinhoId: pagamento.id,
+      },
+    });
+
+    pedidosCriados.push(pedido);
+    console.log(`📝 [SERVICE] Pedido criado: ${pedido.musicaTitulo}`);
+  }
+
+  try {
+    console.log('🛒 [SERVICE] Criando pagamento PIX no Mercado Pago...');
+
+    // Criar descrição com todas as músicas
+    const descricao = `Espeto Music - ${carrinho.quantidadeItens} músicas`;
+    const titulo = carrinho.musicas.map(m => m.titulo).join(', ').substring(0, 100);
+
+    // Criar pagamento PIX no Mercado Pago
+    const pixPayment = await criarPagamentoPix({
+      titulo,
+      descricao,
+      valor: carrinho.valorTotal,
+      pedidoId: pedidosCriados[0].id, // Usar primeiro pedido como referência
+      emailPagador: dadosPagador.email,
+      cpfPagador: dadosPagador.cpf,
+      nomePagador: dadosPagador.nome || carrinho.nomeCliente,
+    });
+
+    console.log('✅ [SERVICE] Pagamento PIX criado no Mercado Pago');
+
+    // Atualizar pagamento com dados do PIX
+    const pagamentoAtualizado = await prisma.pagamento.update({
+      where: { id: pagamento.id },
+      data: {
+        mercadoPagoPaymentId: pixPayment.id.toString(),
+        status: pixPayment.status,
+        qrCode: pixPayment.qrCode,
+        qrCodeText: pixPayment.qrCodeText,
+        pixExpirationDate: pixPayment.pixExpirationDate ? new Date(pixPayment.pixExpirationDate) : null,
+      },
+    });
+
+    // Limpar carrinho após criar pagamento
+    await carrinhoService.limparCarrinho(sessionId);
+    console.log('🗑️  [SERVICE] Carrinho limpo após criar pagamento');
+
+    return {
+      pagamento: pagamentoAtualizado,
+      pedidos: pedidosCriados,
+      qrCode: pixPayment.qrCode,
+      qrCodeText: pixPayment.qrCodeText,
+      pixExpirationDate: pixPayment.pixExpirationDate,
+      mercadoPagoPaymentId: pixPayment.id,
+    };
+  } catch (error) {
+    console.error('❌ [SERVICE] Erro ao criar pagamento PIX do carrinho');
+    console.error('❌ [SERVICE] Mensagem:', error.message);
+
+    // Rollback: remover pagamento e pedidos criados
+    await prisma.pagamento.delete({ where: { id: pagamento.id } });
+
+    for (const pedido of pedidosCriados) {
+      await prisma.pedidoMusica.delete({ where: { id: pedido.id } });
+    }
+
+    console.log('🔄 [SERVICE] Rollback executado: pagamento e pedidos removidos');
+
+    throw error;
+  }
+}
+
 module.exports = {
   criarPagamento,
   criarPagamentoPIX,
+  criarPagamentoPIXCarrinho,
   processarWebhook,
   buscarPagamentoPorId,
   verificarStatusPagamento,

@@ -14,6 +14,7 @@ const moderacaoRoutes = require('./moderacaoRoutes');
 const themeRoutes = require('./themeRoutes');
 const giftCardRoutes = require('./giftCardRoutes');
 const webhookRoutes = require('./webhookRoutes');
+const carrinhoRoutes = require('./carrinhoRoutes');
 
 // Health check
 router.get('/health', (req, res) => {
@@ -29,6 +30,9 @@ router.use('/public', publicRoutes);
 
 // Webhooks (sem autenticação - recebe de servidores externos)
 router.use('/webhooks', webhookRoutes);
+
+// Carrinho (público - identificado por IP)
+router.use('/carrinho', carrinhoRoutes);
 
 // Rotas protegidas
 router.use('/mesas', mesaRoutes);

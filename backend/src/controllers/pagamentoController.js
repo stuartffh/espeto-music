@@ -223,9 +223,88 @@ async function verificarStatus(req, res) {
   }
 }
 
+/**
+ * Finaliza carrinho e cria pagamento PIX para múltiplas músicas
+ * POST /api/pagamentos/carrinho
+ */
+async function finalizarCarrinho(req, res) {
+  try {
+    console.log('\n🛒 ═══════════════════════════════════════════════════════');
+    console.log('   FINALIZANDO CARRINHO');
+    console.log('   ═══════════════════════════════════════════════════════');
+    console.log('📅 Timestamp:', new Date().toISOString());
+    console.log('📋 Body recebido:', JSON.stringify(req.body, null, 2));
+
+    const { obterIPCliente } = require('../middlewares/rateLimit');
+    const ip = obterIPCliente(req);
+    const sessionId = `session_${ip}`;
+
+    const { email, nome, cpf } = req.body;
+
+    console.log(`\n📦 SessionId: ${sessionId}`);
+    console.log(`📧 Email: ${email || 'Não fornecido (opcional)'}`);
+    console.log(`👤 Nome: ${nome || 'Não fornecido (opcional)'}`);
+    console.log(`🆔 CPF: ${cpf || 'Não fornecido (opcional)'}`);
+
+    // Preparar dados do pagador
+    const dadosPagador = {};
+    if (email) dadosPagador.email = email;
+    if (nome) dadosPagador.nome = nome;
+    if (cpf) dadosPagador.cpf = cpf;
+
+    console.log('\n⏳ Criando pagamento para carrinho...');
+
+    const result = await pagamentoService.criarPagamentoPIXCarrinho(sessionId, dadosPagador);
+
+    console.log('\n✅ [PAGAMENTO] Pagamento do carrinho criado com sucesso!');
+    console.log(`💰 Valor: R$ ${result.pagamento?.valor.toFixed(2)}`);
+    console.log(`🔢 Payment ID: ${result.mercadoPagoPaymentId}`);
+    console.log(`📝 Pedidos criados: ${result.pedidos?.length}`);
+    console.log(`📱 QR Code: ${result.qrCode ? 'Gerado' : 'Erro'}`);
+    console.log(`📋 Pix Copia e Cola: ${result.qrCodeText ? 'Gerado' : 'Erro'}`);
+    console.log('═══════════════════════════════════════════════════════\n');
+
+    res.status(201).json({
+      success: true,
+      mensagem: 'Carrinho finalizado com sucesso',
+      pagamento: {
+        id: result.pagamento.id,
+        valor: result.pagamento.valor,
+        status: result.pagamento.status,
+        mercadoPagoPaymentId: result.mercadoPagoPaymentId,
+        quantidadeMusicas: result.pedidos.length,
+      },
+      pedidos: result.pedidos.map(p => ({
+        id: p.id,
+        musicaTitulo: p.musicaTitulo,
+        status: p.status,
+      })),
+      pix: {
+        qrCode: result.qrCode,
+        qrCodeText: result.qrCodeText,
+        expirationDate: result.pixExpirationDate,
+      },
+    });
+  } catch (error) {
+    console.error('\n❌ ═══════════════════════════════════════════════════════');
+    console.error('   ERRO AO FINALIZAR CARRINHO');
+    console.error('   ═══════════════════════════════════════════════════════');
+    console.error('Tipo:', error.constructor.name);
+    console.error('Mensagem:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('═══════════════════════════════════════════════════════\n');
+
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   criar,
   criarPix,
+  finalizarCarrinho,
   webhook,
   buscarPorId,
   verificarStatus,

@@ -5,6 +5,9 @@ const pagamentoController = require('../controllers/pagamentoController');
 // Cria pagamento PIX direto
 router.post('/pix', pagamentoController.criarPix);
 
+// Finaliza carrinho e cria pagamento PIX (múltiplas músicas)
+router.post('/carrinho', pagamentoController.finalizarCarrinho);
+
 // Cria pagamento (preferência antiga)
 router.post('/', pagamentoController.criar);
 
