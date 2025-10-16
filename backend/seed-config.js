@@ -1,14 +1,39 @@
 /**
- * Seed inicial das configurações do sistema
+ * Seed inicial das configurações do sistema e usuário admin
  *
  * Executa: node seed-config.js
  */
 
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Iniciando seed das configurações...');
+  console.log('🌱 Iniciando seed das configurações e usuário admin...');
+
+  // ========== CRIAR USUÁRIO ADMIN ==========
+  const senhaAdmin = 'admin123';
+  const hashSenha = await bcrypt.hash(senhaAdmin, 10);
+
+  const adminExistente = await prisma.usuario.findUnique({
+    where: { email: 'admin@espetomusic.com' }
+  });
+
+  if (adminExistente) {
+    console.log('  ⚠️  Usuário admin já existe, pulando...');
+  } else {
+    await prisma.usuario.create({
+      data: {
+        nome: 'Administrador',
+        email: 'admin@espetomusic.com',
+        senha: hashSenha,
+        role: 'ADMIN'
+      }
+    });
+    console.log('  ✅ Usuário admin criado!');
+    console.log('  📧 Email: admin@espetomusic.com');
+    console.log('  🔑 Senha: admin123');
+  }
 
   const configuracoes = [
     // ========== CONFIGURAÇÕES DE PAGAMENTO ==========

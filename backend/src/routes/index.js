@@ -6,6 +6,7 @@ const musicaRoutes = require('./musicaRoutes');
 const pagamentoRoutes = require('./pagamentoRoutes');
 const authRoutes = require('./authRoutes');
 const configuracaoRoutes = require('./configuracaoRoutes');
+const publicRoutes = require('./publicRoutes');
 const sugestaoRoutes = require('./sugestaoRoutes');
 const playerRoutes = require('./playerRoutes');
 const streamRoutes = require('./stream');
@@ -21,7 +22,10 @@ router.get('/health', (req, res) => {
   });
 });
 
-// Rotas
+// Rotas públicas (sem autenticação)
+router.use('/public', publicRoutes);
+
+// Rotas protegidas
 router.use('/mesas', mesaRoutes);
 router.use('/musicas', musicaRoutes);
 router.use('/pagamentos', pagamentoRoutes);
