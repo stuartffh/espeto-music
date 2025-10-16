@@ -19,8 +19,8 @@ const useCarrinhoStore = create((set, get) => ({
     try {
       set({ loading: true, error: null });
       const response = await carrinhoAPI.listar();
-      set({ carrinho: response.data, loading: false });
-      return response.data;
+      set({ carrinho: response.data.carrinho, loading: false });
+      return response.data.carrinho;
     } catch (error) {
       console.error('Erro ao carregar carrinho:', error);
       set({ error: error.response?.data?.error || 'Erro ao carregar carrinho', loading: false });
@@ -39,8 +39,8 @@ const useCarrinhoStore = create((set, get) => ({
         duracao: musica.duracao,
         valor: musica.valor || 5.0,
       });
-      set({ carrinho: response.data, loading: false, isOpen: true });
-      return { success: true, data: response.data };
+      set({ carrinho: response.data.carrinho, loading: false, isOpen: true });
+      return { success: true, data: response.data.carrinho };
     } catch (error) {
       console.error('Erro ao adicionar música ao carrinho:', error);
       const errorMessage = error.response?.data?.error || 'Erro ao adicionar música ao carrinho';
@@ -54,8 +54,8 @@ const useCarrinhoStore = create((set, get) => ({
     try {
       set({ loading: true, error: null });
       const response = await carrinhoAPI.remover(youtubeId);
-      set({ carrinho: response.data, loading: false });
-      return { success: true, data: response.data };
+      set({ carrinho: response.data.carrinho, loading: false });
+      return { success: true, data: response.data.carrinho };
     } catch (error) {
       console.error('Erro ao remover música do carrinho:', error);
       const errorMessage = error.response?.data?.error || 'Erro ao remover música do carrinho';
@@ -69,8 +69,8 @@ const useCarrinhoStore = create((set, get) => ({
     try {
       set({ loading: true, error: null });
       const response = await carrinhoAPI.limpar();
-      set({ carrinho: response.data, loading: false });
-      return { success: true, data: response.data };
+      set({ carrinho: response.data.carrinho, loading: false });
+      return { success: true, data: response.data.carrinho };
     } catch (error) {
       console.error('Erro ao limpar carrinho:', error);
       const errorMessage = error.response?.data?.error || 'Erro ao limpar carrinho';
@@ -84,8 +84,8 @@ const useCarrinhoStore = create((set, get) => ({
     try {
       set({ loading: true, error: null });
       const response = await carrinhoAPI.definirNome(nomeCliente);
-      set({ carrinho: response.data, loading: false });
-      return { success: true, data: response.data };
+      set({ carrinho: response.data.carrinho, loading: false });
+      return { success: true, data: response.data.carrinho };
     } catch (error) {
       console.error('Erro ao definir nome do cliente:', error);
       const errorMessage = error.response?.data?.error || 'Erro ao definir nome do cliente';

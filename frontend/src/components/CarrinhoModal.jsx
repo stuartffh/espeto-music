@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, ShoppingCart, Loader2, AlertCircle } from 'lucide-react';
 import useCarrinhoStore from '../store/carrinhoStore';
+import useStore from '../store/useStore';
+import { buscarFila } from '../services/api';
 import Button from './ui/Button';
 import CheckoutCarrinho from './CheckoutCarrinho';
 
@@ -22,6 +24,8 @@ function CarrinhoModal() {
     limparCarrinho,
     limparErro,
   } = useCarrinhoStore();
+
+  const { setFila } = useStore();
 
   const [mostrarCheckout, setMostrarCheckout] = useState(false);
   const [removendoId, setRemovendoId] = useState(null);
@@ -59,9 +63,17 @@ function CarrinhoModal() {
     setMostrarCheckout(true);
   };
 
-  const handleCheckoutSuccess = () => {
+  const handleCheckoutSuccess = async () => {
     setMostrarCheckout(false);
     fecharCarrinho();
+
+    // Recarregar fila após pagamento aprovado
+    try {
+      const response = await buscarFila();
+      setFila(response.data);
+    } catch (error) {
+      console.error('Erro ao recarregar fila:', error);
+    }
   };
 
   const isCarrinhoVazio = !carrinho || carrinho.quantidadeItens === 0;

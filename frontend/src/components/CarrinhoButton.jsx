@@ -27,11 +27,11 @@ function CarrinhoButton() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={abrirCarrinho}
-        className="relative bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-full shadow-2xl transition-all p-5 flex items-center gap-3 group"
+        className="relative bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-full shadow-2xl transition-all p-4 sm:p-5 flex items-center gap-3 group"
       >
         {/* Ícone do Carrinho */}
         <div className="relative">
-          <ShoppingCart className="w-7 h-7" />
+          <ShoppingCart className="w-6 h-6 sm:w-7 sm:h-7" />
 
           {/* Badge com quantidade */}
           <AnimatePresence>
@@ -48,16 +48,13 @@ function CarrinhoButton() {
           </AnimatePresence>
         </div>
 
-        {/* Valor Total (mostrado ao passar o mouse) */}
-        <motion.div
-          initial={{ width: 0, opacity: 0 }}
-          whileHover={{ width: 'auto', opacity: 1 }}
-          className="overflow-hidden whitespace-nowrap"
-        >
-          <span className="text-lg font-semibold">
+        {/* Valor Total (sempre visível) */}
+        <div className="flex flex-col items-start">
+          <span className="text-xs text-white/80 hidden sm:block">Total</span>
+          <span className="text-base sm:text-lg font-bold">
             R$ {valorTotal.toFixed(2).replace('.', ',')}
           </span>
-        </motion.div>
+        </div>
 
         {/* Efeito de pulso */}
         <motion.div
