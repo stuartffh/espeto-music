@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Music, User, Clock, ChevronLeft, ChevronRight, Info, CreditCard, Gift, X, Loader2 } from 'lucide-react';
-import { buscarMusicas, criarPedidoMusica, criarPagamento, buscarFila, validarGiftCard, usarGiftCard } from '../../services/api';
+import { buscarMusicas, criarPedidoMusica, buscarFila, validarGiftCard, usarGiftCard } from '../../services/api';
 import socket from '../../services/socket';
 import useStore from '../../store/useStore';
 import { categorias, getSugestoesDinamicas } from '../../data/musicSuggestions';
@@ -22,6 +22,7 @@ import MusicListItem from '../../components/MusicListItem';
 import QueueItem from '../../components/QueueItem';
 import CategoryCard from '../../components/CategoryCard';
 import ConfettiEffect from '../../components/ConfettiEffect';
+import CheckoutPix from '../../components/CheckoutPix';
 
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useToast } from '../../hooks/useToast';
@@ -44,6 +45,7 @@ function Home() {
   const [showFilaModal, setShowFilaModal] = useState(false);
   const [showNomeModal, setShowNomeModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCheckoutPix, setShowCheckoutPix] = useState(false);
   const [giftCode, setGiftCode] = useState('');
   const [validandoGift, setValidandoGift] = useState(false);
   const [usandoGift, setUsandoGift] = useState(false);
@@ -158,16 +160,9 @@ function Home() {
     }
   };
 
-  const handlePayWithPix = async () => {
-    if (!pedidoPendente) return;
-
-    try {
-      const pagamento = await criarPagamento(pedidoPendente.id);
-      window.location.href = pagamento.data.initPoint;
-    } catch (error) {
-      console.error('Erro:', error);
-      showToast('Erro ao processar pagamento', 'error');
-    }
+  const handlePayWithPix = () => {
+    setShowCheckoutPix(true);
+    setShowPaymentModal(false);
   };
 
   const handleValidateGiftCard = async () => {
@@ -670,6 +665,27 @@ function Home() {
           isOpen={toast.isOpen}
           onClose={hideToast}
         />
+
+        {/* Checkout PIX Transparente */}
+        {showCheckoutPix && pedidoPendente && (
+          <CheckoutPix
+            pedido={pedidoPendente}
+            onClose={() => {
+              setShowCheckoutPix(false);
+              setPedidoPendente(null);
+            }}
+            onSuccess={async () => {
+              setShowCheckoutPix(false);
+              setShowConfetti(true);
+              showToast('Pagamento processado! Música será adicionada à fila! 🎵', 'success');
+              await buscarFila().then(res => setFila(res.data));
+              setBusca('');
+              setResultados([]);
+              setCategoriaAtiva(null);
+              setPedidoPendente(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );

@@ -17,6 +17,10 @@ export const buscarMusicaAtual = () => api.get('/musicas/atual');
 
 // Pagamentos
 export const criarPagamento = (pedidoId) => api.post('/pagamentos', { pedidoId });
+export const criarPagamentoPix = (pedidoId, dadosPagador) => api.post('/pagamentos/pix', {
+  pedidoId,
+  ...dadosPagador
+});
 
 // Gift Cards (Public)
 export const validarGiftCard = (codigo) => api.get(`/public/gifts/validar/${codigo}`);
