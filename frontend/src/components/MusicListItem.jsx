@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
-import { Play, Plus } from 'lucide-react';
+import { Play, Plus, ShoppingCart } from 'lucide-react';
 import Button from './ui/Button';
 
-export default function MusicListItem({ musica, onAdd, loading = false }) {
+export default function MusicListItem({ musica, onAdd, loading = false, showCartIcon = false }) {
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -64,8 +64,17 @@ export default function MusicListItem({ musica, onAdd, loading = false }) {
             disabled={loading}
             className="min-w-[44px] min-h-[44px] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl transition-all"
           >
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />
-            <span className="hidden sm:inline ml-1.5">Adicionar</span>
+            {showCartIcon ? (
+              <>
+                <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />
+                <span className="hidden sm:inline ml-1.5">Carrinho</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />
+                <span className="hidden sm:inline ml-1.5">Adicionar</span>
+              </>
+            )}
           </Button>
         </div>
       </div>

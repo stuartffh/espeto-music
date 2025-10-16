@@ -447,7 +447,8 @@ function Home() {
                       <motion.div key={musica.id} variants={staggerItem}>
                         <MusicListItem
                           musica={musica}
-                          onAdd={() => handleEscolherMusica(musica)}
+                          onAdd={() => modoGratuito ? handleEscolherMusica(musica) : handleAdicionarAoCarrinho(musica)}
+                          showCartIcon={!modoGratuito}
                           loading={adicionando}
                         />
                       </motion.div>
