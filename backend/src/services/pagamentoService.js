@@ -185,18 +185,32 @@ async function criarPagamentoPIX(pedidoId, dadosPagador = {}) {
  * Processa notificação de webhook do Mercado Pago
  */
 async function processarWebhook(data) {
-  console.log('📩 Webhook recebido:', JSON.stringify(data, null, 2));
+  console.log('\n🔄 [WEBHOOK SERVICE] Processando notificação...');
+  console.log('📦 [WEBHOOK SERVICE] Dados recebidos:', JSON.stringify(data, null, 2));
 
   if (data.type !== 'payment') {
-    console.log('⚠️ Tipo de notificação ignorado:', data.type);
+    console.log('⚠️ [WEBHOOK SERVICE] Tipo de notificação ignorado:', data.type);
     return { ignorado: true };
   }
 
   try {
     const paymentId = data.data.id;
+    console.log(`🔍 [WEBHOOK SERVICE] Buscando informações do pagamento: ${paymentId}`);
+
     const paymentInfo = await buscarPagamento(paymentId);
 
-    console.log('💳 Informações do pagamento:', JSON.stringify(paymentInfo, null, 2));
+    console.log('\n💳 [WEBHOOK SERVICE] ═════════════════════════════════════');
+    console.log('   INFORMAÇÕES DO PAGAMENTO');
+    console.log('   ═════════════════════════════════════════════════════');
+    console.log('💰 ID:', paymentInfo.id);
+    console.log('📊 Status:', paymentInfo.status);
+    console.log('💵 Valor:', paymentInfo.transaction_amount);
+    console.log('💳 Método:', paymentInfo.payment_method_id);
+    console.log('📧 Email Pagador:', paymentInfo.payer?.email);
+    console.log('🆔 CPF:', paymentInfo.payer?.identification?.number);
+    console.log('👤 Nome:', paymentInfo.payer?.first_name);
+    console.log('🔗 External Reference:', paymentInfo.external_reference);
+    console.log('═════════════════════════════════════════════════════\n');
 
     const pedidoId = paymentInfo.external_reference;
 
@@ -231,6 +245,13 @@ async function processarWebhook(data) {
 
     // Se pagamento aprovado, atualizar status do pedido
     if (paymentInfo.status === 'approved') {
+      console.log('\n💚 [WEBHOOK SERVICE] ═════════════════════════════════════');
+      console.log('   PAGAMENTO APROVADO!');
+      console.log('   ═════════════════════════════════════════════════════');
+      console.log('📋 Pedido ID:', pedidoId);
+      console.log('💰 Valor:', paymentInfo.transaction_amount);
+      console.log('🎵 Atualizando status para "pago"...');
+
       pedidoAtualizado = await prisma.pedidoMusica.update({
         where: { id: pedidoId },
         data: { status: 'pago' },
@@ -239,7 +260,8 @@ async function processarWebhook(data) {
         },
       });
 
-      console.log('✅ Pagamento aprovado! Pedido atualizado:', pedidoId);
+      console.log('✅ [WEBHOOK SERVICE] Pedido atualizado com sucesso!');
+      console.log('═════════════════════════════════════════════════════\n');
 
       const outraMusicaTocando = await prisma.pedidoMusica.findFirst({
         where: {
