@@ -21,13 +21,25 @@ async function autoSeed() {
   try {
     console.log('\n🔍 Verificando necessidade de seed automático...');
 
-    // Verificar se o banco de dados existe
-    const dbPath = path.join(__dirname, 'dev.db');
-    const dbExists = fs.existsSync(dbPath);
+    // Verificar se o banco de dados existe (tentar ambos os caminhos)
+    const dbPath1 = path.join(__dirname, 'dev.db');
+    const dbPath2 = path.join(__dirname, 'prisma', 'dev.db');
+    const dbPath3 = path.join(__dirname, 'prisma', 'production.db');
+
+    const dbExists = fs.existsSync(dbPath1) || fs.existsSync(dbPath2) || fs.existsSync(dbPath3);
 
     if (!dbExists) {
-      console.log('📭 Banco de dados não existe. Será criado nas migrações.');
-      return;
+      console.log('📭 Banco de dados não existe nos caminhos esperados.');
+      console.log('   Tentando verificar tabelas via Prisma...');
+
+      // Tentar verificar se há tabelas mesmo sem arquivo visível
+      try {
+        await prisma.$queryRaw`SELECT 1`;
+        console.log('✅ Conexão com banco estabelecida via Prisma');
+      } catch (error) {
+        console.log('❌ Não foi possível conectar ao banco. Será criado nas migrações.');
+        return;
+      }
     }
 
     // Verificar se existem dados no banco
