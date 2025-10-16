@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { io } from 'socket.io-client';
 import axios from 'axios';
+import socket from '../../services/socket';
 import {
   Play,
   Pause,
@@ -45,9 +45,6 @@ function AdminDashboard() {
 
   // Estado da sidebar
   const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
-
-  // WebSocket
-  const [socket, setSocket] = useState(null);
 
   // Estados gerais
   const [configs, setConfigs] = useState([]);
@@ -133,18 +130,12 @@ function AdminDashboard() {
     }
   }, [abaAtiva]);
 
-  // WebSocket para sincronização em tempo real
+  // WebSocket para sincronização em tempo real (usando singleton)
   useEffect(() => {
-    console.log('🔌 Conectando WebSocket do Dashboard Admin...');
-    const newSocket = io(API_URL);
-    setSocket(newSocket);
+    console.log('🔌 [DASHBOARD] Configurando listeners do WebSocket...');
 
-    newSocket.on('connect', () => {
-      console.log('✅ WebSocket conectado no Dashboard Admin');
-    });
-
-    newSocket.on('config:atualizada', ({ chave, valor }) => {
-      console.log(`📡 Config atualizada via WebSocket: ${chave} = ${valor}`);
+    const handleConfigAtualizada = ({ chave, valor }) => {
+      console.log(`📡 [DASHBOARD] Config atualizada via WebSocket: ${chave} = ${valor}`);
 
       // Atualizar estado local
       setConfigs(prevConfigs =>
@@ -163,19 +154,17 @@ function AdminDashboard() {
       // Mostrar notificação
       setSuccess(`⚡ ${chave.replace(/_/g, ' ')} atualizada em tempo real!`);
       setTimeout(() => setSuccess(''), 2000);
-    });
+    };
 
-    newSocket.on('disconnect', () => {
-      console.log('🔌 WebSocket desconectado no Dashboard Admin');
-    });
+    // Adicionar listener ao socket singleton
+    socket.on('config:atualizada', handleConfigAtualizada);
 
-    newSocket.on('error', (error) => {
-      console.error('❌ Erro no WebSocket:', error);
-    });
+    console.log('✅ [DASHBOARD] Listeners configurados');
 
+    // Cleanup: remover listener ao desmontar
     return () => {
-      console.log('🔌 Desconectando WebSocket do Dashboard Admin');
-      newSocket.disconnect();
+      console.log('🧹 [DASHBOARD] Removendo listeners do WebSocket');
+      socket.off('config:atualizada', handleConfigAtualizada);
     };
   }, []);
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Music, User, Clock, Play, Pause, SkipForward, Volume2, Maximize, Heart, TrendingUp, Wifi, WifiOff } from 'lucide-react';
+import { Music, User, Clock, Play, Pause, SkipForward, Volume2, VolumeX, Wifi, WifiOff } from 'lucide-react';
 import axios from 'axios';
 import socket from '../../services/socket';
 import EqualizerAnimation from '../../components/EqualizerAnimation';
@@ -92,13 +92,13 @@ function Panel() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(80);
-  const [showControls, setShowControls] = useState(false);
+  const [muted, setMuted] = useState(false);
   const [qrCodeData, setQrCodeData] = useState(null);
+  const [focusedButton, setFocusedButton] = useState(0); // 0: Play/Pause, 1: Skip, 2: Volume-, 3: Volume+, 4: Mute
 
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const videoDescansoRef = useRef(null);
-  const controlsTimeoutRef = useRef(null);
 
   // 🧹 LIMPEZA AUTOMÁTICA: Sempre começar com conexão limpa na TV
   useEffect(() => {
@@ -151,50 +151,104 @@ function Panel() {
     }
   }, [estadoPlayer?.musicaAtual, socket]);
 
-  const toggleFullscreen = useCallback(() => {
-    const elem = containerRef.current;
-    if (!elem) return;
+  // Funções de controle do player
+  const handlePlayPause = useCallback(async () => {
+    try {
+      if (estadoPlayer?.status === 'playing') {
+        await api.post('/api/player/pause');
+        console.log('⏸️ Pausando player');
+      } else {
+        await api.post('/api/player/play');
+        console.log('▶️ Iniciando player');
+      }
+    } catch (err) {
+      console.error('Erro ao controlar player:', err);
+    }
+  }, [estadoPlayer?.status]);
 
-    if (!document.fullscreenElement &&
-        !document.webkitFullscreenElement &&
-        !document.mozFullScreenElement &&
-        !document.msFullscreenElement) {
-      // Enter fullscreen
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-      } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-      } else if (elem.mozRequestFullScreen) {
-        elem.mozRequestFullScreen();
-      } else if (elem.msRequestFullscreen) {
-        elem.msRequestFullscreen();
-      }
-    } else {
-      // Exit fullscreen
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-      }
+  const handleSkip = useCallback(async () => {
+    try {
+      await api.post('/api/player/skip');
+      console.log('⏭️ Pulando música');
+    } catch (err) {
+      console.error('Erro ao pular música:', err);
     }
   }, []);
 
-  // Mostrar controles temporariamente
-  const showControlsTemporarily = useCallback(() => {
-    setShowControls(true);
-
-    if (controlsTimeoutRef.current) {
-      clearTimeout(controlsTimeoutRef.current);
+  const handleVolumeUp = useCallback(() => {
+    const newVolume = Math.min(100, volume + 10);
+    setVolume(newVolume);
+    const iframeWindow = videoRef.current?.contentWindow;
+    if (iframeWindow) {
+      iframeWindow.postMessage({ type: 'set-volume', volume: newVolume / 100 }, '*');
     }
+    console.log('🔊 Volume:', newVolume);
+  }, [volume]);
 
-    controlsTimeoutRef.current = setTimeout(() => {
-      setShowControls(false);
-    }, 3000);
-  }, []);
+  const handleVolumeDown = useCallback(() => {
+    const newVolume = Math.max(0, volume - 10);
+    setVolume(newVolume);
+    const iframeWindow = videoRef.current?.contentWindow;
+    if (iframeWindow) {
+      iframeWindow.postMessage({ type: 'set-volume', volume: newVolume / 100 }, '*');
+    }
+    console.log('🔉 Volume:', newVolume);
+  }, [volume]);
+
+  const handleToggleMute = useCallback(() => {
+    const newMuted = !muted;
+    setMuted(newMuted);
+    const iframeWindow = videoRef.current?.contentWindow;
+    if (iframeWindow) {
+      iframeWindow.postMessage({ type: 'set-muted', muted: newMuted }, '*');
+    }
+    console.log(newMuted ? '🔇 Mutado' : '🔊 Desmutado');
+  }, [muted]);
+
+  // Navegação por teclado (controle remoto da TV)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          setFocusedButton((prev) => Math.max(0, prev - 1));
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          setFocusedButton((prev) => Math.min(4, prev + 1));
+          break;
+        case 'Enter':
+        case ' ':
+          e.preventDefault();
+          // Executar ação do botão focado
+          switch (focusedButton) {
+            case 0:
+              handlePlayPause();
+              break;
+            case 1:
+              handleSkip();
+              break;
+            case 2:
+              handleVolumeDown();
+              break;
+            case 3:
+              handleVolumeUp();
+              break;
+            case 4:
+              handleToggleMute();
+              break;
+            default:
+              break;
+          }
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [focusedButton, handlePlayPause, handleSkip, handleVolumeDown, handleVolumeUp, handleToggleMute]);
 
   // Buscar configurações do sistema
   useEffect(() => {
@@ -389,9 +443,6 @@ function Panel() {
         case 'player-autoplay-muted':
           console.warn('ℹ️ Player da TV iniciou reprodução sem áudio. Aguarde interação para ativar o som.');
           break;
-        case 'toggle-fullscreen':
-          toggleFullscreen();
-          break;
         case 'time-update':
           if (event.data.currentTime !== undefined) {
             setCurrentTime(event.data.currentTime);
@@ -410,7 +461,7 @@ function Panel() {
     return () => {
       window.removeEventListener('message', messageHandler);
     };
-  }, [handleVideoEnd, toggleFullscreen]);
+  }, [handleVideoEnd]);
 
   const sendVideoToIframe = useCallback((musica) => {
     if (!musica) {
@@ -467,459 +518,316 @@ function Panel() {
   return (
     <div
       ref={containerRef}
-      className="h-screen w-screen flex bg-gradient-to-br from-dark-bg via-dark-surface to-dark-bg text-white overflow-hidden"
-      onMouseMove={showControlsTemporarily}
-      onClick={showControlsTemporarily}
+      className="h-screen w-screen flex flex-col bg-gradient-to-br from-dark-bg via-dark-surface to-dark-bg text-white overflow-hidden"
     >
-      {/* Indicador de Conexão */}
-      <motion.div
-        className={`absolute top-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-full ${isConnected ? 'bg-green-500/20 border-green-500' : 'bg-red-500/20 border-red-500'} border backdrop-blur-sm`}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        {isConnected ? (
-          <>
-            <Wifi className="w-4 h-4 text-green-400" />
-            <span className="text-xs font-medium text-green-400">Conectado</span>
-          </>
-        ) : (
-          <>
-            <WifiOff className="w-4 h-4 text-red-400" />
-            <span className="text-xs font-medium text-red-400">Desconectado</span>
-          </>
-        )}
-      </motion.div>
-
-      {/* Área Principal - Player */}
-      <div className="flex-1 flex flex-col relative min-h-0">
-        {/* Header - Tocando Agora (Redesenhado) */}
-        <AnimatePresence>
-          {musicaAtual && (
-            <motion.div
-              className="absolute top-0 left-0 right-0 z-20 glass-heavy backdrop-blur-xl border-b border-white/10"
-              initial={{ opacity: 0, y: -100 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -100 }}
-              transition={{ duration: 0.6, type: 'spring' }}
-            >
-              <div className="container mx-auto px-6 py-4">
-                <div className="flex items-center justify-between gap-6">
-                  {/* Info da música */}
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    {/* Thumbnail */}
-                    {musicaAtual.musicaThumbnail && (
-                      <motion.div
-                        className="relative w-16 h-16 rounded-xl overflow-hidden shadow-2xl flex-shrink-0"
-                        animate={{ scale: [1, 1.05, 1] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
-                        <img
-                          src={musicaAtual.musicaThumbnail}
-                          alt={musicaAtual.musicaTitulo}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                      </motion.div>
-                    )}
-
-                    {/* Título e artista */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="bg-gradient-to-r from-neon-cyan to-neon-purple p-1.5 rounded-lg">
-                          <Music className="w-4 h-4 text-white" />
-                        </div>
-                        <span className="text-xs font-semibold text-neon-cyan uppercase tracking-wider">
-                          Tocando Agora
-                        </span>
-                        <EqualizerAnimation />
-                      </div>
-                      <h2 className="text-xl font-bold text-white truncate mb-1">
-                        {musicaAtual.musicaTitulo}
-                      </h2>
-                      <div className="flex items-center gap-2 text-sm text-gray-300">
-                        <User className="w-4 h-4" />
-                        <span className="truncate">
-                          {musicaAtual.nomeCliente || 'Anônimo'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Progress bar e tempo */}
-                  <div className="hidden md:flex flex-col items-end gap-2 w-48">
-                    <div className="flex items-center gap-3 text-sm font-mono text-gray-300">
-                      <span>{formatTime(currentTime)}</span>
-                      <span>/</span>
-                      <span>{formatTime(duration)}</span>
-                    </div>
-                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-neon-cyan to-neon-purple"
-                        initial={{ width: '0%' }}
-                        animate={{ width: `${progress}%` }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Player com Controles Overlay */}
-        <div
-          className="flex-1 bg-black flex items-center justify-center relative overflow-hidden"
-          style={{
-            backgroundImage: configs.BACKGROUND_IMAGE_URL ? `url(${configs.BACKGROUND_IMAGE_URL})` : 'none',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
-          }}
-        >
-          {/* Overlay escuro para melhor legibilidade quando há imagem de fundo */}
-          {configs.BACKGROUND_IMAGE_URL && (
-            <div className="absolute inset-0 bg-black/50" />
-          )}
-
-          {/* Animated Background Gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/5 via-transparent to-neon-cyan/5 animate-pulse" />
-
-          {musicaAtual ? (
-            <div className="relative w-full h-full p-4 md:p-8">
-              <div className="w-full h-full neon-border-glow rounded-2xl overflow-hidden shadow-2xl relative">
-                {/* Animated border glow */}
-                <div className="absolute inset-0 bg-gradient-to-r from-neon-cyan via-neon-purple to-neon-pink opacity-30 blur-2xl animate-glow-pulse" />
-
-                <iframe
-                  ref={videoRef}
-                  src="/tv-player.html"
-                  className="w-full h-full border-0 relative z-10 rounded-2xl"
-                  allow="autoplay; fullscreen"
-                  onLoad={() => {
-                    console.log('✅ Player da TV carregado');
-
-                    const iframeWindow = videoRef.current?.contentWindow;
-                    if (iframeWindow) {
-                      iframeWindow.postMessage({ type: 'host-ready' }, '*');
-                    }
-                  }}
-                />
-
-                {/* Controles Overlay (aparece ao mover mouse) */}
-                <AnimatePresence>
-                  {showControls && (
-                    <motion.div
-                      className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/90 via-black/70 to-transparent z-20"
-                      initial={{ opacity: 0, y: 100 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 100 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {/* Progress bar grande */}
-                      <div className="mb-6 w-full">
-                        <div className="relative w-full h-2 bg-white/20 rounded-full overflow-hidden group cursor-pointer">
-                          <motion.div
-                            className="h-full bg-gradient-to-r from-neon-cyan to-neon-purple relative"
-                            style={{ width: `${progress}%` }}
-                          >
-                            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </motion.div>
-                        </div>
-                        <div className="flex items-center justify-between mt-2 text-sm font-mono text-gray-300">
-                          <span>{formatTime(currentTime)}</span>
-                          <span>{formatTime(duration)}</span>
-                        </div>
-                      </div>
-
-                      {/* Controles */}
-                      <div className="flex items-center justify-center gap-6">
-                        <motion.button
-                          className="p-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <Heart className="w-6 h-6" />
-                        </motion.button>
-
-                        <motion.button
-                          className="p-6 rounded-full bg-gradient-to-r from-neon-cyan to-neon-purple hover:shadow-neon-cyan transition-all"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          {estadoPlayer?.status === 'playing' ? (
-                            <Pause className="w-8 h-8" />
-                          ) : (
-                            <Play className="w-8 h-8" />
-                          )}
-                        </motion.button>
-
-                        <motion.button
-                          className="p-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <SkipForward className="w-6 h-6" />
-                        </motion.button>
-
-                        <div className="flex items-center gap-3 ml-4">
-                          <Volume2 className="w-5 h-5" />
-                          <div className="w-24 h-2 bg-white/20 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-white"
-                              style={{ width: `${volume}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        <motion.button
-                          className="p-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all ml-4"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={toggleFullscreen}
-                        >
-                          <Maximize className="w-6 h-6" />
-                        </motion.button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Vídeo de descanso em loop */}
-              {configs.VIDEO_DESCANSO_ATIVO === 'true' && configs.VIDEO_DESCANSO_URL ? (
-                <video
-                  ref={videoDescansoRef}
-                  src={configs.VIDEO_DESCANSO_URL}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  onError={(e) => {
-                    console.error('❌ Erro ao carregar vídeo de descanso:', e);
-                    // Fallback para tela padrão
-                    if (videoDescansoRef.current) {
-                      videoDescansoRef.current.style.display = 'none';
-                    }
-                  }}
-                />
-              ) : null}
-
-              {/* Tela de aguardo com animações aprimoradas */}
-              <motion.div
-                className="text-center px-4 relative z-10"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-              >
-                {configs.LOGO_URL ? (
-                  <motion.img
-                    src={configs.LOGO_URL}
-                    alt="Logo"
-                    className="mx-auto mb-12 max-w-xs md:max-w-md max-h-48 object-contain drop-shadow-2xl"
-                    animate={{
-                      y: [0, -20, 0],
-                      filter: ['drop-shadow(0 10px 30px rgba(0, 255, 255, 0.3))', 'drop-shadow(0 20px 40px rgba(0, 255, 255, 0.5))', 'drop-shadow(0 10px 30px rgba(0, 255, 255, 0.3))']
-                    }}
-                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                ) : (
+      {/* Header - Indicador de Conexão e Info da Música */}
+      <div className="flex-shrink-0 glass-heavy backdrop-blur-xl border-b border-white/10 p-4">
+        <div className="flex items-center justify-between gap-4">
+          {/* Info da música atual */}
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            {musicaAtual ? (
+              <>
+                {musicaAtual.musicaThumbnail && (
                   <motion.div
-                    className="text-8xl mb-12"
-                    animate={{
-                      rotate: [0, 15, -15, 0],
-                      scale: [1, 1.1, 1]
-                    }}
-                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                    className="relative w-16 h-16 rounded-xl overflow-hidden shadow-2xl flex-shrink-0"
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <Music className="w-40 h-40 mx-auto text-neon-cyan drop-shadow-neon" />
+                    <img
+                      src={musicaAtual.musicaThumbnail}
+                      alt={musicaAtual.musicaTitulo}
+                      className="w-full h-full object-cover"
+                    />
                   </motion.div>
                 )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Music className="w-4 h-4 text-neon-cyan flex-shrink-0" />
+                    <span className="text-xs font-semibold text-neon-cyan uppercase">Tocando Agora</span>
+                    <EqualizerAnimation />
+                  </div>
+                  <h2 className="text-lg font-bold text-white truncate">{musicaAtual.musicaTitulo}</h2>
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <User className="w-3 h-3" />
+                    <span className="truncate">{musicaAtual.nomeCliente || 'Anônimo'}</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Music className="w-8 h-8 text-neon-purple" />
+                <div>
+                  <h2 className="text-lg font-bold gradient-text">
+                    {configs.NOME_ESTABELECIMENTO || 'Espeto Music'}
+                  </h2>
+                  <p className="text-sm text-gray-400">Aguardando músicas...</p>
+                </div>
+              </div>
+            )}
+          </div>
 
-                <h1 className="text-6xl md:text-9xl font-black mb-8 gradient-text drop-shadow-2xl animate-float">
-                  {configs.NOME_ESTABELECIMENTO || 'Espeto Music'}
-                </h1>
-
-                <motion.div
-                  className="glass-heavy rounded-2xl p-8 md:p-12 max-w-3xl mx-auto neon-border-glow mb-12"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                    className="inline-block mb-6"
-                  >
-                    <Music className="w-24 h-24 text-neon-purple" />
-                  </motion.div>
-                  <p className="text-3xl md:text-5xl text-white mb-4 font-bold">
-                    Aguardando músicas...
-                  </p>
-                  <p className="text-xl md:text-2xl text-gray-300">
-                    {configs.SLOGAN_ESTABELECIMENTO || 'Adicione músicas pelo celular para começar!'}
-                  </p>
-                </motion.div>
-
-                {/* QR Code Aprimorado */}
-                {qrCodeData && (
-                  <motion.div
-                    className="mt-12 glass-heavy rounded-2xl p-8 max-w-md mx-auto neon-border"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.6 }}
-                  >
-                    <p className="text-lg md:text-xl text-gray-300 mb-6 font-semibold">
-                      Escaneie para adicionar músicas
-                    </p>
-                    <motion.div
-                      className="relative"
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <img
-                        src={qrCodeData.qrCode}
-                        alt="QR Code"
-                        className="w-48 h-48 md:w-56 md:h-56 mx-auto rounded-xl shadow-2xl"
-                      />
-                      <div className="absolute inset-0 rounded-xl border-4 border-neon-cyan opacity-50 blur-sm animate-pulse" />
-                    </motion.div>
-                    <p className="text-sm text-gray-400 mt-6">
-                      {qrCodeData.url}
-                    </p>
-                  </motion.div>
-                )}
-              </motion.div>
-            </>
-          )}
-        </div>
-
-        {/* Footer - Stats e Logo */}
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 z-10 glass-heavy backdrop-blur-xl border-t border-white/10"
-          initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-            <div>
-              <p className="text-2xl font-black gradient-text">
-                {configs.NOME_ESTABELECIMENTO || 'Espeto Music'}
-              </p>
-              <p className="text-sm text-gray-400">
-                {configs.SLOGAN_ESTABELECIMENTO || 'Seu pedido, sua música!'}
-              </p>
+          {/* Conexão e Stats */}
+          <div className="flex items-center gap-4">
+            {/* Fila */}
+            <div className="text-center px-4 py-2 glass rounded-xl">
+              <div className="flex items-center gap-2 text-neon-cyan mb-1">
+                <Clock className="w-4 h-4" />
+                <span className="text-xl font-bold">{fila.length}</span>
+              </div>
+              <p className="text-xs text-gray-400 uppercase">Na Fila</p>
             </div>
 
-            <div className="flex items-center gap-8">
-              <div className="text-center">
-                <div className="flex items-center gap-2 text-neon-cyan mb-1">
-                  <TrendingUp className="w-5 h-5" />
-                  <span className="text-2xl font-bold">{fila.length}</span>
-                </div>
-                <p className="text-xs text-gray-400 uppercase tracking-wide">Na Fila</p>
-              </div>
-
-              {musicaAtual && (
-                <div className="text-center">
-                  <div className="flex items-center gap-2 text-neon-purple mb-1">
-                    <Music className="w-5 h-5" />
-                    <span className="text-2xl font-bold">1</span>
-                  </div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wide">Tocando</p>
-                </div>
+            {/* Status de conexão */}
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${isConnected ? 'bg-green-500/20 border-green-500' : 'bg-red-500/20 border-red-500'} border`}>
+              {isConnected ? (
+                <>
+                  <Wifi className="w-4 h-4 text-green-400" />
+                  <span className="text-xs font-medium text-green-400">Online</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-4 h-4 text-red-400" />
+                  <span className="text-xs font-medium text-red-400">Offline</span>
+                </>
               )}
             </div>
           </div>
-        </motion.div>
-      </div>
+        </div>
 
-      {/* Sidebar da Fila - Redesenhada e mais sofisticada */}
-      {fila.length > 0 && (
-        <motion.div
-          className="hidden xl:flex w-96 2xl:w-[28rem] glass-heavy border-l border-white/10 flex-col overflow-hidden"
-          initial={{ x: 400, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.6, type: 'spring' }}
-        >
-          {/* Header da fila */}
-          <div className="p-6 border-b border-white/10">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="bg-gradient-to-br from-neon-cyan to-neon-purple p-3 rounded-xl">
-                <Clock className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-black gradient-text">Próximas</h3>
-                <p className="text-sm text-gray-400">
-                  {fila.length} música{fila.length > 1 ? 's' : ''} aguardando
-                </p>
-              </div>
+        {/* Barra de progresso */}
+        {musicaAtual && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs font-mono text-gray-400 mb-2">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-neon-cyan to-neon-purple"
+                initial={{ width: '0%' }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.3 }}
+              />
             </div>
           </div>
+        )}
+      </div>
 
-          {/* Lista da fila */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-            <AnimatePresence>
-              {fila.map((musica, index) => (
-                <motion.div
-                  key={musica.id}
-                  className="glass rounded-xl p-4 hover:bg-white/5 transition-all group"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50, height: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Posição */}
-                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-neon-cyan to-neon-purple flex items-center justify-center font-black text-lg shadow-lg">
-                      {index + 1}
-                    </div>
+      {/* Player Area - Maior e centralizado */}
+      <div className="flex-1 flex items-center justify-center bg-black relative overflow-hidden min-h-0">
+        {/* Background */}
+        {configs.BACKGROUND_IMAGE_URL && (
+          <>
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url(${configs.BACKGROUND_IMAGE_URL})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                filter: 'blur(10px)',
+                transform: 'scale(1.1)'
+              }}
+            />
+            <div className="absolute inset-0 bg-black/70" />
+          </>
+        )}
 
-                    {/* Thumbnail (se disponível) */}
-                    {musica.musicaThumbnail && (
-                      <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden shadow-lg">
-                        <img
-                          src={musica.musicaThumbnail}
-                          alt={musica.musicaTitulo}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-white truncate leading-tight mb-2 group-hover:text-neon-cyan transition-colors">
-                        {musica.musicaTitulo}
-                      </p>
-                      <div className="flex items-center gap-2 mb-1">
-                        <User className="w-3 h-3 text-gray-400" />
-                        <p className="text-xs text-gray-400 truncate">
-                          {musica.nomeCliente || 'Anônimo'}
-                        </p>
-                      </div>
-                      {musica.musicaDuracao && (
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-3 h-3 text-gray-500" />
-                          <p className="text-xs text-gray-500 font-mono">
-                            {formatTime(musica.musicaDuracao)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+        {musicaAtual ? (
+          <div className="relative w-full h-full max-w-7xl mx-auto p-8">
+            <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border-4 border-neon-cyan/30">
+              <iframe
+                ref={videoRef}
+                src="/tv-player.html"
+                className="w-full h-full border-0"
+                allow="autoplay; fullscreen"
+                onLoad={() => {
+                  console.log('✅ Player da TV carregado');
+                  const iframeWindow = videoRef.current?.contentWindow;
+                  if (iframeWindow) {
+                    iframeWindow.postMessage({ type: 'host-ready' }, '*');
+                  }
+                }}
+              />
+            </div>
           </div>
-        </motion.div>
-      )}
+        ) : (
+          <>
+            {/* Vídeo de descanso */}
+            {configs.VIDEO_DESCANSO_ATIVO === 'true' && configs.VIDEO_DESCANSO_URL ? (
+              <video
+                ref={videoDescansoRef}
+                src={configs.VIDEO_DESCANSO_URL}
+                className="absolute inset-0 w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+                onError={(e) => {
+                  console.error('❌ Erro ao carregar vídeo de descanso:', e);
+                  if (videoDescansoRef.current) {
+                    videoDescansoRef.current.style.display = 'none';
+                  }
+                }}
+              />
+            ) : null}
+
+            {/* Tela de aguardo */}
+            <motion.div
+              className="text-center px-8 relative z-10"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              {configs.LOGO_URL ? (
+                <motion.img
+                  src={configs.LOGO_URL}
+                  alt="Logo"
+                  className="mx-auto mb-8 max-w-md max-h-48 object-contain drop-shadow-2xl"
+                  animate={{ y: [0, -20, 0] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                />
+              ) : (
+                <Music className="w-40 h-40 mx-auto text-neon-cyan mb-8" />
+              )}
+
+              <h1 className="text-7xl font-black mb-6 gradient-text">
+                {configs.NOME_ESTABELECIMENTO || 'Espeto Music'}
+              </h1>
+
+              <motion.div
+                className="glass-heavy rounded-2xl p-8 max-w-2xl mx-auto neon-border mb-8"
+                animate={{ scale: [1, 1.02, 1] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                <Music className="w-20 h-20 mx-auto text-neon-purple mb-4" />
+                <p className="text-3xl text-white mb-2 font-bold">Aguardando músicas...</p>
+                <p className="text-xl text-gray-300">
+                  {configs.SLOGAN_ESTABELECIMENTO || 'Escaneie o QR Code para adicionar!'}
+                </p>
+              </motion.div>
+
+              {/* QR Code */}
+              {qrCodeData && (
+                <motion.div
+                  className="glass-heavy rounded-2xl p-6 max-w-sm mx-auto neon-border"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <p className="text-lg text-gray-300 mb-4 font-semibold">Escaneie para adicionar</p>
+                  <img
+                    src={qrCodeData.qrCode}
+                    alt="QR Code"
+                    className="w-48 h-48 mx-auto rounded-xl shadow-2xl"
+                  />
+                </motion.div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </div>
+
+      {/* Footer - Controles SEMPRE VISÍVEIS para navegação por controle remoto */}
+      <div className="flex-shrink-0 glass-heavy backdrop-blur-xl border-t border-white/10 p-6">
+        <div className="flex items-center justify-center gap-6">
+          {/* Play/Pause */}
+          <motion.button
+            onClick={handlePlayPause}
+            className={`p-8 rounded-2xl transition-all ${
+              focusedButton === 0
+                ? 'bg-gradient-to-r from-neon-cyan to-neon-purple shadow-[0_0_30px_rgba(0,245,255,0.6)] scale-110'
+                : 'bg-white/10 hover:bg-white/20'
+            }`}
+            whileHover={{ scale: focusedButton === 0 ? 1.1 : 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            disabled={!musicaAtual}
+          >
+            {estadoPlayer?.status === 'playing' ? (
+              <Pause className="w-12 h-12" />
+            ) : (
+              <Play className="w-12 h-12" />
+            )}
+          </motion.button>
+
+          {/* Skip */}
+          <motion.button
+            onClick={handleSkip}
+            className={`p-8 rounded-2xl transition-all ${
+              focusedButton === 1
+                ? 'bg-gradient-to-r from-neon-cyan to-neon-purple shadow-[0_0_30px_rgba(0,245,255,0.6)] scale-110'
+                : 'bg-white/10 hover:bg-white/20'
+            }`}
+            whileHover={{ scale: focusedButton === 1 ? 1.1 : 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            disabled={!musicaAtual}
+          >
+            <SkipForward className="w-12 h-12" />
+          </motion.button>
+
+          {/* Divisor */}
+          <div className="w-px h-16 bg-white/20 mx-4" />
+
+          {/* Volume Down */}
+          <motion.button
+            onClick={handleVolumeDown}
+            className={`p-6 rounded-2xl transition-all ${
+              focusedButton === 2
+                ? 'bg-gradient-to-r from-neon-cyan to-neon-purple shadow-[0_0_30px_rgba(0,245,255,0.6)] scale-110'
+                : 'bg-white/10 hover:bg-white/20'
+            }`}
+            whileHover={{ scale: focusedButton === 2 ? 1.1 : 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <div className="text-3xl font-bold">-</div>
+          </motion.button>
+
+          {/* Volume Display */}
+          <div className="flex flex-col items-center gap-2">
+            <Volume2 className="w-8 h-8 text-neon-cyan" />
+            <div className="text-2xl font-bold font-mono">{volume}%</div>
+          </div>
+
+          {/* Volume Up */}
+          <motion.button
+            onClick={handleVolumeUp}
+            className={`p-6 rounded-2xl transition-all ${
+              focusedButton === 3
+                ? 'bg-gradient-to-r from-neon-cyan to-neon-purple shadow-[0_0_30px_rgba(0,245,255,0.6)] scale-110'
+                : 'bg-white/10 hover:bg-white/20'
+            }`}
+            whileHover={{ scale: focusedButton === 3 ? 1.1 : 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <div className="text-3xl font-bold">+</div>
+          </motion.button>
+
+          {/* Divisor */}
+          <div className="w-px h-16 bg-white/20 mx-4" />
+
+          {/* Mute */}
+          <motion.button
+            onClick={handleToggleMute}
+            className={`p-6 rounded-2xl transition-all ${
+              focusedButton === 4
+                ? 'bg-gradient-to-r from-neon-cyan to-neon-purple shadow-[0_0_30px_rgba(0,245,255,0.6)] scale-110'
+                : 'bg-white/10 hover:bg-white/20'
+            }`}
+            whileHover={{ scale: focusedButton === 4 ? 1.1 : 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            {muted ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />}
+          </motion.button>
+        </div>
+
+        {/* Dica de navegação */}
+        <motion.p
+          className="text-center text-sm text-gray-400 mt-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          Use as setas ← → do controle remoto para navegar • Enter ou OK para selecionar
+        </motion.p>
+      </div>
     </div>
   );
 }
