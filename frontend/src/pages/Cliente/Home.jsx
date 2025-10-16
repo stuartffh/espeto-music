@@ -132,16 +132,11 @@ function Home() {
   };
 
   const handleEscolherMusica = async (musica) => {
-    if (!nomeCliente.trim()) {
-      setShowNomeModal(true);
-      return;
-    }
-
     setAdicionando(true);
 
     try {
       const pedido = await criarPedidoMusica({
-        nomeCliente: nomeCliente.trim(),
+        nomeCliente: 'Anônimo', // Nome padrão, será alterado no pagamento
         musicaTitulo: musica.titulo,
         musicaYoutubeId: musica.id,
         musicaThumbnail: musica.thumbnail,
@@ -149,6 +144,13 @@ function Home() {
       });
 
       if (modoGratuito) {
+        // Modo gratuito: pedir nome antes de adicionar
+        if (!nomeCliente.trim()) {
+          setPedidoPendente(pedido.data);
+          setShowNomeModal(true);
+          return;
+        }
+
         setShowConfetti(true);
         showToast('Música adicionada à fila com sucesso! 🎵', 'success');
         await buscarFila().then(res => setFila(res.data));
@@ -156,6 +158,7 @@ function Home() {
         setResultados([]);
         setCategoriaAtiva(null);
       } else {
+        // Modo pago: guardar pedido e ir para pagamento
         setPedidoPendente(pedido.data);
         setShowPaymentModal(true);
       }
@@ -386,15 +389,45 @@ function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Coluna Principal */}
           <div className="lg:col-span-2 space-y-6 md:space-y-8">
-            {/* Campo Nome */}
-            <Card variant="glass">
-              <Input
-                icon={User}
-                value={nomeCliente}
-                onChange={(e) => setNomeCliente(e.target.value)}
-                placeholder="Digite seu nome..."
-              />
-            </Card>
+            {/* Banner Explicativo - Como Funciona */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <Card variant="glass" className="border-2 border-neon-cyan/30">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 bg-gradient-to-br from-neon-cyan to-neon-purple p-3 rounded-xl">
+                    <Info className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold gradient-text mb-2">
+                      Como funciona?
+                    </h3>
+                    <ol className="space-y-2 text-sm text-gray-300">
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-cyan/20 text-neon-cyan flex items-center justify-center text-xs font-bold">1</span>
+                        <span>Busque pela música que deseja ouvir</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-purple/20 text-neon-purple flex items-center justify-center text-xs font-bold">2</span>
+                        <span>{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-pink/20 text-neon-pink flex items-center justify-center text-xs font-bold">3</span>
+                        <span>{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
+                      </li>
+                      {!modoGratuito && (
+                        <li className="flex items-start gap-2">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-green/20 text-neon-green flex items-center justify-center text-xs font-bold">4</span>
+                          <span>Após o pagamento, digite seu nome e aproveite!</span>
+                        </li>
+                      )}
+                    </ol>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
 
             {/* Busca */}
             <form onSubmit={handleBuscar} className="space-y-2 sm:space-y-0">

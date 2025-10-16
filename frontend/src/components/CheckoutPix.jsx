@@ -13,6 +13,7 @@ import Input from './ui/Input';
  * sem redirecionar para o Mercado Pago
  */
 function CheckoutPix({ pedido, onClose, onSuccess }) {
+  const [nome, setNome] = useState(pedido.nomeCliente || '');
   const [cpf, setCpf] = useState('');
   const [gerando, setGerando] = useState(false);
   const [pagamento, setPagamento] = useState(null);
@@ -50,15 +51,23 @@ function CheckoutPix({ pedido, onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErro('');
+
+    // Validar nome
+    if (!nome.trim()) {
+      setErro('Por favor, digite seu nome');
+      return;
+    }
+
     setGerando(true);
 
     try {
       console.log('🛒 [CHECKOUT] Criando pagamento PIX...');
       console.log('📋 Pedido:', pedido);
+      console.log('👤 Nome:', nome.trim());
       console.log('🆔 CPF:', cpf || 'Não fornecido');
 
       const dadosPagador = {
-        nome: pedido.nomeCliente,
+        nome: nome.trim(),
       };
 
       // Adicionar CPF apenas se fornecido
@@ -159,11 +168,21 @@ function CheckoutPix({ pedido, onClose, onSuccess }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Seu Nome
+                  <label htmlFor="nome" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Seu Nome <span className="text-red-500">*</span>
                   </label>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    👤 {pedido.nomeCliente}
+                  <Input
+                    id="nome"
+                    type="text"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    placeholder="Digite seu nome..."
+                    required
+                    className="w-full"
+                    autoFocus
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Seu nome aparecerá na tela da TV quando sua música tocar
                   </p>
                 </div>
 
