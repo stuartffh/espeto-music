@@ -58,10 +58,10 @@ async function main() {
 
     // ========== CONFIGURAÇÕES DA FILA ==========
     {
-      chave: 'MODO_FILA',
-      valor: 'gratuito',
-      descricao: 'Modo de operação da fila (gratuito ou pago)',
-      tipo: 'text'
+      chave: 'modo_gratuito',
+      valor: 'false',
+      descricao: 'Modo de operação: true = gratuito (sem pagamento), false = pago (requer pagamento PIX ou gift card)',
+      tipo: 'boolean'
     },
     {
       chave: 'MAX_MUSICAS_FILA',
