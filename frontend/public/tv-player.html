@@ -398,6 +398,11 @@
                 this.autoplayConsent = this.loadAutoplayConsent();
                 this.smartTVEnvironment = this.detectSmartTVEnvironment();
 
+                // Configuração: usar YouTube embed direto (true) ou download local (false)
+                // YouTube embed = sem download, qualidade automática, instantâneo
+                // Download local = armazena vídeo, controle total, sem dependência do YouTube
+                this.useYouTubeEmbed = true; // ALTERE PARA false PARA USAR DOWNLOAD LOCAL
+
                 this.init();
             }
 
@@ -1059,6 +1064,44 @@
                 }
             }
 
+            loadYouTubeEmbed(youtubeId, musica = {}) {
+                console.log('🎬 Carregando YouTube embed:', youtubeId);
+                console.log('📋 Música:', musica.titulo || 'Sem título');
+
+                this.hideInteractionPrompt();
+                this.errorMessage.classList.remove('visible');
+                this.hideLoading();
+
+                // Substituir elemento de vídeo por iframe do YouTube
+                const container = document.getElementById('player-container');
+                const oldVideo = this.video;
+
+                // Criar iframe do YouTube
+                const iframe = document.createElement('iframe');
+                iframe.id = 'youtube-player';
+                iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1&origin=${window.location.origin}`;
+                iframe.width = '100%';
+                iframe.height = '100%';
+                iframe.style.border = 'none';
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                iframe.allowFullscreen = true;
+
+                // Substituir vídeo pelo iframe
+                container.replaceChild(iframe, oldVideo);
+
+                console.log('✅ YouTube embed carregado com sucesso');
+                console.log('🎵 Música tocando via YouTube direto (qualidade automática)');
+
+                // Notificar parent que o vídeo iniciou
+                window.parent.postMessage({
+                    type: 'video-started',
+                    youtubeId: youtubeId,
+                    musica: musica
+                }, '*');
+            }
+
             loadMP4(url) {
                 this.setNativeSource(url, 'video/mp4');
                 this.autoStartAfterSource();
@@ -1215,7 +1258,18 @@
                         player.updateAutoplayConsent(e.data.autoplayConsent, { persist: false, notify: true });
                     }
 
-                    player.loadVideo(e.data.url, e.data.format || 'auto');
+                    // Decidir entre YouTube embed ou download local
+                    if (player.useYouTubeEmbed && e.data.youtubeId) {
+                        console.log('🎬 Usando YouTube embed direto (sem download)');
+                        console.log('🆔 YouTube ID:', e.data.youtubeId);
+                        player.loadYouTubeEmbed(e.data.youtubeId, e.data.musica);
+                    } else if (e.data.streamUrl) {
+                        console.log('💾 Usando stream local (com download)');
+                        console.log('📡 Stream URL:', e.data.streamUrl);
+                        player.loadVideo(e.data.streamUrl, e.data.format || 'auto');
+                    } else {
+                        console.error('❌ Nem youtubeId nem streamUrl fornecidos');
+                    }
                     break;
                 case 'host-ready':
                     player.notifyPlayerReady();

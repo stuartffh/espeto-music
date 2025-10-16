@@ -450,14 +450,20 @@ function Panel() {
       return;
     }
 
-    const videoUrl = `${API_URL}/api/stream/video/${musica.musicaYoutubeId}`;
-    console.log('🎵 Enviando vídeo para o player:', videoUrl);
+    // Enviar YouTube ID diretamente para o player decidir como tocar
+    // O player pode usar YouTube embed (sem download) ou stream local (com download)
+    console.log('🎵 Enviando música para o player:', musica.musicaTitulo);
+    console.log('🆔 YouTube ID:', musica.musicaYoutubeId);
 
     iframeWindow.postMessage({
       type: 'load-video',
-      url: videoUrl,
-      format: 'mp4',
-      autoplayConsent
+      youtubeId: musica.musicaYoutubeId,
+      streamUrl: `${API_URL}/api/stream/video/${musica.musicaYoutubeId}`,
+      autoplayConsent,
+      musica: {
+        titulo: musica.musicaTitulo,
+        cliente: musica.nomeCliente
+      }
     }, '*');
   }, [autoplayConsent]);
 
