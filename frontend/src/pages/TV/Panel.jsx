@@ -211,7 +211,8 @@ function Panel() {
     // Buscar fila inicial
     api.get('/api/musicas/fila')
       .then(res => {
-        const filaFiltrada = res.data.filter(m => m.status !== 'tocando');
+        // Filtrar músicas que não estão tocando E não são a música atual
+        const filaFiltrada = res.data.filter(m => m.status === 'pendente');
         console.log('📋 Fila:', filaFiltrada.length, 'músicas');
         setFila(filaFiltrada);
       })
@@ -275,7 +276,8 @@ function Panel() {
     // ========== EVENTOS DA FILA ==========
 
     const handleFilaAtualizada = (novaFila) => {
-      const filaFiltrada = novaFila.filter(m => m.status !== 'tocando');
+      // Mostrar apenas músicas pendentes (não tocando e não tocada)
+      const filaFiltrada = novaFila.filter(m => m.status === 'pendente');
       console.log('📋 Fila atualizada:', filaFiltrada.length, 'músicas');
       setFila(filaFiltrada);
     };
@@ -316,6 +318,45 @@ function Panel() {
     };
   }, []);
 
+  // Função para alternar fullscreen
+  const toggleFullscreen = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    try {
+      if (!document.fullscreenElement &&
+          !document.webkitFullscreenElement &&
+          !document.mozFullScreenElement &&
+          !document.msFullscreenElement) {
+        // Entrar em fullscreen
+        if (container.requestFullscreen) {
+          container.requestFullscreen();
+        } else if (container.webkitRequestFullscreen) {
+          container.webkitRequestFullscreen();
+        } else if (container.mozRequestFullScreen) {
+          container.mozRequestFullScreen();
+        } else if (container.msRequestFullscreen) {
+          container.msRequestFullscreen();
+        }
+        console.log('🖥️ Entrando em fullscreen');
+      } else {
+        // Sair de fullscreen
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+        console.log('🖥️ Saindo de fullscreen');
+      }
+    } catch (err) {
+      console.error('Erro ao alternar fullscreen:', err);
+    }
+  }, []);
+
   useEffect(() => {
     const messageHandler = (event) => {
       const { type, autoplayConsent: consentValue } = event.data || {};
@@ -346,6 +387,45 @@ function Panel() {
             setDuration(event.data.duration);
           }
           break;
+        case 'toggle-fullscreen':
+          toggleFullscreen();
+          break;
+        case 'set-volume':
+          // Repassar comando de volume para o iframe
+          if (videoRef.current?.contentWindow && event.data.volume !== undefined) {
+            videoRef.current.contentWindow.postMessage({
+              type: 'set-volume',
+              volume: event.data.volume
+            }, '*');
+          }
+          break;
+        case 'set-muted':
+          // Repassar comando de mute para o iframe
+          if (videoRef.current?.contentWindow && event.data.muted !== undefined) {
+            videoRef.current.contentWindow.postMessage({
+              type: 'set-muted',
+              muted: event.data.muted
+            }, '*');
+          }
+          break;
+        case 'play':
+          // Repassar comando de play para o iframe
+          if (videoRef.current?.contentWindow) {
+            videoRef.current.contentWindow.postMessage({ type: 'play' }, '*');
+          }
+          break;
+        case 'pause':
+          // Repassar comando de pause para o iframe
+          if (videoRef.current?.contentWindow) {
+            videoRef.current.contentWindow.postMessage({ type: 'pause' }, '*');
+          }
+          break;
+        case 'stop':
+          // Repassar comando de stop para o iframe
+          if (videoRef.current?.contentWindow) {
+            videoRef.current.contentWindow.postMessage({ type: 'stop' }, '*');
+          }
+          break;
         default:
           break;
       }
@@ -356,7 +436,7 @@ function Panel() {
     return () => {
       window.removeEventListener('message', messageHandler);
     };
-  }, [handleVideoEnd]);
+  }, [handleVideoEnd, toggleFullscreen]);
 
   const sendVideoToIframe = useCallback((musica) => {
     if (!musica) {

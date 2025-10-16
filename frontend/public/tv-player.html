@@ -500,7 +500,8 @@
             }
 
             setAutoplayMutedState() {
-                if (this.autoplayConsent) {
+                // Para Smart TVs, sempre tentar com som primeiro
+                if (this.smartTVEnvironment || this.autoplayConsent) {
                     this.video.muted = false;
                     this.video.removeAttribute('muted');
                 } else {
@@ -1221,6 +1222,27 @@
                     break;
                 case 'set-autoplay-consent':
                     player.updateAutoplayConsent(e.data.value, { persist: true, notify: true });
+                    break;
+                case 'play':
+                    player.video.play().catch(e => console.error('Erro ao reproduzir:', e));
+                    break;
+                case 'pause':
+                    player.video.pause();
+                    break;
+                case 'stop':
+                    player.video.pause();
+                    player.video.currentTime = 0;
+                    break;
+                case 'set-volume':
+                    if (typeof e.data.volume === 'number') {
+                        player.setVolume(e.data.volume);
+                    }
+                    break;
+                case 'set-muted':
+                    if (typeof e.data.muted === 'boolean') {
+                        player.video.muted = e.data.muted;
+                        player.updateVolumeDisplay();
+                    }
                     break;
                 default:
                     break;
