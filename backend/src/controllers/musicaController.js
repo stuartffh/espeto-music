@@ -83,7 +83,7 @@ async function criar(req, res) {
     const prisma = require('../config/database');
     const [configPreco, configModoGratuito, configTempoMaximo] = await Promise.all([
       prisma.configuracao.findUnique({ where: { chave: 'PRECO_MUSICA' } }),
-      prisma.configuracao.findUnique({ where: { chave: 'MODO_GRATUITO' } }),
+      prisma.configuracao.findUnique({ where: { chave: 'modo_gratuito' } }),
       prisma.configuracao.findUnique({ where: { chave: 'TEMPO_MAXIMO_MUSICA' } }),
     ]);
 
