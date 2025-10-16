@@ -22,6 +22,16 @@ export const criarPagamentoPix = (pedidoId, dadosPagador) => api.post('/pagament
   ...dadosPagador
 });
 
+// Carrinho
+export const carrinho = {
+  listar: () => api.get('/carrinho'),
+  adicionar: (musica) => api.post('/carrinho', musica),
+  remover: (youtubeId) => api.delete(`/carrinho/${youtubeId}`),
+  limpar: () => api.delete('/carrinho'),
+  definirNome: (nomeCliente) => api.patch('/carrinho/nome', { nomeCliente }),
+  finalizar: (dadosPagador) => api.post('/pagamentos/carrinho', dadosPagador),
+};
+
 // Gift Cards (Public)
 export const validarGiftCard = (codigo) => api.get(`/public/gifts/validar/${codigo}`);
 export const usarGiftCard = (codigo, pedidoMusicaId, nomeCliente) =>

@@ -23,6 +23,9 @@ import QueueItem from '../../components/QueueItem';
 import CategoryCard from '../../components/CategoryCard';
 import ConfettiEffect from '../../components/ConfettiEffect';
 import CheckoutPix from '../../components/CheckoutPix';
+import CarrinhoModal from '../../components/CarrinhoModal';
+import CarrinhoButton from '../../components/CarrinhoButton';
+import useCarrinhoStore from '../../store/carrinhoStore';
 
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useToast } from '../../hooks/useToast';
@@ -53,6 +56,7 @@ function Home() {
 
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { toast, showToast, hideToast } = useToast();
+  const { adicionarMusica, carregarCarrinho } = useCarrinhoStore();
 
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -85,11 +89,14 @@ function Home() {
       buscarFila().then(res => setFila(res.data)).catch(console.error);
     });
 
+    // Carregar carrinho ao iniciar
+    carregarCarrinho();
+
     return () => {
       socket.off('fila:atualizada');
       socket.off('pedido:pago');
     };
-  }, [setFila]);
+  }, [setFila, carregarCarrinho]);
 
   const handleBuscar = async (e) => {
     e.preventDefault();
@@ -208,6 +215,33 @@ function Home() {
       showToast(error.response?.data?.erro || 'Erro ao usar gift card', 'error');
     } finally {
       setUsandoGift(false);
+    }
+  };
+
+  const handleAdicionarAoCarrinho = async (musica) => {
+    // Buscar preço da música
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    let preco = 5.0; // Padrão
+
+    try {
+      const configResponse = await axios.get(`${API_URL}/api/public/config/PRECO_MUSICA`);
+      preco = parseFloat(configResponse.data.valor) || 5.0;
+    } catch (error) {
+      console.error('Erro ao buscar preço:', error);
+    }
+
+    const resultado = await adicionarMusica({
+      titulo: musica.titulo,
+      youtubeId: musica.id,
+      thumbnail: musica.thumbnail,
+      duracao: musica.duracao || null,
+      valor: preco,
+    });
+
+    if (resultado.success) {
+      showToast('Música adicionada ao carrinho! 🛒', 'success');
+    } else {
+      showToast(resultado.error || 'Erro ao adicionar música ao carrinho', 'error');
     }
   };
 
@@ -432,6 +466,8 @@ function Home() {
                         <MusicCard
                           musica={musica}
                           onAdd={() => handleEscolherMusica(musica)}
+                          onAddToCart={!modoGratuito ? () => handleAdicionarAoCarrinho(musica) : null}
+                          showCartButton={!modoGratuito}
                           loading={adicionando}
                         />
                       </motion.div>
@@ -686,6 +722,12 @@ function Home() {
             }}
           />
         )}
+
+        {/* Carrinho Modal */}
+        <CarrinhoModal />
+
+        {/* Botão Flutuante do Carrinho */}
+        <CarrinhoButton />
       </div>
     </div>
   );

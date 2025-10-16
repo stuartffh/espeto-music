@@ -162,7 +162,13 @@ async function webhook(req, res) {
         io.emit('fila:atualizada', fila);
 
         if (resultado.paymentInfo?.status === 'approved') {
-          io.emit('pedido:pago', { pedidoId: resultado.pedido.id });
+          // Emitir evento com pedidoId e pagamentoId
+          const eventData = {
+            pedidoId: resultado.pedido.id,
+            pagamentoId: resultado.pedido.pagamento?.id || resultado.pedido.pagamentoCarrinho?.id
+          };
+          io.emit('pedido:pago', eventData);
+          console.log('📡 [WEBHOOK] Evento pedido:pago emitido:', eventData);
         }
       }
     }

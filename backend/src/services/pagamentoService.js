@@ -250,36 +250,85 @@ async function processarWebhook(data) {
       console.log('   ═════════════════════════════════════════════════════');
       console.log('📋 Pedido ID:', pedidoId);
       console.log('💰 Valor:', paymentInfo.transaction_amount);
-      console.log('🎵 Atualizando status para "pago"...');
 
-      pedidoAtualizado = await prisma.pedidoMusica.update({
-        where: { id: pedidoId },
-        data: { status: 'pago' },
-        include: {
-          pagamento: true,
-        },
-      });
+      // Verificar se é pagamento de carrinho (múltiplas músicas)
+      if (pedido.pagamentoCarrinhoId) {
+        console.log('🛒 Pagamento de carrinho detectado!');
+        console.log('💳 Pagamento ID:', pedido.pagamentoCarrinhoId);
 
-      console.log('✅ [WEBHOOK SERVICE] Pedido atualizado com sucesso!');
-      console.log('═════════════════════════════════════════════════════\n');
+        // Buscar todos os pedidos deste carrinho
+        const todosPedidos = await prisma.pedidoMusica.findMany({
+          where: { pagamentoCarrinhoId: pedido.pagamentoCarrinhoId },
+          include: { pagamentoCarrinho: true },
+        });
 
-      const outraMusicaTocando = await prisma.pedidoMusica.findFirst({
-        where: {
-          status: 'tocando',
-          id: { not: pedidoId },
-        },
-      });
+        console.log(`🎵 Atualizando ${todosPedidos.length} pedidos para "pago"...`);
 
-      if (!outraMusicaTocando) {
+        // Atualizar todos os pedidos para "pago"
+        for (const pedidoCarrinho of todosPedidos) {
+          await prisma.pedidoMusica.update({
+            where: { id: pedidoCarrinho.id },
+            data: { status: 'pago' },
+          });
+          console.log(`✅ Pedido atualizado: ${pedidoCarrinho.musicaTitulo}`);
+        }
+
+        pedidoAtualizado = todosPedidos[0]; // Retornar primeiro pedido
+
+        console.log('✅ [WEBHOOK SERVICE] Todos os pedidos do carrinho atualizados!');
+        console.log('═════════════════════════════════════════════════════\n');
+
+        // Verificar se deve iniciar primeira música
+        const outraMusicaTocando = await prisma.pedidoMusica.findFirst({
+          where: {
+            status: 'tocando',
+          },
+        });
+
+        if (!outraMusicaTocando) {
+          pedidoAtualizado = await prisma.pedidoMusica.update({
+            where: { id: todosPedidos[0].id },
+            data: { status: 'tocando' },
+            include: {
+              pagamentoCarrinho: true,
+            },
+          });
+          deveIniciarReproducao = true;
+          console.log('🎵 Primeira música do carrinho iniciada automaticamente:', todosPedidos[0].id);
+        }
+      } else {
+        // Pagamento unitário
+        console.log('🎵 Atualizando status para "pago"...');
+
         pedidoAtualizado = await prisma.pedidoMusica.update({
           where: { id: pedidoId },
-          data: { status: 'tocando' },
+          data: { status: 'pago' },
           include: {
             pagamento: true,
           },
         });
-        deveIniciarReproducao = true;
-        console.log('🎵 Música iniciada automaticamente:', pedidoId);
+
+        console.log('✅ [WEBHOOK SERVICE] Pedido atualizado com sucesso!');
+        console.log('═════════════════════════════════════════════════════\n');
+
+        const outraMusicaTocando = await prisma.pedidoMusica.findFirst({
+          where: {
+            status: 'tocando',
+            id: { not: pedidoId },
+          },
+        });
+
+        if (!outraMusicaTocando) {
+          pedidoAtualizado = await prisma.pedidoMusica.update({
+            where: { id: pedidoId },
+            data: { status: 'tocando' },
+            include: {
+              pagamento: true,
+            },
+          });
+          deveIniciarReproducao = true;
+          console.log('🎵 Música iniciada automaticamente:', pedidoId);
+        }
       }
     } else if (paymentInfo.status === 'rejected' || paymentInfo.status === 'cancelled') {
       pedidoAtualizado = await prisma.pedidoMusica.update({
