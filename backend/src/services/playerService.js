@@ -72,6 +72,35 @@ async function recuperarEstado() {
         console.log('🎵 Recuperando música:', musicaAtual.musicaTitulo);
         console.log('⏱️  Tempo salvo:', Math.floor(estadoSalvo.tempoAtual), 'segundos');
 
+        // VALIDAÇÃO CRÍTICA: Verificar se o arquivo de vídeo existe
+        const downloadService = require('./downloadService');
+        const videoExiste = downloadService.videoExiste(musicaAtual.musicaYoutubeId);
+
+        if (!videoExiste) {
+          console.warn('⚠️  ERRO: Arquivo de vídeo não encontrado para música em reprodução!');
+          console.warn(`   YouTube ID: ${musicaAtual.musicaYoutubeId}`);
+          console.warn(`   Caminho esperado: ${downloadService.getVideoPath(musicaAtual.musicaYoutubeId)}`);
+          console.warn('   Possível causa: Deploy/reinício deletou arquivos temporários');
+          console.warn('   Ação: Marcando música como concluída e buscando próxima...');
+
+          // Marcar como concluída e buscar próxima
+          const musicaService = require('./musicaService');
+          const proximaMusica = await musicaService.concluirMusica(musicaAtual.id);
+
+          if (proximaMusica) {
+            console.log('✅ Próxima música encontrada, iniciando:', proximaMusica.musicaTitulo);
+            // Iniciar próxima música (que fará download se necessário)
+            await limparEstado();
+            const playerService = require('./playerService');
+            await playerService.iniciarMusica(proximaMusica);
+          } else {
+            console.log('ℹ️  Nenhuma música na fila, parando player');
+            await limparEstado();
+          }
+
+          return;
+        }
+
         estadoMemoria = {
           musicaAtual,
           status: estadoSalvo.status,
@@ -83,6 +112,7 @@ async function recuperarEstado() {
         // Se estava tocando, retomar
         if (estadoSalvo.status === 'playing') {
           console.log('▶️ Retomando reprodução automaticamente...');
+          console.log('✅ Arquivo de vídeo verificado e disponível');
           iniciarSincronizacao();
           iniciarBackup();
 
@@ -177,6 +207,37 @@ function pararBackup() {
  */
 async function iniciarMusica(musica) {
   console.log('▶️ Player: Iniciando música', musica.musicaTitulo);
+
+  // VALIDAÇÃO: Verificar se o arquivo de vídeo existe antes de iniciar
+  const downloadService = require('./downloadService');
+  const videoExiste = downloadService.videoExiste(musica.musicaYoutubeId);
+
+  if (!videoExiste) {
+    console.warn('⚠️  Arquivo de vídeo não encontrado, iniciando download...');
+    console.log(`   YouTube ID: ${musica.musicaYoutubeId}`);
+
+    try {
+      // Fazer download antes de iniciar reprodução
+      await downloadService.baixarVideo(musica.musicaYoutubeId);
+      console.log('✅ Download completo, iniciando reprodução...');
+    } catch (error) {
+      console.error('❌ Falha no download do vídeo:', error.message);
+      console.error('   Pulando para próxima música...');
+
+      // Marcar como concluída (falhou) e tentar próxima
+      const musicaService = require('./musicaService');
+      const proximaMusica = await musicaService.concluirMusica(musica.id);
+
+      if (proximaMusica) {
+        return await iniciarMusica(proximaMusica);
+      } else {
+        console.log('ℹ️  Nenhuma música na fila');
+        return await parar();
+      }
+    }
+  } else {
+    console.log('✅ Arquivo de vídeo disponível no cache');
+  }
 
   estadoMemoria = {
     musicaAtual: musica,
@@ -276,12 +337,30 @@ async function pularMusica() {
   console.log('⏭️ Player: Pulando música');
 
   const musicaService = require('./musicaService');
+  const downloadService = require('./downloadService');
 
   if (estadoMemoria.musicaAtual) {
+    const musicaPulada = estadoMemoria.musicaAtual;
     const proximaMusica = await musicaService.pularMusica(estadoMemoria.musicaAtual.id);
 
     pararSincronizacao();
     pararBackup();
+
+    // Agendar limpeza do arquivo de vídeo após 1 minuto (música pulada também)
+    if (musicaPulada.musicaYoutubeId) {
+      console.log(`🗑️  Agendando limpeza do vídeo pulado ${musicaPulada.musicaTitulo} em 1 minuto...`);
+
+      setTimeout(async () => {
+        try {
+          const deleted = await downloadService.deletarVideo(musicaPulada.musicaYoutubeId);
+          if (deleted) {
+            console.log(`✅ Vídeo pulado limpo: ${musicaPulada.musicaTitulo}`);
+          }
+        } catch (error) {
+          console.error('❌ Erro ao limpar vídeo pulado:', error);
+        }
+      }, 60000);
+    }
 
     if (proximaMusica) {
       return await iniciarMusica(proximaMusica);
@@ -300,12 +379,32 @@ async function musicaTerminou() {
   console.log('🎵 Player: Música terminou');
 
   const musicaService = require('./musicaService');
+  const downloadService = require('./downloadService');
 
   if (estadoMemoria.musicaAtual) {
+    const musicaConcluida = estadoMemoria.musicaAtual;
     const proximaMusica = await musicaService.concluirMusica(estadoMemoria.musicaAtual.id);
 
     pararSincronizacao();
     pararBackup();
+
+    // Agendar limpeza do arquivo de vídeo após 1 minuto
+    if (musicaConcluida.musicaYoutubeId) {
+      console.log(`🗑️  Agendando limpeza do vídeo ${musicaConcluida.musicaTitulo} em 1 minuto...`);
+
+      setTimeout(async () => {
+        try {
+          const deleted = await downloadService.deletarVideo(musicaConcluida.musicaYoutubeId);
+          if (deleted) {
+            const videoPath = downloadService.getVideoPath(musicaConcluida.musicaYoutubeId);
+            console.log(`✅ Vídeo limpo após reprodução: ${musicaConcluida.musicaTitulo}`);
+            console.log(`   Caminho: ${videoPath}`);
+          }
+        } catch (error) {
+          console.error('❌ Erro ao limpar vídeo após reprodução:', error);
+        }
+      }, 60000); // 60 segundos = 1 minuto
+    }
 
     if (proximaMusica) {
       return await iniciarMusica(proximaMusica);
