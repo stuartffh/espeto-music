@@ -87,6 +87,9 @@ async function criarPagamentoPix({
   nomePagador,
 }) {
   try {
+    console.log('🟣 [MP CONFIG] Iniciando criarPagamentoPix');
+    console.log('🟣 [MP CONFIG] Access Token configurado:', process.env.MERCADOPAGO_ACCESS_TOKEN ? 'SIM (primeiros 20 chars: ' + process.env.MERCADOPAGO_ACCESS_TOKEN.substring(0, 20) + '...)' : 'NÃO');
+
     // Data de expiração: 15 dias a partir de agora
     const expirationDate = new Date();
     expirationDate.setDate(expirationDate.getDate() + 15);
@@ -96,7 +99,7 @@ async function criarPagamentoPix({
       description: descricao || titulo,
       payment_method_id: 'pix',
       external_reference: pedidoId,
-      notification_url: `${process.env.BASE_URL || 'http://localhost:3000'}/api/webhooks/mercadopago`,
+      notification_url: `${process.env.BASE_URL || 'http://localhost:3000'}/api/webhooks/mercadopago',
       date_of_expiration: expirationDate.toISOString(),
       payer: {
         email: emailPagador || 'cliente@espeto.music',
@@ -108,7 +111,8 @@ async function criarPagamentoPix({
       },
     };
 
-    console.log('🔄 Criando pagamento PIX:', JSON.stringify(paymentData, null, 2));
+    console.log('🟣 [MP CONFIG] Payload para Mercado Pago:', JSON.stringify(paymentData, null, 2));
+    console.log('🟣 [MP CONFIG] Chamando payment.create()...');
 
     const response = await payment.create({
       body: paymentData,
@@ -117,7 +121,10 @@ async function criarPagamentoPix({
       },
     });
 
-    console.log('✅ Pagamento PIX criado:', response.id);
+    console.log('✅ [MP CONFIG] Pagamento PIX criado com sucesso!');
+    console.log('✅ [MP CONFIG] Payment ID:', response.id);
+    console.log('✅ [MP CONFIG] Status:', response.status);
+    console.log('✅ [MP CONFIG] QR Code disponível:', !!response.point_of_interaction?.transaction_data?.qr_code);
 
     return {
       id: response.id,
@@ -128,8 +135,18 @@ async function criarPagamentoPix({
       transactionAmount: response.transaction_amount,
     };
   } catch (error) {
-    console.error('❌ Erro ao criar pagamento PIX:', error);
-    throw new Error('Falha ao criar pagamento PIX');
+    console.error('❌ [MP CONFIG] Erro ao criar pagamento PIX');
+    console.error('❌ [MP CONFIG] Tipo:', error.constructor.name);
+    console.error('❌ [MP CONFIG] Mensagem:', error.message);
+    console.error('❌ [MP CONFIG] Stack:', error.stack);
+    if (error.response) {
+      console.error('❌ [MP CONFIG] Status HTTP:', error.response.status);
+      console.error('❌ [MP CONFIG] Response body:', JSON.stringify(error.response.data, null, 2));
+    }
+    if (error.cause) {
+      console.error('❌ [MP CONFIG] Causa:', error.cause);
+    }
+    throw new Error('Falha ao criar pagamento PIX: ' + error.message);
   }
 }
 

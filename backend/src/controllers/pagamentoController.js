@@ -8,11 +8,18 @@ const downloadService = require('../services/downloadService');
  */
 async function criarPix(req, res) {
   try {
+    console.log('💳 [PAGAMENTO] Iniciando criação de pagamento PIX');
+    console.log('📋 [PAGAMENTO] Body recebido:', JSON.stringify(req.body, null, 2));
+
     const { pedidoId, email, cpf, nome } = req.body;
 
     if (!pedidoId) {
+      console.log('❌ [PAGAMENTO] Erro: ID do pedido não fornecido');
       return res.status(400).json({ error: 'ID do pedido é obrigatório' });
     }
+
+    console.log(`🔍 [PAGAMENTO] Pedido ID: ${pedidoId}`);
+    console.log(`👤 [PAGAMENTO] Dados do pagador: email=${email}, cpf=${cpf}, nome=${nome}`);
 
     const result = await pagamentoService.criarPagamentoPIX(pedidoId, {
       email,
@@ -20,12 +27,16 @@ async function criarPix(req, res) {
       nome,
     });
 
+    console.log('✅ [PAGAMENTO] Pagamento PIX criado com sucesso');
+    console.log('📄 [PAGAMENTO] Resultado:', JSON.stringify(result, null, 2));
+
     res.status(201).json({
       mensagem: 'Pagamento PIX criado com sucesso',
       ...result,
     });
   } catch (error) {
-    console.error('Erro ao criar pagamento PIX:', error);
+    console.error('❌ [PAGAMENTO] Erro ao criar pagamento PIX:', error);
+    console.error('❌ [PAGAMENTO] Stack trace:', error.stack);
     res.status(400).json({ error: error.message });
   }
 }

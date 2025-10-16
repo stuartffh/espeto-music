@@ -69,19 +69,33 @@ async function criarPagamento(pedidoId) {
  * Cria um pagamento PIX direto no Mercado Pago
  */
 async function criarPagamentoPIX(pedidoId, dadosPagador = {}) {
+  console.log('🔵 [SERVICE] Iniciando criarPagamentoPIX');
+  console.log(`🔵 [SERVICE] PedidoId: ${pedidoId}`);
+  console.log(`🔵 [SERVICE] DadosPagador:`, JSON.stringify(dadosPagador, null, 2));
+
   const pedido = await prisma.pedidoMusica.findUnique({
     where: { id: pedidoId },
   });
 
+  console.log('🔵 [SERVICE] Pedido encontrado:', pedido ? 'SIM' : 'NÃO');
+  if (pedido) {
+    console.log(`🔵 [SERVICE] Pedido status: ${pedido.status}`);
+    console.log(`🔵 [SERVICE] Pedido valor: ${pedido.valor}`);
+    console.log(`🔵 [SERVICE] Música: ${pedido.musicaTitulo}`);
+  }
+
   if (!pedido) {
+    console.log('❌ [SERVICE] Erro: Pedido não encontrado');
     throw new Error('Pedido não encontrado');
   }
 
   if (pedido.status !== 'pendente') {
+    console.log(`❌ [SERVICE] Erro: Pedido já foi processado (status: ${pedido.status})`);
     throw new Error('Este pedido já foi processado');
   }
 
   // Criar registro de pagamento
+  console.log('🔵 [SERVICE] Criando registro de pagamento no banco...');
   const pagamento = await prisma.pagamento.create({
     data: {
       valor: pedido.valor,
@@ -92,8 +106,20 @@ async function criarPagamentoPIX(pedidoId, dadosPagador = {}) {
       metodoPagamento: 'pix',
     },
   });
+  console.log(`✅ [SERVICE] Pagamento criado no banco com ID: ${pagamento.id}`);
 
   try {
+    console.log('🔵 [SERVICE] Chamando Mercado Pago API para criar pagamento PIX...');
+    console.log('🔵 [SERVICE] Dados enviados ao MP:', {
+      titulo: `Música: ${pedido.musicaTitulo}`,
+      descricao: `Espeto Music - ${pedido.musicaTitulo}`,
+      valor: pedido.valor,
+      pedidoId: pedido.id,
+      emailPagador: dadosPagador.email,
+      cpfPagador: dadosPagador.cpf,
+      nomePagador: dadosPagador.nome,
+    });
+
     // Criar pagamento PIX no Mercado Pago
     const pixPayment = await criarPagamentoPix({
       titulo: `Música: ${pedido.musicaTitulo}`,
@@ -104,6 +130,8 @@ async function criarPagamentoPIX(pedidoId, dadosPagador = {}) {
       cpfPagador: dadosPagador.cpf,
       nomePagador: dadosPagador.nome,
     });
+
+    console.log('✅ [SERVICE] Resposta do Mercado Pago:',  JSON.stringify(pixPayment, null, 2));
 
     // Atualizar pagamento com dados do PIX
     const pagamentoAtualizado = await prisma.pagamento.update({
@@ -133,10 +161,22 @@ async function criarPagamentoPIX(pedidoId, dadosPagador = {}) {
       mercadoPagoPaymentId: pixPayment.id,
     };
   } catch (error) {
+    console.error('❌ [SERVICE] Erro ao criar pagamento PIX');
+    console.error('❌ [SERVICE] Tipo do erro:', error.constructor.name);
+    console.error('❌ [SERVICE] Mensagem:', error.message);
+    console.error('❌ [SERVICE] Stack:', error.stack);
+    if (error.response) {
+      console.error('❌ [SERVICE] Response data:', error.response.data);
+      console.error('❌ [SERVICE] Response status:', error.response.status);
+    }
+
     // Se falhar, remover pagamento criado
+    console.log('🔵 [SERVICE] Removendo pagamento do banco (rollback)...');
     await prisma.pagamento.delete({
       where: { id: pagamento.id },
     });
+    console.log('✅ [SERVICE] Pagamento removido do banco');
+
     throw error;
   }
 }
