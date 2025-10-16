@@ -343,6 +343,9 @@ exports.usarCarrinho = async (req, res) => {
 
     console.log('📝 [GIFT CARD CARRINHO] Criando pedidos de música...');
 
+    // Calcular valor unitário (valorTotal / quantidade)
+    const valorUnitario = totalMusicas > 0 ? valorTotalCarrinho / totalMusicas : 0;
+
     for (const musica of carrinho.musicas) {
       // Mapear campos do carrinho para campos do pedido
       const musicaTitulo = musica.musicaTitulo || musica.titulo;
@@ -362,6 +365,7 @@ exports.usarCarrinho = async (req, res) => {
           musicaThumbnail,
           musicaYoutubeId,
           musicaDuracao,
+          valor: valorUnitario, // Valor calculado do carrinho
           status: 'pago', // Já marcar como pago
           modoGratuito: false,
           metodoPagamento: 'gift_card',
