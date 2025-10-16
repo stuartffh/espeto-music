@@ -4,7 +4,7 @@ import Button from './ui/Button';
 import Badge from './ui/Badge';
 import clsx from 'clsx';
 
-export default function MusicCard({ musica, onAdd, onAddToCart, loading = false, showCartButton = false }) {
+export default function MusicCard({ musica, onAdd, loading = false, showCartButton = false }) {
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -52,28 +52,18 @@ export default function MusicCard({ musica, onAdd, onAddToCart, loading = false,
           {musica.canal || musica.artista || 'Artista Desconhecido'}
         </p>
 
-        {showCartButton && onAddToCart ? (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              onClick={onAddToCart}
-              disabled={loading}
-            >
-              <ShoppingCart className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              className="flex-1"
-              onClick={onAdd}
-              loading={loading}
-              disabled={loading}
-            >
-              Pagar Agora
-            </Button>
-          </div>
+        {showCartButton ? (
+          <Button
+            variant="primary"
+            size="sm"
+            className="w-full"
+            onClick={onAdd}
+            loading={loading}
+            disabled={loading}
+          >
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Adicionar ao Carrinho
+          </Button>
         ) : (
           <Button
             variant="primary"
