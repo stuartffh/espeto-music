@@ -15,23 +15,23 @@ async function main() {
   const senhaAdmin = 'admin123';
   const hashSenha = await bcrypt.hash(senhaAdmin, 10);
 
-  const adminExistente = await prisma.usuario.findUnique({
-    where: { email: 'admin@espetomusic.com' }
+  const adminExistente = await prisma.admin.findUnique({
+    where: { username: 'admin' }
   });
 
   if (adminExistente) {
     console.log('  ⚠️  Usuário admin já existe, pulando...');
   } else {
-    await prisma.usuario.create({
+    await prisma.admin.create({
       data: {
+        username: 'admin',
+        password: hashSenha,
         nome: 'Administrador',
-        email: 'admin@espetomusic.com',
-        senha: hashSenha,
-        role: 'ADMIN'
+        ativo: true
       }
     });
     console.log('  ✅ Usuário admin criado!');
-    console.log('  📧 Email: admin@espetomusic.com');
+    console.log('  👤 Username: admin');
     console.log('  🔑 Senha: admin123');
   }
 
