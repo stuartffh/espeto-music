@@ -190,8 +190,11 @@ function AdminDashboard() {
         tempoTotal: '2h 30m', // Pode ser calculado depois
         configuracoes: configsData.data.length,
       });
+
+      setLoading(false);
     } catch (err) {
       console.error('Erro ao carregar overview:', err);
+      setLoading(false);
     }
   };
 
