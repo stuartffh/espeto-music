@@ -230,6 +230,16 @@ function Panel() {
       setFila([]);
     });
 
+    // ========== EVENTOS DE CONFIGURAÇÃO ==========
+
+    newSocket.on('config:atualizada', (data) => {
+      console.log(`🔄 Configuração atualizada: ${data.chave} = ${data.valor}`);
+      setConfigs(prevConfigs => ({
+        ...prevConfigs,
+        [data.chave]: data.valor
+      }));
+    });
+
     return () => {
       newSocket.close();
     };

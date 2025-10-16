@@ -67,6 +67,13 @@ async function atualizar(req, res) {
       data: { valor: String(valor) },
     });
 
+    // Emitir evento WebSocket para atualizar configurações em tempo real
+    const io = req.app.get('io');
+    if (io) {
+      console.log(`🔄 Emitindo atualização de configuração: ${chave} = ${valor}`);
+      io.emit('config:atualizada', { chave, valor: String(valor) });
+    }
+
     res.json(config);
   } catch (error) {
     console.error('Erro ao atualizar configuração:', error);

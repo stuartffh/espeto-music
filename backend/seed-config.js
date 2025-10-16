@@ -108,13 +108,13 @@ async function main() {
     },
     {
       chave: 'VIDEO_DESCANSO_URL',
-      valor: '',
+      valor: 'https://cdn.pixabay.com/video/2023/11/18/189639-886016299_large.mp4',
       descricao: 'URL do vídeo de descanso para quando não houver música tocando',
       tipo: 'url'
     },
     {
       chave: 'VIDEO_DESCANSO_ATIVO',
-      valor: 'false',
+      valor: 'true',
       descricao: 'Ativar vídeo de descanso quando não houver música tocando',
       tipo: 'boolean'
     },
