@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, Loader2, QrCode as QrCodeIcon, CreditCard, CheckCircle, ShoppingCart, AlertCircle } from 'lucide-react';
+import { X, Copy, Check, Loader2, QrCode as QrCodeIcon, CreditCard, CheckCircle, ShoppingCart, AlertCircle, Gift } from 'lucide-react';
 import useCarrinhoStore from '../store/carrinhoStore';
 import socket from '../services/socket';
 import Button from './ui/Button';
 import Input from './ui/Input';
+import { usarGiftCard } from '../services/api';
 
 /**
  * Componente de Checkout do Carrinho (Múltiplas Músicas)
@@ -21,7 +22,12 @@ function CheckoutCarrinho({ carrinho, onClose, onSuccess }) {
   const [erro, setErro] = useState('');
   const [pagamentoAprovado, setPagamentoAprovado] = useState(false);
 
-  const { finalizarCarrinho, definirNomeCliente } = useCarrinhoStore();
+  // Gift Card
+  const [mostrarGiftCard, setMostrarGiftCard] = useState(false);
+  const [codigoGift, setCodigoGift] = useState('');
+  const [validandoGift, setValidandoGift] = useState(false);
+
+  const { finalizarCarrinho, definirNomeCliente, limparCarrinho } = useCarrinhoStore();
 
   // Escutar evento de pagamento aprovado via WebSocket
   useEffect(() => {
@@ -118,6 +124,60 @@ function CheckoutCarrinho({ carrinho, onClose, onSuccess }) {
 
   const handleCpfChange = (e) => {
     setCpf(formatarCPF(e.target.value));
+  };
+
+  const handleUsarGiftCard = async (e) => {
+    e.preventDefault();
+
+    if (!codigoGift.trim()) {
+      setErro('Por favor, informe o código do Gift Card');
+      return;
+    }
+
+    if (!nomeCliente.trim()) {
+      setErro('Por favor, informe seu nome');
+      return;
+    }
+
+    setErro('');
+    setValidandoGift(true);
+
+    try {
+      console.log('🎁 [CHECKOUT CARRINHO] Validando Gift Card:', codigoGift);
+
+      // Atualizar nome no carrinho primeiro
+      await definirNomeCliente(nomeCliente.trim());
+
+      const response = await usarGiftCard({
+        codigo: codigoGift.trim().toUpperCase(),
+        nomeCliente: nomeCliente.trim(),
+        carrinho: {
+          musicas: carrinho.musicas,
+          quantidadeItens: carrinho.quantidadeItens,
+        }
+      });
+
+      console.log('✅ [CHECKOUT CARRINHO] Gift Card válido:', response.data);
+
+      // Gift Card aplicado com sucesso
+      setPagamentoAprovado(true);
+
+      // Limpar carrinho
+      await limparCarrinho();
+
+      // Aguardar 2 segundos e fechar
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess();
+        }
+      }, 2000);
+
+    } catch (error) {
+      console.error('❌ [CHECKOUT CARRINHO] Erro ao usar Gift Card:', error);
+      setErro(error.response?.data?.erro || 'Gift Card inválido, expirado ou já usado');
+    } finally {
+      setValidandoGift(false);
+    }
   };
 
   return (
@@ -255,6 +315,70 @@ function CheckoutCarrinho({ carrinho, onClose, onSuccess }) {
                   <CreditCard className="w-5 h-5 mr-2" />
                   Gerar PIX
                 </Button>
+
+                {/* Divisor OU */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-700"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-slate-900 text-slate-400">ou</span>
+                  </div>
+                </div>
+
+                {/* Opção Gift Card */}
+                {!mostrarGiftCard ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setMostrarGiftCard(true)}
+                  >
+                    <Gift className="w-5 h-5 mr-2" />
+                    Usar Gift Card
+                  </Button>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-3 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-purple-400 flex items-center gap-2">
+                        <Gift className="w-5 h-5" />
+                        Gift Card
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setMostrarGiftCard(false)}
+                        className="text-slate-400 hover:text-white transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <Input
+                      type="text"
+                      value={codigoGift}
+                      onChange={(e) => setCodigoGift(e.target.value.toUpperCase())}
+                      placeholder="XXXX-XXXX-XXXX"
+                      className="w-full font-mono"
+                      maxLength={20}
+                    />
+
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full"
+                      loading={validandoGift}
+                      disabled={validandoGift || !nomeCliente.trim() || !codigoGift.trim()}
+                      onClick={handleUsarGiftCard}
+                    >
+                      <Gift className="w-5 h-5 mr-2" />
+                      Validar Gift Card
+                    </Button>
+                  </motion.div>
+                )}
               </form>
             ) : (
               // QR Code e Pix Copia e Cola
