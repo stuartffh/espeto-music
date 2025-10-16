@@ -352,23 +352,19 @@ exports.usarCarrinho = async (req, res) => {
       const musicaYoutubeId = musica.musicaYoutubeId || musica.youtubeId;
       const musicaThumbnail = musica.musicaThumbnail || musica.thumbnail || '';
       const musicaDuracao = musica.musicaDuracao || musica.duracao || 0;
-      const musicaArtista = musica.musicaArtista || musica.artista || 'Artista Desconhecido';
 
       console.log(`🎵 Criando pedido: ${musicaTitulo} (${musicaYoutubeId})`);
 
-      // Criar pedido
+      // Criar pedido (NOTA: musicaArtista NÃO existe no schema)
       const pedido = await prisma.pedidoMusica.create({
         data: {
           nomeCliente: nomeCliente.trim(),
           musicaTitulo,
-          musicaArtista,
           musicaThumbnail,
           musicaYoutubeId,
           musicaDuracao,
           valor: valorUnitario, // Valor calculado do carrinho
           status: 'pago', // Já marcar como pago
-          modoGratuito: false,
-          metodoPagamento: 'gift_card',
         }
       });
 
