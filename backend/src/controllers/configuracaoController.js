@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { invalidarCache } = require('../utils/configHelper');
 
 /**
  * GET /api/config
@@ -67,6 +68,9 @@ async function atualizar(req, res) {
       data: { valor: String(valor) },
     });
 
+    // Invalidar cache da configuração atualizada
+    invalidarCache(chave);
+
     // Emitir evento WebSocket para atualizar configurações em tempo real
     const io = req.app.get('io');
     if (io) {
@@ -106,6 +110,9 @@ async function criar(req, res) {
       },
     });
 
+    // Invalidar cache ao criar nova configuração
+    invalidarCache(chave);
+
     res.status(201).json(config);
   } catch (error) {
     console.error('Erro ao criar configuração:', error);
@@ -126,6 +133,9 @@ async function remover(req, res) {
     await prisma.configuracao.delete({
       where: { chave },
     });
+
+    // Invalidar cache ao remover configuração
+    invalidarCache(chave);
 
     res.json({
       mensagem: 'Configuração removida com sucesso',

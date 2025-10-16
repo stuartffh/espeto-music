@@ -1,12 +1,50 @@
 const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
+const { buscarConfig } = require('../utils/configHelper');
 
-// Configurar credenciais do Mercado Pago
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || 'TEST-token',
-});
+// Cliente do Mercado Pago (será inicializado sob demanda)
+let client = null;
+let preference = null;
+let payment = null;
+let ultimoTokenCarregado = null;
 
-const preference = new Preference(client);
-const payment = new Payment(client);
+/**
+ * Inicializa ou atualiza o cliente do Mercado Pago com as credenciais do banco
+ */
+async function inicializarCliente() {
+  // Buscar token do banco de dados
+  const accessToken = await buscarConfig(
+    'MERCADOPAGO_ACCESS_TOKEN',
+    process.env.MERCADOPAGO_ACCESS_TOKEN || ''
+  );
+
+  // Se não mudou o token, retornar cliente existente
+  if (client && ultimoTokenCarregado === accessToken) {
+    return { client, preference, payment };
+  }
+
+  // Verificar se token é válido
+  if (!accessToken || accessToken.trim() === '') {
+    throw new Error(
+      'Token do Mercado Pago não configurado. Configure em: Painel Admin > Configurações > MERCADOPAGO_ACCESS_TOKEN'
+    );
+  }
+
+  console.log('🔧 Inicializando cliente Mercado Pago...');
+  console.log(`🔑 Token configurado: ${accessToken.substring(0, 20)}...`);
+
+  // Criar novo cliente
+  client = new MercadoPagoConfig({
+    accessToken: accessToken,
+  });
+
+  preference = new Preference(client);
+  payment = new Payment(client);
+  ultimoTokenCarregado = accessToken;
+
+  console.log('✅ Cliente Mercado Pago inicializado com sucesso');
+
+  return { client, preference, payment };
+}
 
 /**
  * Cria uma preferência de pagamento no Mercado Pago
@@ -21,6 +59,9 @@ async function criarPreferenciaPagamento({
   mesaNumero,
 }) {
   try {
+    // Inicializar cliente
+    const { preference: pref } = await inicializarCliente();
+
     const preferenceData = {
       items: [
         {
@@ -49,11 +90,11 @@ async function criarPreferenciaPagamento({
       expiration_date_to: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutos
     };
 
-    const response = await preference.create({ body: preferenceData });
+    const response = await pref.create({ body: preferenceData });
     return response;
   } catch (error) {
     console.error('Erro ao criar preferência Mercado Pago:', error);
-    throw new Error('Falha ao criar preferência de pagamento');
+    throw new Error('Falha ao criar preferência de pagamento: ' + error.message);
   }
 }
 
@@ -64,7 +105,10 @@ async function criarPreferenciaPagamento({
  */
 async function buscarPagamento(paymentId) {
   try {
-    const paymentData = await payment.get({ id: paymentId });
+    // Inicializar cliente
+    const { payment: pay } = await inicializarCliente();
+
+    const paymentData = await pay.get({ id: paymentId });
     return paymentData;
   } catch (error) {
     console.error('Erro ao buscar pagamento:', error);
@@ -88,7 +132,11 @@ async function criarPagamentoPix({
 }) {
   try {
     console.log('🟣 [MP CONFIG] Iniciando criarPagamentoPix');
-    console.log('🟣 [MP CONFIG] Access Token configurado:', process.env.MERCADOPAGO_ACCESS_TOKEN ? 'SIM (primeiros 20 chars: ' + process.env.MERCADOPAGO_ACCESS_TOKEN.substring(0, 20) + '...)' : 'NÃO');
+
+    // Inicializar cliente (busca token do banco)
+    const { payment: pay } = await inicializarCliente();
+
+    console.log('🟣 [MP CONFIG] Cliente Mercado Pago inicializado');
 
     // Data de expiração: 15 dias a partir de agora
     const expirationDate = new Date();
@@ -114,7 +162,7 @@ async function criarPagamentoPix({
     console.log('🟣 [MP CONFIG] Payload para Mercado Pago:', JSON.stringify(paymentData, null, 2));
     console.log('🟣 [MP CONFIG] Chamando payment.create()...');
 
-    const response = await payment.create({
+    const response = await pay.create({
       body: paymentData,
       requestOptions: {
         idempotencyKey: `${pedidoId}-${Date.now()}`,
@@ -154,7 +202,8 @@ module.exports = {
   criarPreferenciaPagamento,
   criarPagamentoPix,
   buscarPagamento,
-  client,
-  preference,
-  payment,
+  inicializarCliente,
+  getClient: () => client,
+  getPreference: () => preference,
+  getPayment: () => payment,
 };
