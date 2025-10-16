@@ -115,7 +115,27 @@ function Home() {
     }
 
     try {
-      // Criar pedido de música
+      const mode = configs.MODO_FILA || 'gratuito';
+
+      // Se o modo for gratuito, adicionar direto na fila
+      if (mode === 'gratuito') {
+        await api.post('/fila', {
+          youtubeId: musica.youtubeId || musica.id,
+          titulo: musica.titulo || musica.title,
+          artista: musica.artista || musica.artist,
+          duracao: musica.duracao || musica.duration,
+          thumbnail: musica.thumbnail,
+          solicitadoPor: nome.trim(),
+        });
+
+        alert('Música adicionada à fila com sucesso!');
+        setResultModalOpen(false);
+        setBusca('');
+        carregarEstadoPlayer();
+        return;
+      }
+
+      // Modo pago: criar pedido e redirecionar para pagamento
       const response = await api.post('/pedidos', {
         musicaYoutubeId: musica.youtubeId || musica.id,
         musicaTitulo: musica.titulo || musica.title,
@@ -301,7 +321,7 @@ function Home() {
                     onClick={() => handleSolicitarMusica(musica)}
                     className="flex-shrink-0"
                   >
-                    Pagar pra Tocar
+                    {mode === 'gratuito' ? 'Tocar Grátis' : 'Pagar pra Tocar'}
                   </Button>
                 </div>
               </motion.div>

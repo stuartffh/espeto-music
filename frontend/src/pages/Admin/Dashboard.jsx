@@ -366,6 +366,30 @@ function AdminDashboard() {
       atualizarConfig(config.chave, newValue);
     };
 
+    // Tratamento especial para MODO_FILA
+    if (config.chave === 'MODO_FILA') {
+      return (
+        <div className="flex items-center gap-2">
+          <select
+            value={config.valor}
+            onChange={(e) => handleChange(e.target.value)}
+            disabled={saving}
+            className="bg-dark-card border border-neon-purple/30 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-neon-cyan/50 focus:border-neon-cyan transition-all"
+          >
+            <option value="gratuito">Gratuito</option>
+            <option value="pago">Pago</option>
+          </select>
+          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+            config.valor === 'gratuito'
+              ? 'bg-green-500/20 text-green-400'
+              : 'bg-yellow-500/20 text-yellow-400'
+          }`}>
+            {config.valor === 'gratuito' ? 'GRÁTIS' : 'PAGO'}
+          </span>
+        </div>
+      );
+    }
+
     switch (config.tipo) {
       case 'boolean':
         return (
