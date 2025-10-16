@@ -70,9 +70,15 @@ async function criar(req, res) {
     });
 
     if (!validacao.aprovado) {
-      console.log(`❌ Pedido rejeitado pela moderação: ${validacao.motivo}`);
-      console.log(`   Campo: ${validacao.campo}`);
-      console.log(`   Palavras encontradas: ${validacao.palavrasEncontradas.map(p => p.palavra).join(', ')}`);
+      console.log('\n🚫 ═══════════════════════════════════════════════════════');
+      console.log('   PEDIDO REJEITADO PELA MODERAÇÃO');
+      console.log('   ═══════════════════════════════════════════════════════');
+      console.log(`📋 Nome Cliente: "${nomeCliente}"`);
+      console.log(`🎵 Título Música: "${musicaTitulo}"`);
+      console.log(`❌ Motivo: ${validacao.motivo}`);
+      console.log(`📍 Campo bloqueado: ${validacao.campo}`);
+      console.log(`🔍 Palavras detectadas: ${validacao.palavrasEncontradas.map(p => `${p.palavra} (${p.severidade})`).join(', ')}`);
+      console.log('═══════════════════════════════════════════════════════\n');
 
       return res.status(400).json({
         error: validacao.motivo,
