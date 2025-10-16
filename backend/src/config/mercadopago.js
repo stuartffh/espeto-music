@@ -21,7 +21,7 @@ async function criarPreferenciaPagamento({
   mesaNumero,
 }) {
   try {
-    const preference = {
+    const preferenceData = {
       items: [
         {
           title: titulo,
@@ -49,7 +49,7 @@ async function criarPreferenciaPagamento({
       expiration_date_to: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutos
     };
 
-    const response = await preference.create({ body: preference });
+    const response = await preference.create({ body: preferenceData });
     return response;
   } catch (error) {
     console.error('Erro ao criar preferência Mercado Pago:', error);
