@@ -42,10 +42,13 @@ async function criarPix(req, res) {
     console.log(`👤 Nome: ${nome || 'Não fornecido (opcional)'}`);
     console.log('\n⏳ Gerando QR Code PIX...');
 
-    const result = await pagamentoService.criarPagamentoPIX(pedidoId, {
-      email: email || 'cliente@espeto.music',
-      nome: nome || 'Cliente',
-    });
+    // Preparar dados do pagador (apenas campos fornecidos)
+    const dadosPagador = {};
+
+    if (email) dadosPagador.email = email;
+    if (nome) dadosPagador.nome = nome;
+
+    const result = await pagamentoService.criarPagamentoPIX(pedidoId, dadosPagador);
 
     console.log('\n✅ [PAGAMENTO] Pagamento PIX criado com sucesso!');
     console.log('💰 Valor:', result.pagamento?.valor);
