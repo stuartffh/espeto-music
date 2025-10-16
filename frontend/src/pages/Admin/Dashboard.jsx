@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { io } from 'socket.io-client';
 import axios from 'axios';
 import {
   Play,
@@ -39,6 +40,9 @@ function AdminDashboard() {
 
   // Estado da sidebar
   const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
+
+  // WebSocket
+  const [socket, setSocket] = useState(null);
 
   // Estados gerais
   const [configs, setConfigs] = useState([]);
@@ -84,6 +88,52 @@ function AdminDashboard() {
     carregarEstadoPlayer();
     carregarFilaPlayer();
     carregarOverview();
+  }, []);
+
+  // WebSocket para sincronização em tempo real
+  useEffect(() => {
+    console.log('🔌 Conectando WebSocket do Dashboard Admin...');
+    const newSocket = io(API_URL);
+    setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      console.log('✅ WebSocket conectado no Dashboard Admin');
+    });
+
+    newSocket.on('config:atualizada', ({ chave, valor }) => {
+      console.log(`📡 Config atualizada via WebSocket: ${chave} = ${valor}`);
+
+      // Atualizar estado local
+      setConfigs(prevConfigs =>
+        prevConfigs.map(c =>
+          c.chave === chave ? { ...c, valor } : c
+        )
+      );
+
+      // Limpar modificação pendente se existir
+      setConfigsModificadas(prev => {
+        const newMods = { ...prev };
+        delete newMods[chave];
+        return newMods;
+      });
+
+      // Mostrar notificação
+      setSuccess(`⚡ ${chave.replace(/_/g, ' ')} atualizada em tempo real!`);
+      setTimeout(() => setSuccess(''), 2000);
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('🔌 WebSocket desconectado no Dashboard Admin');
+    });
+
+    newSocket.on('error', (error) => {
+      console.error('❌ Erro no WebSocket:', error);
+    });
+
+    return () => {
+      console.log('🔌 Desconectando WebSocket do Dashboard Admin');
+      newSocket.disconnect();
+    };
   }, []);
 
   // Atualizar collapsed da sidebar quando a tela mudar
@@ -176,12 +226,15 @@ function AdminDashboard() {
 
   const carregarConfiguracoes = async () => {
     try {
+      console.log('🔄 Carregando configurações...');
       const response = await axios.get(`${API_URL}/api/config`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log('✅ Configurações carregadas:', response.data.length, 'itens');
       setConfigs(response.data);
       setLoading(false);
     } catch (err) {
+      console.error('❌ Erro ao carregar configurações:', err);
       setError('Erro ao carregar configurações');
       setLoading(false);
     }
@@ -212,23 +265,34 @@ function AdminDashboard() {
     setSuccess('');
 
     try {
+      console.log('💾 Salvando configurações modificadas:', Object.keys(configsModificadas));
+
       // Salvar todas as configurações modificadas em paralelo
-      const promises = Object.entries(configsModificadas).map(([chave, valor]) =>
-        axios.put(
+      const promises = Object.entries(configsModificadas).map(([chave, valor]) => {
+        console.log(`🔧 Salvando ${chave} = ${valor}`);
+        return axios.put(
           `${API_URL}/api/config/${chave}`,
           { valor },
           { headers: { Authorization: `Bearer ${token}` } }
-        )
-      );
+        );
+      });
 
       await Promise.all(promises);
 
-      setSuccess(`${Object.keys(configsModificadas).length} configurações salvas com sucesso!`);
+      console.log('✅ Todas as configurações salvas com sucesso');
+
+      // Recarregar configurações do backend para garantir consistência
+      await carregarConfiguracoes();
+
+      setSuccess(`✅ ${Object.keys(configsModificadas).length} configurações salvas com sucesso!`);
       setConfigsModificadas({});
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
+      console.error('❌ Erro ao salvar configurações:', err);
       setError('Erro ao salvar configurações. Tente novamente.');
-      console.error('Erro ao salvar:', err);
+
+      // Recarregar configs em caso de erro para reverter mudanças
+      await carregarConfiguracoes();
     } finally {
       setSaving(false);
     }
