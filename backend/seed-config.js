@@ -33,6 +33,12 @@ async function main() {
 
     // ========== CONFIGURAÇÕES DA FILA ==========
     {
+      chave: 'MODO_FILA',
+      valor: 'gratuito',
+      descricao: 'Modo de operação da fila (gratuito ou pago)',
+      tipo: 'text'
+    },
+    {
       chave: 'MAX_MUSICAS_FILA',
       valor: '50',
       descricao: 'Número máximo de músicas na fila',
@@ -44,6 +50,12 @@ async function main() {
       descricao: 'Permitir que a mesma música seja adicionada múltiplas vezes na fila',
       tipo: 'boolean'
     },
+    {
+      chave: 'TEMPO_MAXIMO_ESPERA',
+      valor: '8',
+      descricao: 'Tempo máximo de espera em minutos por música',
+      tipo: 'number'
+    },
 
     // ========== CONFIGURAÇÕES DE MODERAÇÃO ==========
     {
@@ -51,6 +63,12 @@ async function main() {
       valor: 'true',
       descricao: 'Ativar moderação de conteúdo (bloquear palavras proibidas)',
       tipo: 'boolean'
+    },
+    {
+      chave: 'NIVEL_MODERACAO',
+      valor: 'MEDIA',
+      descricao: 'Nível de moderação (BAIXA, MEDIA, ALTA)',
+      tipo: 'text'
     },
 
     // ========== CONFIGURAÇÕES DE INTERFACE ==========
