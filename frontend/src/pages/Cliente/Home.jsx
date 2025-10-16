@@ -55,11 +55,12 @@ function Home() {
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     Promise.all([
-      axios.get(`${API_URL}/api/public/config/MODO_FILA`),
+      axios.get(`${API_URL}/api/public/config/modo_gratuito`),
       axios.get(`${API_URL}/api/public/config/TEMPO_MAXIMO_MUSICA`)
     ])
       .then(([resModo, resTempo]) => {
-        setModoGratuito(resModo.data.valor === 'gratuito');
+        // modo_gratuito: "true" = gratuito, "false" = pago
+        setModoGratuito(resModo.data.valor === 'true');
         const minutos = parseInt(resTempo.data.valor) || 10;
         setTempoMaximo(minutos);
       })
