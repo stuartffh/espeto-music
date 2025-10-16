@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
 import StatusBar from '../components/home/StatusBar';
 import NowPlaying from '../components/home/NowPlaying';
 import CategoryGrid from '../components/home/CategoryGrid';
 import SearchSection from '../components/home/SearchSection';
+import Tutorial from '../components/Tutorial';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import api from '../config/api';
 
 function Home() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // Estado da aplicação
   const [nome, setNome] = useState('');
   const [busca, setBusca] = useState('');
@@ -23,11 +28,18 @@ function Home() {
   // Modais
   const [rulesModalOpen, setRulesModalOpen] = useState(false);
   const [resultModalOpen, setResultModalOpen] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   // Carregar configurações e estado inicial
   useEffect(() => {
     carregarConfiguracoes();
     carregarEstadoPlayer();
+
+    // Verificar se deve mostrar tutorial
+    const tutorialCompleted = localStorage.getItem('tutorial_completed');
+    if (!tutorialCompleted) {
+      setShowTutorial(true);
+    }
 
     // Polling para atualizar fila e música atual
     const interval = setInterval(() => {
@@ -36,6 +48,15 @@ function Home() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Verificar se voltou da tela de pagamento com sucesso
+  useEffect(() => {
+    if (location.state?.paymentApproved) {
+      // Limpar state do location
+      window.history.replaceState({}, document.title);
+      carregarEstadoPlayer();
+    }
+  }, [location]);
 
   const carregarConfiguracoes = async () => {
     try {
@@ -94,18 +115,38 @@ function Home() {
     }
 
     try {
-      await api.post('/fila', {
-        musicaId: musica.id,
-        nomeCliente: nome.trim()
+      // Criar pedido de música
+      const response = await api.post('/pedidos', {
+        musicaYoutubeId: musica.youtubeId || musica.id,
+        musicaTitulo: musica.titulo || musica.title,
+        musicaArtista: musica.artista || musica.artist,
+        musicaDuracao: musica.duracao || musica.duration,
+        musicaThumbnail: musica.thumbnail,
+        nomeCliente: nome.trim(),
+        valor: parseFloat(configs.PRECO_MUSICA || '5.00'),
       });
 
-      alert('Música adicionada à fila com sucesso!');
+      const pedidoId = response.data.id;
+
+      // Redirecionar para tela de pagamento
+      navigate('/payment', {
+        state: {
+          musica: {
+            id: musica.youtubeId || musica.id,
+            title: musica.titulo || musica.title,
+            artist: musica.artista || musica.artist,
+            duration: musica.duracao || musica.duration,
+            thumbnail: musica.thumbnail,
+          },
+          pedidoId,
+          nome: nome.trim(),
+        },
+      });
+
       setResultModalOpen(false);
-      setBusca('');
-      carregarEstadoPlayer();
     } catch (error) {
-      console.error('Erro ao solicitar música:', error);
-      alert(error.response?.data?.erro || 'Erro ao adicionar música à fila.');
+      console.error('Erro ao criar pedido:', error);
+      alert(error.response?.data?.error || 'Erro ao criar pedido de música.');
     }
   };
 
@@ -116,6 +157,14 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-dark-bg">
+      {/* Tutorial */}
+      {showTutorial && (
+        <Tutorial
+          onClose={() => setShowTutorial(false)}
+          onComplete={() => setShowTutorial(false)}
+        />
+      )}
+
       {/* Status Bar */}
       <StatusBar
         queueCount={queueCount}
@@ -252,7 +301,7 @@ function Home() {
                     onClick={() => handleSolicitarMusica(musica)}
                     className="flex-shrink-0"
                   >
-                    Solicitar
+                    Pagar pra Tocar
                   </Button>
                 </div>
               </motion.div>

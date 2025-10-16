@@ -4,6 +4,33 @@ const playerService = require('../services/playerService');
 const downloadService = require('../services/downloadService');
 
 /**
+ * Cria um pagamento PIX direto para um pedido
+ */
+async function criarPix(req, res) {
+  try {
+    const { pedidoId, email, cpf, nome } = req.body;
+
+    if (!pedidoId) {
+      return res.status(400).json({ error: 'ID do pedido é obrigatório' });
+    }
+
+    const result = await pagamentoService.criarPagamentoPIX(pedidoId, {
+      email,
+      cpf,
+      nome,
+    });
+
+    res.status(201).json({
+      mensagem: 'Pagamento PIX criado com sucesso',
+      ...result,
+    });
+  } catch (error) {
+    console.error('Erro ao criar pagamento PIX:', error);
+    res.status(400).json({ error: error.message });
+  }
+}
+
+/**
  * Cria um pagamento para um pedido
  */
 async function criar(req, res) {
@@ -115,6 +142,7 @@ async function verificarStatus(req, res) {
 
 module.exports = {
   criar,
+  criarPix,
   webhook,
   buscarPorId,
   verificarStatus,

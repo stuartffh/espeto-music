@@ -34,20 +34,35 @@ model PedidoMusica {
 }
 
 model Pagamento {
-  id                    String   @id @default(uuid())
-  mercadoPagoPaymentId  String?  @unique
-  mercadoPagoPreferenceId String? @unique
-  status                String   @default("pending") // pending, approved, rejected, cancelled
-  valor                 Float
-  metodoPagamento       String?
-  emailPagador          String?
-  criadoEm              DateTime @default(now())
-  atualizadoEm          DateTime @updatedAt
+  id                      String   @id @default(uuid())
+  mercadoPagoPaymentId    String?  @unique
+  mercadoPagoPreferenceId String?  @unique
+  status                  String   @default("pending") // pending, approved, rejected, cancelled, refunded
+  valor                   Float
+  metodoPagamento         String?  // pix, credit_card, debit_card, etc
+
+  // Dados do pagador
+  emailPagador            String?
+  cpfPagador              String?
+  nomePagador             String?
+
+  // Dados do PIX
+  qrCode                  String?  // QR Code em base64
+  qrCodeText              String?  // Texto para copia e cola do PIX
+  pixExpirationDate       DateTime?
+
+  // Webhook e notificações
+  webhookData             String?  // JSON com dados do webhook
+  lastWebhookUpdate       DateTime?
+
+  criadoEm                DateTime @default(now())
+  atualizadoEm            DateTime @updatedAt
 
   pedidoMusica  PedidoMusica?
 
   @@map("pagamentos")
   @@index([status])
+  @@index([mercadoPagoPaymentId])
 }
 
 model Configuracao {

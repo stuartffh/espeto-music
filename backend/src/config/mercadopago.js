@@ -72,8 +72,70 @@ async function buscarPagamento(paymentId) {
   }
 }
 
+/**
+ * Cria um pagamento PIX direto no Mercado Pago
+ * @param {Object} params - Parâmetros do pagamento PIX
+ * @returns {Promise<Object>} Pagamento criado com QR Code
+ */
+async function criarPagamentoPix({
+  titulo,
+  descricao,
+  valor,
+  pedidoId,
+  emailPagador,
+  cpfPagador,
+  nomePagador,
+}) {
+  try {
+    // Data de expiração: 15 dias a partir de agora
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + 15);
+
+    const paymentData = {
+      transaction_amount: parseFloat(valor),
+      description: descricao || titulo,
+      payment_method_id: 'pix',
+      external_reference: pedidoId,
+      notification_url: `${process.env.BASE_URL || 'http://localhost:3000'}/api/webhooks/mercadopago`,
+      date_of_expiration: expirationDate.toISOString(),
+      payer: {
+        email: emailPagador || 'cliente@espeto.music',
+        identification: cpfPagador ? {
+          type: 'CPF',
+          number: cpfPagador,
+        } : undefined,
+        first_name: nomePagador || 'Cliente',
+      },
+    };
+
+    console.log('🔄 Criando pagamento PIX:', JSON.stringify(paymentData, null, 2));
+
+    const response = await payment.create({
+      body: paymentData,
+      requestOptions: {
+        idempotencyKey: `${pedidoId}-${Date.now()}`,
+      },
+    });
+
+    console.log('✅ Pagamento PIX criado:', response.id);
+
+    return {
+      id: response.id,
+      status: response.status,
+      qrCode: response.point_of_interaction?.transaction_data?.qr_code_base64,
+      qrCodeText: response.point_of_interaction?.transaction_data?.qr_code,
+      pixExpirationDate: response.date_of_expiration,
+      transactionAmount: response.transaction_amount,
+    };
+  } catch (error) {
+    console.error('❌ Erro ao criar pagamento PIX:', error);
+    throw new Error('Falha ao criar pagamento PIX');
+  }
+}
+
 module.exports = {
   criarPreferenciaPagamento,
+  criarPagamentoPix,
   buscarPagamento,
   client,
   preference,

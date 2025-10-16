@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const pagamentoController = require('../controllers/pagamentoController');
 
-// Cria pagamento
+// Cria pagamento PIX direto
+router.post('/pix', pagamentoController.criarPix);
+
+// Cria pagamento (preferência antiga)
 router.post('/', pagamentoController.criar);
 
 // Webhook do Mercado Pago (aceita POST e GET)

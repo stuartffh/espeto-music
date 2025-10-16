@@ -1,5 +1,5 @@
 const prisma = require('../config/database');
-const { criarPreferenciaPagamento, buscarPagamento } = require('../config/mercadopago');
+const { criarPreferenciaPagamento, criarPagamentoPix, buscarPagamento } = require('../config/mercadopago');
 
 /**
  * Cria um pagamento e preferência no Mercado Pago
@@ -66,6 +66,82 @@ async function criarPagamento(pedidoId) {
 }
 
 /**
+ * Cria um pagamento PIX direto no Mercado Pago
+ */
+async function criarPagamentoPIX(pedidoId, dadosPagador = {}) {
+  const pedido = await prisma.pedidoMusica.findUnique({
+    where: { id: pedidoId },
+  });
+
+  if (!pedido) {
+    throw new Error('Pedido não encontrado');
+  }
+
+  if (pedido.status !== 'pendente') {
+    throw new Error('Este pedido já foi processado');
+  }
+
+  // Criar registro de pagamento
+  const pagamento = await prisma.pagamento.create({
+    data: {
+      valor: pedido.valor,
+      status: 'pending',
+      emailPagador: dadosPagador.email,
+      cpfPagador: dadosPagador.cpf,
+      nomePagador: dadosPagador.nome,
+      metodoPagamento: 'pix',
+    },
+  });
+
+  try {
+    // Criar pagamento PIX no Mercado Pago
+    const pixPayment = await criarPagamentoPix({
+      titulo: `Música: ${pedido.musicaTitulo}`,
+      descricao: `Espeto Music - ${pedido.musicaTitulo}`,
+      valor: pedido.valor,
+      pedidoId: pedido.id,
+      emailPagador: dadosPagador.email,
+      cpfPagador: dadosPagador.cpf,
+      nomePagador: dadosPagador.nome,
+    });
+
+    // Atualizar pagamento com dados do PIX
+    const pagamentoAtualizado = await prisma.pagamento.update({
+      where: { id: pagamento.id },
+      data: {
+        mercadoPagoPaymentId: pixPayment.id.toString(),
+        status: pixPayment.status,
+        qrCode: pixPayment.qrCode,
+        qrCodeText: pixPayment.qrCodeText,
+        pixExpirationDate: pixPayment.pixExpirationDate ? new Date(pixPayment.pixExpirationDate) : null,
+      },
+    });
+
+    // Vincular pagamento ao pedido
+    await prisma.pedidoMusica.update({
+      where: { id: pedidoId },
+      data: {
+        pagamentoId: pagamento.id,
+      },
+    });
+
+    return {
+      pagamento: pagamentoAtualizado,
+      qrCode: pixPayment.qrCode,
+      qrCodeText: pixPayment.qrCodeText,
+      pixExpirationDate: pixPayment.pixExpirationDate,
+      mercadoPagoPaymentId: pixPayment.id,
+    };
+  } catch (error) {
+    // Se falhar, remover pagamento criado
+    await prisma.pagamento.delete({
+      where: { id: pagamento.id },
+    });
+    throw error;
+  }
+}
+
+/**
  * Processa notificação de webhook do Mercado Pago
  */
 async function processarWebhook(data) {
@@ -103,6 +179,10 @@ async function processarWebhook(data) {
         status: paymentInfo.status,
         metodoPagamento: paymentInfo.payment_method_id,
         emailPagador: paymentInfo.payer?.email,
+        cpfPagador: paymentInfo.payer?.identification?.number,
+        nomePagador: paymentInfo.payer?.first_name,
+        webhookData: JSON.stringify(paymentInfo),
+        lastWebhookUpdate: new Date(),
       },
     });
 
@@ -219,6 +299,7 @@ async function verificarStatusPagamento(pagamentoId) {
 
 module.exports = {
   criarPagamento,
+  criarPagamentoPIX,
   processarWebhook,
   buscarPagamentoPorId,
   verificarStatusPagamento,
