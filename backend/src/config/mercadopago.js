@@ -150,7 +150,7 @@ async function criarPagamentoPix({
       notification_url: `${process.env.BASE_URL || 'http://localhost:3000'}/api/webhooks/mercadopago`,
       date_of_expiration: expirationDate.toISOString(),
       payer: {
-        email: emailPagador || 'cliente@espeto.music',
+        email: emailPagador || 'cliente@espetomusic.com.br',
         identification: cpfPagador ? {
           type: 'CPF',
           number: cpfPagador,

@@ -31,7 +31,7 @@ function CheckoutPix({ pedido, onClose, onSuccess }) {
       const response = await criarPagamentoPix(pedido.id, {
         nome: pedido.nomeCliente,
         cpf: cpf || undefined,
-        email: `cliente_${pedido.id.substring(0, 8)}@espeto.music`,
+        email: `cliente.${pedido.id.substring(0, 8)}@espetomusic.com.br`,
       });
 
       console.log('✅ [CHECKOUT] Pagamento criado:', response.data);
