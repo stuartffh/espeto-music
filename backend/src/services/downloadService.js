@@ -115,16 +115,35 @@ async function baixarVideo(youtubeId) {
         ? path.join(__dirname, '../../ffmpeg/ffmpeg-8.0-essentials_build/bin/ffmpeg.exe')
         : 'ffmpeg'; // No Linux/Docker, ffmpeg estará no PATH
 
-      // Construir comando completo com formato específico para browser
-      // Formato simples e robusto que evita bugs do yt-dlp com merge
-      // Prioriza formatos pre-merged (18=360p, 22=720p) que já contém áudio
-      // Fallback para best até 720p se pre-merged não disponível
-      const command = `"${ytdlpPath}" "${videoUrl}" -f "18/22/best[height<=720]" --merge-output-format mp4 --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --progress --newline`;
+      // Sistema inteligente de seleção de qualidade em ordem decrescente
+      // Tenta obter a melhor qualidade possível, fazendo fallback se não disponível
+      //
+      // Ordem de prioridade:
+      // 1. 1080p (video 137 + audio 140) - Melhor qualidade comum
+      // 2. 720p (video 136 + audio 140) - Alta qualidade
+      // 3. Melhor video MP4 <= 1080p + melhor audio M4A
+      // 4. Formato pre-merged 22 (720p com audio)
+      // 5. Melhor video <= 720p + melhor audio
+      // 6. Formato pre-merged 18 (360p com audio)
+      // 7. Melhor qualidade disponível (fallback final)
+      const formatString = [
+        '137+140',                                      // 1080p video + 128kbps audio (ideal)
+        '136+140',                                      // 720p video + 128kbps audio
+        'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]', // Melhor <=1080p
+        '22',                                           // 720p pre-merged
+        'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]',  // Melhor <=720p
+        '18',                                           // 360p pre-merged
+        'best[ext=mp4]',                                // Melhor MP4 disponível
+        'best'                                          // Qualquer formato (último recurso)
+      ].join('/');
+
+      const command = `"${ytdlpPath}" "${videoUrl}" -f "${formatString}" --merge-output-format mp4 --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --progress --newline`;
 
       console.log(`🎬 Executando yt-dlp:`);
       console.log(`   URL: ${videoUrl}`);
       console.log(`   Output: ${tempOutputTemplate}.mp4`);
-      console.log(`   Formato: 18 (360p) ou 22 (720p) pre-merged`);
+      console.log(`   Formato: Qualidade inteligente (1080p → 720p → 360p)`);
+      console.log(`   Strategy: Melhor qualidade disponível com fallback automático`);
 
       const ytdlp = spawn(command, {
         shell: true,
