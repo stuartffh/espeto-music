@@ -1,14 +1,39 @@
 /**
- * Seed inicial das configurações do sistema
+ * Seed inicial das configurações do sistema e usuário admin
  *
  * Executa: node seed-config.js
  */
 
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Iniciando seed das configurações...');
+  console.log('🌱 Iniciando seed das configurações e usuário admin...');
+
+  // ========== CRIAR USUÁRIO ADMIN ==========
+  const senhaAdmin = 'admin123';
+  const hashSenha = await bcrypt.hash(senhaAdmin, 10);
+
+  const adminExistente = await prisma.usuario.findUnique({
+    where: { email: 'admin@espetomusic.com' }
+  });
+
+  if (adminExistente) {
+    console.log('  ⚠️  Usuário admin já existe, pulando...');
+  } else {
+    await prisma.usuario.create({
+      data: {
+        nome: 'Administrador',
+        email: 'admin@espetomusic.com',
+        senha: hashSenha,
+        role: 'ADMIN'
+      }
+    });
+    console.log('  ✅ Usuário admin criado!');
+    console.log('  📧 Email: admin@espetomusic.com');
+    console.log('  🔑 Senha: admin123');
+  }
 
   const configuracoes = [
     // ========== CONFIGURAÇÕES DE PAGAMENTO ==========
@@ -56,6 +81,12 @@ async function main() {
       descricao: 'Tempo máximo de espera em minutos por música',
       tipo: 'number'
     },
+    {
+      chave: 'TEMPO_MAXIMO_MUSICA',
+      valor: '10',
+      descricao: 'Duração máxima da música em minutos',
+      tipo: 'number'
+    },
 
     // ========== CONFIGURAÇÕES DE MODERAÇÃO ==========
     {
@@ -69,6 +100,24 @@ async function main() {
       valor: 'MEDIA',
       descricao: 'Nível de moderação (BAIXA, MEDIA, ALTA)',
       tipo: 'text'
+    },
+    {
+      chave: 'MODERAR_NOME_CLIENTE',
+      valor: 'true',
+      descricao: 'Ativar moderação no nome do cliente',
+      tipo: 'boolean'
+    },
+    {
+      chave: 'MODERAR_TITULO_MUSICA',
+      valor: 'true',
+      descricao: 'Ativar moderação no título da música',
+      tipo: 'boolean'
+    },
+    {
+      chave: 'REJEITAR_AUTO',
+      valor: 'false',
+      descricao: 'Rejeitar automaticamente músicas com palavras proibidas',
+      tipo: 'boolean'
     },
 
     // ========== CONFIGURAÇÕES DE INTERFACE ==========
@@ -149,12 +198,32 @@ async function main() {
       tipo: 'text'
     },
 
+    // ========== CONFIGURAÇÕES DE ANÚNCIOS ==========
+    {
+      chave: 'MOSTRAR_ANUNCIOS',
+      valor: 'true',
+      descricao: 'Exibir anúncios na TV',
+      tipo: 'boolean'
+    },
+    {
+      chave: 'INTERVALO_ANUNCIOS',
+      valor: '5',
+      descricao: 'Intervalo de músicas entre anúncios',
+      tipo: 'number'
+    },
+
     // ========== CONFIGURAÇÕES DE INTEGRAÇÕES ==========
     {
       chave: 'YOUTUBE_API_KEY',
       valor: '',
       descricao: 'Chave da API do YouTube (opcional, para melhor busca)',
       tipo: 'password'
+    },
+    {
+      chave: 'WEBHOOK_URL',
+      valor: '',
+      descricao: 'URL do webhook para notificações externas',
+      tipo: 'url'
     },
 
     // ========== CONFIGURAÇÕES AVANÇADAS ==========
@@ -171,6 +240,12 @@ async function main() {
       tipo: 'boolean'
     },
     {
+      chave: 'EXIBIR_PRECO_FRONTEND',
+      valor: 'true',
+      descricao: 'Exibir preço no frontend do cliente',
+      tipo: 'boolean'
+    },
+    {
       chave: 'ANIMACAO_TRANSICAO',
       valor: 'fade',
       descricao: 'Tipo de animação entre músicas (fade, slide, none)',
@@ -180,6 +255,12 @@ async function main() {
       chave: 'EXIBIR_LETRA_MUSICA',
       valor: 'false',
       descricao: 'Tentar exibir letra da música durante reprodução',
+      tipo: 'boolean'
+    },
+    {
+      chave: 'ATIVAR_LOGS_DETALHADOS',
+      valor: 'false',
+      descricao: 'Ativar logs detalhados no console para debugging',
       tipo: 'boolean'
     }
   ];

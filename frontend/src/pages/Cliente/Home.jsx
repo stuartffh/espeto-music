@@ -50,18 +50,18 @@ function Home() {
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     Promise.all([
-      axios.get(`${API_URL}/api/config/MODO_GRATUITO`),
-      axios.get(`${API_URL}/api/config/TEMPO_MAXIMO_MUSICA`)
+      axios.get(`${API_URL}/api/public/config/MODO_FILA`),
+      axios.get(`${API_URL}/api/public/config/TEMPO_MAXIMO_MUSICA`)
     ])
       .then(([resModo, resTempo]) => {
-        setModoGratuito(resModo.data.valor === 'true');
-        const segundos = parseInt(resTempo.data.valor) || 480;
-        setTempoMaximo(Math.floor(segundos / 60));
+        setModoGratuito(resModo.data.valor === 'gratuito');
+        const minutos = parseInt(resTempo.data.valor) || 10;
+        setTempoMaximo(minutos);
       })
       .catch(error => {
         console.error('Erro ao buscar config:', error);
         setModoGratuito(true);
-        setTempoMaximo(8);
+        setTempoMaximo(10);
       })
       .finally(() => {
         setCarregandoConfig(false);
