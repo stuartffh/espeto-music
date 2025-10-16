@@ -118,32 +118,39 @@ async function baixarVideo(youtubeId) {
       // Sistema inteligente de seleção de qualidade em ordem decrescente
       // Tenta obter a melhor qualidade possível, fazendo fallback se não disponível
       //
-      // Ordem de prioridade:
-      // 1. 1080p (video 137 + audio 140) - Melhor qualidade comum
-      // 2. 720p (video 136 + audio 140) - Alta qualidade
-      // 3. Melhor video MP4 <= 1080p + melhor audio M4A
-      // 4. Formato pre-merged 22 (720p com audio)
-      // 5. Melhor video <= 720p + melhor audio
-      // 6. Formato pre-merged 18 (360p com audio)
-      // 7. Melhor qualidade disponível (fallback final)
+      // Ordem de prioridade (prioriza formatos pre-merged para evitar bugs de merge):
+      // 1. Formato pre-merged 22 (720p com audio) - Mais estável
+      // 2. 720p (video 136 + audio 140) - Alta qualidade com merge
+      // 3. 1080p (video 137 + audio 140) - Melhor qualidade (requer merge)
+      // 4. Formato pre-merged 18 (360p com audio) - Fallback estável
+      // 5. Melhor video MP4 <= 1080p + melhor audio M4A
+      // 6. Melhor video <= 720p + melhor audio
+      // 7. Melhor MP4 disponível
+      // 8. Melhor qualidade disponível (último recurso)
+      //
+      // Nota: Priorizamos formatos pre-merged (22, 18) para evitar o bug
+      // 'NoneType' object has no attribute 'lower' durante o merge do ffmpeg
       const formatString = [
-        '137+140',                                      // 1080p video + 128kbps audio (ideal)
-        '136+140',                                      // 720p video + 128kbps audio
+        '22',                                           // 720p pre-merged (PRIORIDADE - mais estável)
+        '136+140',                                      // 720p video + audio (merge seguro)
+        '137+140',                                      // 1080p video + audio (melhor qualidade)
+        '18',                                           // 360p pre-merged (fallback estável)
         'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]', // Melhor <=1080p
-        '22',                                           // 720p pre-merged
         'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]',  // Melhor <=720p
-        '18',                                           // 360p pre-merged
         'best[ext=mp4]',                                // Melhor MP4 disponível
         'best'                                          // Qualquer formato (último recurso)
       ].join('/');
 
-      const command = `"${ytdlpPath}" "${videoUrl}" -f "${formatString}" --merge-output-format mp4 --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --progress --newline`;
+      // Adicionar flags para evitar bugs do yt-dlp com merge
+      // --no-check-formats: evita verificação que pode causar erro
+      // --compat-options no-live-chat: evita processar live chat que pode causar bugs
+      const command = `"${ytdlpPath}" "${videoUrl}" -f "${formatString}" --merge-output-format mp4 --no-check-formats --compat-options no-live-chat --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --progress --newline`;
 
       console.log(`🎬 Executando yt-dlp:`);
       console.log(`   URL: ${videoUrl}`);
       console.log(`   Output: ${tempOutputTemplate}.mp4`);
-      console.log(`   Formato: Qualidade inteligente (1080p → 720p → 360p)`);
-      console.log(`   Strategy: Melhor qualidade disponível com fallback automático`);
+      console.log(`   Formato: Qualidade inteligente (720p pre-merged → 1080p → 360p)`);
+      console.log(`   Strategy: Prioriza formatos estáveis, fallback para melhor qualidade`);
 
       const ytdlp = spawn(command, {
         shell: true,
