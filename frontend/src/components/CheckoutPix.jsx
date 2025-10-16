@@ -187,11 +187,17 @@ function CheckoutPix({ pedido, onClose, onSuccess }) {
                 {/* QR Code */}
                 <div className="flex flex-col items-center">
                   <div className="p-4 bg-white rounded-xl shadow-lg">
-                    <img
-                      src={pagamento.pix.qrCode}
-                      alt="QR Code PIX"
-                      className="w-64 h-64"
-                    />
+                    {pagamento.pix.qrCode ? (
+                      <img
+                        src={`data:image/png;base64,${pagamento.pix.qrCode}`}
+                        alt="QR Code PIX"
+                        className="w-64 h-64"
+                      />
+                    ) : (
+                      <div className="w-64 h-64 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        <p className="text-sm text-gray-500">QR Code não disponível</p>
+                      </div>
+                    )}
                   </div>
                   <p className="mt-3 text-sm text-center text-gray-600 dark:text-gray-400">
                     Escaneie com o app do seu banco

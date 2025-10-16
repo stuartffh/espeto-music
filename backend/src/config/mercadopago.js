@@ -221,13 +221,25 @@ async function criarPagamentoPix({
     console.log('✅ [MP CONFIG] Pagamento PIX criado com sucesso!');
     console.log('✅ [MP CONFIG] Payment ID:', response.id);
     console.log('✅ [MP CONFIG] Status:', response.status);
-    console.log('✅ [MP CONFIG] QR Code disponível:', !!response.point_of_interaction?.transaction_data?.qr_code);
+    console.log('✅ [MP CONFIG] QR Code Base64 disponível:', !!response.point_of_interaction?.transaction_data?.qr_code_base64);
+    console.log('✅ [MP CONFIG] QR Code Text disponível:', !!response.point_of_interaction?.transaction_data?.qr_code);
+    console.log('✅ [MP CONFIG] Webhook URL:', paymentData.notification_url);
+
+    const qrCodeBase64 = response.point_of_interaction?.transaction_data?.qr_code_base64;
+    const qrCodeText = response.point_of_interaction?.transaction_data?.qr_code;
+
+    if (!qrCodeBase64) {
+      console.log('⚠️ [MP CONFIG] QR Code Base64 não retornado pelo Mercado Pago!');
+    }
+    if (!qrCodeText) {
+      console.log('⚠️ [MP CONFIG] QR Code Text não retornado pelo Mercado Pago!');
+    }
 
     return {
       id: response.id,
       status: response.status,
-      qrCode: response.point_of_interaction?.transaction_data?.qr_code_base64,
-      qrCodeText: response.point_of_interaction?.transaction_data?.qr_code,
+      qrCode: qrCodeBase64,
+      qrCodeText: qrCodeText,
       pixExpirationDate: response.date_of_expiration,
       transactionAmount: response.transaction_amount,
     };
