@@ -139,6 +139,34 @@ async function concluirMusica(pedidoId) {
 }
 
 /**
+ * Verifica se há músicas na fila aguardando e inicia automaticamente
+ * Retorna a música iniciada ou null
+ */
+async function iniciarProximaMusicaSeNecessario() {
+  // Verificar se já há música tocando
+  const musicaTocando = await buscarMusicaAtual();
+
+  if (musicaTocando) {
+    return null; // Já há música tocando
+  }
+
+  // Buscar primeira música paga na fila
+  const proximaMusica = await prisma.pedidoMusica.findFirst({
+    where: {
+      status: 'pago',
+    },
+    orderBy: { criadoEm: 'asc' },
+  });
+
+  if (proximaMusica) {
+    console.log('🎵 Autoplay: Iniciando primeira música da fila:', proximaMusica.musicaTitulo);
+    return await tocarMusica(proximaMusica.id);
+  }
+
+  return null;
+}
+
+/**
  * Pula música atual
  */
 async function pularMusica(pedidoId) {
@@ -214,4 +242,5 @@ module.exports = {
   cancelarPedido,
   buscarHistorico,
   buscarPedidoPorId,
+  iniciarProximaMusicaSeNecessario,
 };

@@ -21,6 +21,7 @@ let estadoMemoria = {
 
 let intervalSync = null;
 let intervalBackup = null;
+let intervalAutoplay = null;
 let io = null;
 
 /**
@@ -33,6 +34,9 @@ async function inicializar(socketIo) {
 
   // Recuperar estado do banco de dados
   await recuperarEstado();
+
+  // Iniciar verificador de autoplay
+  iniciarVerificadorAutoplay();
 
   console.log('✅ Player Service inicializado');
 }
@@ -390,6 +394,46 @@ function pararSincronizacao() {
   if (intervalSync) {
     clearInterval(intervalSync);
     intervalSync = null;
+  }
+}
+
+/**
+ * Inicia verificador periódico de autoplay
+ * Verifica a cada 10 segundos se há músicas na fila e player parado
+ */
+function iniciarVerificadorAutoplay() {
+  pararVerificadorAutoplay();
+
+  console.log('🔄 Iniciando verificador de autoplay (a cada 10 segundos)');
+
+  intervalAutoplay = setInterval(async () => {
+    try {
+      // Se já há música tocando, não fazer nada
+      if (estadoMemoria.musicaAtual && estadoMemoria.status === 'playing') {
+        return;
+      }
+
+      // Buscar próxima música na fila
+      const musicaService = require('./musicaService');
+      const proximaMusica = await musicaService.iniciarProximaMusicaSeNecessario();
+
+      if (proximaMusica) {
+        console.log('🎵 Autoplay: Verificador detectou música aguardando e iniciou automaticamente');
+        await iniciarMusica(proximaMusica);
+      }
+    } catch (error) {
+      console.error('❌ Erro no verificador de autoplay:', error);
+    }
+  }, 10000); // A cada 10 segundos
+}
+
+/**
+ * Para verificador de autoplay
+ */
+function pararVerificadorAutoplay() {
+  if (intervalAutoplay) {
+    clearInterval(intervalAutoplay);
+    intervalAutoplay = null;
   }
 }
 

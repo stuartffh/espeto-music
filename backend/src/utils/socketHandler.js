@@ -77,11 +77,12 @@ function setupSocketHandlers(io) {
         // Notificar todos os clientes
         io.emit('fila:atualizada', fila);
 
-        // Se não houver música tocando, iniciar esta usando o playerService
-        const estadoPlayer = playerService.obterEstado();
-        if (!estadoPlayer.musicaAtual) {
-          const pedido = await musicaService.tocarMusica(data.pedidoId);
-          playerService.iniciarMusica(pedido);
+        // Verificar se precisa iniciar música automaticamente
+        const musicaIniciada = await musicaService.iniciarProximaMusicaSeNecessario();
+
+        if (musicaIniciada) {
+          console.log('🎵 Autoplay: Música iniciada automaticamente via socket');
+          await playerService.iniciarMusica(musicaIniciada);
         }
       } catch (error) {
         console.error('Erro ao processar pedido pago:', error);
