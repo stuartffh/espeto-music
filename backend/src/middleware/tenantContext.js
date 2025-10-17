@@ -76,7 +76,36 @@ async function tenantContext(req, res, next) {
     }
 
     // 2. Tentar extrair identificador do estabelecimento
-    const tenantIdentifier = extractTenantIdentifier(req);
+    let tenantIdentifier = extractTenantIdentifier(req);
+
+    // 2.1. Se não encontrou tenant na URL/header, tentar extrair do JWT token
+    if (!tenantIdentifier && req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.replace('Bearer ', '');
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        // Se token tem estabelecimentoId, usar ele
+        if (decoded.estabelecimentoId) {
+          console.log('🔑 [TENANT] Estabelecimento extraído do JWT:', decoded.estabelecimentoId);
+          req.estabelecimentoId = decoded.estabelecimentoId;
+
+          // Buscar estabelecimento pelo ID
+          const estabelecimento = await prisma.estabelecimento.findUnique({
+            where: { id: decoded.estabelecimentoId }
+          });
+
+          if (estabelecimento && estabelecimento.ativo) {
+            req.estabelecimento = estabelecimento;
+            req.isSuperAdmin = false;
+            console.log(`🏢 Tenant Context (do JWT): ${estabelecimento.nome} (${estabelecimento.slug})`);
+            return next();
+          }
+        }
+      } catch (error) {
+        // Token inválido ou não tem estabelecimentoId - continua para verificar rotas públicas
+        console.log('⚠️  [TENANT] Não foi possível extrair estabelecimento do JWT');
+      }
+    }
 
     if (!tenantIdentifier) {
       // Rotas públicas que não precisam de tenant
