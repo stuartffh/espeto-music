@@ -15,6 +15,7 @@ const themeRoutes = require('./themeRoutes');
 const giftCardRoutes = require('./giftCardRoutes');
 const webhookRoutes = require('./webhookRoutes');
 const carrinhoRoutes = require('./carrinhoRoutes');
+const superAdminRoutes = require('./superAdminRoutes');
 
 // Health check
 router.get('/health', (req, res) => {
@@ -24,6 +25,9 @@ router.get('/health', (req, res) => {
     uptime: process.uptime(),
   });
 });
+
+// Super Admin (requer autenticação especial)
+router.use('/super-admin', superAdminRoutes);
 
 // Rotas públicas (sem autenticação)
 router.use('/public', publicRoutes);
