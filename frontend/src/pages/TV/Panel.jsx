@@ -249,12 +249,30 @@ function Panel() {
 
     // Backend manda iniciar/trocar música
     const handlePlayerIniciar = (data) => {
-      console.log('▶️ Backend: Iniciar música', data.musica.musicaTitulo);
+      console.log('\n🚀 ═══════════════════════════════════════════════════════');
+      console.log('   EVENTO: player:iniciar recebido do BACKEND');
+      console.log('   ═══════════════════════════════════════════════════════');
+      console.log('📋 Dados recebidos:');
+      console.log('   - Música:', data.musica?.musicaTitulo || 'N/A');
+      console.log('   - YouTube ID:', data.musica?.musicaYoutubeId || 'N/A');
+      console.log('   - Cliente:', data.musica?.nomeCliente || 'Anônimo');
+      console.log('   - Status do estado:', data.estado?.status);
+
+      // Atualizar estado do player (isso vai disparar o useEffect de autoplay)
+      console.log('✅ Atualizando estadoPlayer (isso dispara useEffect de autoplay)...');
       setEstadoPlayer(data.estado);
+
+      // Resetar tempo
       setCurrentTime(0);
+
+      // Definir duração se disponível
       if (data.estado.musicaAtual?.musicaDuracao) {
         setDuration(data.estado.musicaAtual.musicaDuracao);
+        console.log('   - Duração:', data.estado.musicaAtual.musicaDuracao, 'segundos');
       }
+
+      console.log('✅ Estado atualizado! O useEffect deve disparar agora...');
+      console.log('═══════════════════════════════════════════════════════\n');
     };
 
     // Backend manda pausar
@@ -399,9 +417,19 @@ function Panel() {
           handleVideoEnd();
           break;
         case 'player-ready':
-          console.log('✅ Player da TV sinalizou que está pronto');
+          console.log('\n🎉 ═══════════════════════════════════════════════════════');
+          console.log('   PLAYER READY - Iframe está pronto para receber comandos!');
+          console.log('   ═══════════════════════════════════════════════════════');
+          console.log('   - autoplayConsent:', Boolean(consentValue));
+          console.log('   - estadoPlayer atual:', estadoPlayer);
+          console.log('   - musicaAtual:', estadoPlayer?.musicaAtual?.musicaTitulo || 'Nenhuma');
+
           setIframeReady(true);
           setAutoplayConsent(Boolean(consentValue));
+
+          console.log('✅ iframeReady definido como TRUE');
+          console.log('   🔔 Isso deve disparar o useEffect de autoplay se houver música!');
+          console.log('═══════════════════════════════════════════════════════\n');
           break;
         case 'autoplay-consent-changed':
           setAutoplayConsent(Boolean(event.data?.value));
@@ -459,11 +487,6 @@ function Panel() {
             videoRef.current.contentWindow.postMessage({ type: 'stop' }, '*');
           }
           break;
-        case 'video-ended':
-          // Vídeo do YouTube terminou, tocar próxima música da fila
-          console.log('🎬 Vídeo terminou, chamando handleVideoEnd para tocar próxima...');
-          handleVideoEnd();
-          break;
         case 'video-error':
           // Erro no vídeo do YouTube, pular para próxima
           console.error('❌ Erro no YouTube Player:', event.data.error);
@@ -506,23 +529,37 @@ function Panel() {
   }, [handleVideoEnd, toggleFullscreen]);
 
   const sendVideoToIframe = useCallback((musica) => {
+    console.log('\n🎬 ═══════════════════════════════════════════════════════');
+    console.log('   ENVIANDO MÚSICA PARA O PLAYER');
+    console.log('   ═══════════════════════════════════════════════════════');
+
     if (!musica) {
+      console.error('❌ [sendVideoToIframe] Música não fornecida!');
+      console.log('═══════════════════════════════════════════════════════\n');
       return;
     }
+
+    console.log('📋 Dados da música:');
+    console.log('   - ID:', musica.id);
+    console.log('   - Título:', musica.musicaTitulo);
+    console.log('   - YouTube ID:', musica.musicaYoutubeId);
+    console.log('   - Cliente:', musica.nomeCliente || 'Anônimo');
 
     const iframeWindow = videoRef.current?.contentWindow;
 
     if (!iframeWindow) {
-      console.warn('ℹ️ Player da TV ainda não está pronto para receber vídeos.');
+      console.error('❌ [sendVideoToIframe] Iframe window não está disponível!');
+      console.log('   - videoRef.current:', videoRef.current);
+      console.log('   - Possível causa: Iframe ainda não montado no DOM');
+      console.log('═══════════════════════════════════════════════════════\n');
       return;
     }
 
+    console.log('✅ Iframe window disponível');
+
     // Enviar YouTube ID diretamente para o player decidir como tocar
     // O player pode usar YouTube embed (sem download) ou stream local (com download)
-    console.log('🎵 Enviando música para o player:', musica.musicaTitulo);
-    console.log('🆔 YouTube ID:', musica.musicaYoutubeId);
-
-    iframeWindow.postMessage({
+    const message = {
       type: 'load-video',
       youtubeId: musica.musicaYoutubeId,
       streamUrl: `${API_URL}/api/stream/video/${musica.musicaYoutubeId}`,
@@ -530,21 +567,48 @@ function Panel() {
       musica: {
         titulo: musica.musicaTitulo,
         cliente: musica.nomeCliente
-      }
-    }, '*');
+      },
+      parentOrigin: window.location.origin
+    };
+
+    console.log('📤 Enviando postMessage para iframe:');
+    console.log('   - type:', message.type);
+    console.log('   - youtubeId:', message.youtubeId);
+    console.log('   - autoplayConsent:', message.autoplayConsent);
+
+    try {
+      iframeWindow.postMessage(message, '*');
+      console.log('✅ postMessage enviado com sucesso!');
+    } catch (error) {
+      console.error('❌ Erro ao enviar postMessage:', error);
+    }
+
+    console.log('═══════════════════════════════════════════════════════\n');
   }, [autoplayConsent]);
 
+  // 🎯 AUTOPLAY: Garantir que música seja enviada ao player sempre que mudar
   useEffect(() => {
+    console.log('🔄 [AUTOPLAY] useEffect disparado - Verificando condições...');
+    console.log('   - estadoPlayer:', estadoPlayer);
+    console.log('   - musicaAtual:', estadoPlayer?.musicaAtual);
+    console.log('   - iframeReady:', iframeReady);
+
     if (!estadoPlayer?.musicaAtual) {
+      console.log('⚠️  [AUTOPLAY] Sem música atual, não há o que tocar');
       return;
     }
 
     if (!iframeReady) {
+      console.log('⚠️  [AUTOPLAY] Iframe não está pronto ainda, aguardando...');
       return;
     }
 
+    console.log('✅ [AUTOPLAY] Todas as condições OK! Enviando música para o player...');
+    console.log('   - Título:', estadoPlayer.musicaAtual.musicaTitulo);
+    console.log('   - YouTube ID:', estadoPlayer.musicaAtual.musicaYoutubeId);
+
     sendVideoToIframe(estadoPlayer.musicaAtual);
-  }, [estadoPlayer?.musicaAtual, iframeReady, sendVideoToIframe]);
+  }, [estadoPlayer?.musicaAtual?.id, iframeReady, sendVideoToIframe]);
 
   // Atualizar tempo atual a cada segundo quando tocando
   useEffect(() => {
@@ -697,11 +761,18 @@ function Panel() {
                   className="w-full h-full border-0"
                   allow="autoplay; fullscreen"
                   onLoad={() => {
-                    console.log('✅ Player da TV carregado');
+                    console.log('\n📺 ═══════════════════════════════════════════════════════');
+                    console.log('   IFRAME DO PLAYER CARREGADO');
+                    console.log('   ═══════════════════════════════════════════════════════');
                     const iframeWindow = videoRef.current?.contentWindow;
                     if (iframeWindow) {
+                      console.log('✅ contentWindow disponível, enviando host-ready...');
                       iframeWindow.postMessage({ type: 'host-ready' }, '*');
+                      console.log('✅ Mensagem host-ready enviada');
+                    } else {
+                      console.error('❌ contentWindow NÃO disponível!');
                     }
+                    console.log('═══════════════════════════════════════════════════════\n');
                   }}
                 />
               </div>

@@ -510,6 +510,16 @@ async function garantirAutoplay() {
   }
 }
 
+/**
+ * Atualiza o tempo atual do player (chamado pela TV via WebSocket)
+ */
+function atualizarTempoAtual(tempo) {
+  if (estadoMemoria.status === 'playing' && typeof tempo === 'number' && tempo >= 0) {
+    estadoMemoria.tempoAtual = tempo;
+    estadoMemoria.ultimaAtualizacao = Date.now();
+  }
+}
+
 module.exports = {
   inicializar,
   iniciarMusica,
@@ -522,4 +532,5 @@ module.exports = {
   obterEstado,
   musicaTerminou,
   garantirAutoplay, // ⭐ NOVA FUNÇÃO EXPORTADA
+  atualizarTempoAtual, // ⭐ NOVA FUNÇÃO para sync de tempo
 };
