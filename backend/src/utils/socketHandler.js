@@ -1,23 +1,29 @@
 const musicaService = require('../services/musicaService');
 const playerService = require('../services/playerService');
 const remoteControlService = require('../services/remoteControlService');
+const { authenticateTV, authenticateAdmin, emitToEstabelecimento } = require('../middleware/socketTenantContext');
 
 /**
- * 🔌 CONFIGURAÇÃO DE WEBSOCKET
+ * 🔌 CONFIGURAÇÃO DE WEBSOCKET MULTI-TENANT
  *
- * Sistema centralizado de eventos WebSocket.
- * Uma única conexão, organizada e eficiente.
+ * Sistema centralizado de eventos WebSocket com isolamento por estabelecimento.
+ * Cada TV/Admin/Cliente se conecta a uma room específica do seu estabelecimento.
  *
- * Eventos disponíveis:
+ * Autenticação:
+ * - tv-authenticate - TV autentica com código único
+ * - admin-authenticate - Admin autentica com slug do estabelecimento
+ *
+ * Eventos disponíveis (requerem autenticação):
  * - request:estado-inicial - Cliente solicita estado completo ao conectar
  * - request:fila - Cliente solicita atualização da fila
  * - request:musica-atual - Cliente solicita música atual
  * - musica:terminou - TV notifica que música terminou
  * - pedido:pago - Cliente notifica pagamento aprovado
+ * - player:tempo-sync - TV envia atualização de tempo do player
  * - remote-control-auth - Autenticação para controle remoto
  * - remote-control-command - Comando de controle remoto
  *
- * Emissões do servidor:
+ * Emissões do servidor (isoladas por room):
  * - estado:inicial - Estado completo (fila + música atual)
  * - fila:atualizada - Fila atualizada
  * - fila:vazia - Fila ficou vazia
@@ -28,28 +34,57 @@ const remoteControlService = require('../services/remoteControlService');
  * - player:parar - Parar reprodução
  * - config:atualizada - Configuração alterada
  * - pedido:pago - Confirmação de pagamento
- * - remote-control - Comando para o player
- * - remote-control-response - ACK/NACK de comandos
  */
 function setupSocketHandlers(io) {
   // Inicializar serviços com io
   playerService.inicializar(io);
   remoteControlService.initialize(io);
 
-  console.log('🔌 [WEBSOCKET] Configurando handlers...');
+  console.log('🔌 [WEBSOCKET] Configurando handlers multi-tenant...');
 
   io.on('connection', (socket) => {
     console.log(`✅ [WEBSOCKET] Cliente conectado: ${socket.id}`);
     console.log(`📊 [WEBSOCKET] Total de clientes: ${io.engine.clientsCount}`);
     console.log(`🔧 [WEBSOCKET] Transport: ${socket.conn.transport.name}`);
 
-    // ========== REQUESTS DO CLIENTE ==========
+    // ========== AUTENTICAÇÃO MULTI-TENANT ==========
+
+    // TV autentica com código único
+    socket.on('tv-authenticate', async (data) => {
+      try {
+        const { tvCode } = data;
+        await authenticateTV(socket, tvCode);
+        console.log(`📺 [WEBSOCKET] TV autenticada: ${tvCode} → estabelecimento ${socket.estabelecimentoId}`);
+      } catch (error) {
+        console.error('❌ [WEBSOCKET] Erro ao autenticar TV:', error);
+        socket.emit('auth-failed', { error: error.message });
+      }
+    });
+
+    // Admin autentica com slug do estabelecimento
+    socket.on('admin-authenticate', async (data) => {
+      try {
+        const { estabelecimentoSlug } = data;
+        await authenticateAdmin(socket, estabelecimentoSlug);
+        console.log(`👤 [WEBSOCKET] Admin autenticado: ${estabelecimentoSlug} → estabelecimento ${socket.estabelecimentoId}`);
+      } catch (error) {
+        console.error('❌ [WEBSOCKET] Erro ao autenticar Admin:', error);
+        socket.emit('auth-failed', { error: error.message });
+      }
+    });
+
+    // ========== REQUESTS DO CLIENTE (MULTI-TENANT) ==========
 
     // Envia estado completo ao conectar
     socket.on('request:estado-inicial', async () => {
       try {
-        const musicaAtual = await musicaService.buscarMusicaAtual();
-        const fila = await musicaService.buscarFilaMusicas();
+        const estabelecimentoId = socket.estabelecimentoId;
+        if (!estabelecimentoId) {
+          return socket.emit('error', { message: 'Autenticação necessária' });
+        }
+
+        const musicaAtual = await musicaService.buscarMusicaAtual(estabelecimentoId);
+        const fila = await musicaService.buscarFilaMusicas(estabelecimentoId);
 
         socket.emit('estado:inicial', {
           musicaAtual,
@@ -64,7 +99,12 @@ function setupSocketHandlers(io) {
     // Cliente solicita atualização da fila
     socket.on('request:fila', async () => {
       try {
-        const fila = await musicaService.buscarFilaMusicas();
+        const estabelecimentoId = socket.estabelecimentoId;
+        if (!estabelecimentoId) {
+          return socket.emit('error', { message: 'Autenticação necessária' });
+        }
+
+        const fila = await musicaService.buscarFilaMusicas(estabelecimentoId);
         socket.emit('fila:atualizada', fila);
       } catch (error) {
         console.error('Erro ao enviar fila:', error);
@@ -75,7 +115,12 @@ function setupSocketHandlers(io) {
     // Cliente solicita música atual
     socket.on('request:musica-atual', async () => {
       try {
-        const musicaAtual = await musicaService.buscarMusicaAtual();
+        const estabelecimentoId = socket.estabelecimentoId;
+        if (!estabelecimentoId) {
+          return socket.emit('error', { message: 'Autenticação necessária' });
+        }
+
+        const musicaAtual = await musicaService.buscarMusicaAtual(estabelecimentoId);
         socket.emit('musica:atual', musicaAtual);
       } catch (error) {
         console.error('Erro ao enviar música atual:', error);
@@ -86,14 +131,19 @@ function setupSocketHandlers(io) {
     // Painel TV notifica que música terminou
     socket.on('musica:terminou', async (data) => {
       try {
-        console.log('🎵 Música terminou:', data);
+        const estabelecimentoId = socket.estabelecimentoId;
+        if (!estabelecimentoId) {
+          return socket.emit('error', { message: 'Autenticação necessária' });
+        }
+
+        console.log('🎵 Música terminou no estabelecimento:', estabelecimentoId);
 
         // Usar o playerService para gerenciar a transição
-        await playerService.musicaTerminou();
+        await playerService.musicaTerminou(estabelecimentoId);
 
-        // Atualizar fila para todos os clientes
-        const fila = await musicaService.buscarFilaMusicas();
-        io.emit('fila:atualizada', fila);
+        // Atualizar fila para clientes DESTE estabelecimento
+        const fila = await musicaService.buscarFilaMusicas(estabelecimentoId);
+        emitToEstabelecimento(io, estabelecimentoId, 'fila:atualizada', fila);
       } catch (error) {
         console.error('Erro ao processar término da música:', error);
         socket.emit('error', { message: 'Erro ao processar término da música' });
@@ -103,19 +153,24 @@ function setupSocketHandlers(io) {
     // Cliente pagou música
     socket.on('pedido:pago', async (data) => {
       try {
-        console.log('💰 [SOCKET] Pedido pago recebido:', data);
+        const estabelecimentoId = socket.estabelecimentoId;
+        if (!estabelecimentoId) {
+          return socket.emit('error', { message: 'Autenticação necessária' });
+        }
+
+        console.log('💰 [SOCKET] Pedido pago recebido no estabelecimento:', estabelecimentoId);
 
         // Buscar estado atualizado
-        const fila = await musicaService.buscarFilaMusicas();
+        const fila = await musicaService.buscarFilaMusicas(estabelecimentoId);
 
-        // Notificar todos os clientes
-        io.emit('fila:atualizada', fila);
+        // Notificar clientes DESTE estabelecimento
+        emitToEstabelecimento(io, estabelecimentoId, 'fila:atualizada', fila);
         console.log('📡 [SOCKET] Fila atualizada emitida');
 
         // 🎯 GARANTIR AUTOPLAY - Função centralizada e robusta
         console.log('💚 [SOCKET] Garantindo autoplay...');
         try {
-          const musicaIniciada = await playerService.garantirAutoplay();
+          const musicaIniciada = await playerService.garantirAutoplay(estabelecimentoId);
 
           if (musicaIniciada) {
             console.log('✅ [SOCKET] Autoplay garantido! Música:', musicaIniciada.musicaTitulo);
@@ -133,8 +188,13 @@ function setupSocketHandlers(io) {
     // TV envia atualização de tempo do player (YouTube)
     socket.on('player:tempo-sync', (data) => {
       try {
+        const estabelecimentoId = socket.estabelecimentoId;
+        if (!estabelecimentoId) {
+          return;
+        }
+
         if (typeof data.tempo === 'number' && data.tempo >= 0) {
-          playerService.atualizarTempoAtual(data.tempo);
+          playerService.atualizarTempoAtual(data.tempo, estabelecimentoId);
         }
       } catch (error) {
         console.error('Erro ao sincronizar tempo do player:', error);
