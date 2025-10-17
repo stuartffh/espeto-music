@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Music, User, Clock, ChevronLeft, ChevronRight, Info, CreditCard, Gift, X, Loader2 } from 'lucide-react';
-import { buscarMusicas, criarPedidoMusica, buscarFila, validarGiftCard, usarGiftCard } from '../../services/api';
-import socket from '../../services/socket';
+import { buscarMusicas, criarPedidoMusica, buscarFila, validarGiftCard, usarGiftCard, setTenantSlug } from '../../services/api';
+import { socket, joinEstabelecimento } from '../../services/socket';
 import useStore from '../../store/useStore';
 import { categorias, getSugestoesDinamicas } from '../../data/musicSuggestions';
 import axios from 'axios';
@@ -29,8 +29,11 @@ import useCarrinhoStore from '../../store/carrinhoStore';
 
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useToast } from '../../hooks/useToast';
+import { useTenant } from '../../hooks/useTenant';
 
 function Home() {
+  // MULTI-TENANT: Obter tenant do contexto
+  const { slug, hasTenant, isLoading: tenantLoading } = useTenant();
   const [busca, setBusca] = useState('');
   const [resultados, setResultados] = useState([]);
   const [carregandoBusca, setCarregandoBusca] = useState(false);
@@ -58,7 +61,28 @@ function Home() {
   const { toast, showToast, hideToast } = useToast();
   const { adicionarMusica, carregarCarrinho } = useCarrinhoStore();
 
+  // MULTI-TENANT: Configurar API e WebSocket com tenant
   useEffect(() => {
+    if (!slug || tenantLoading) return;
+
+    console.log('🏢 [HOME] Configurando tenant:', slug);
+
+    // Configurar API com tenant
+    setTenantSlug(slug);
+
+    // Cliente entra na room do estabelecimento
+    joinEstabelecimento(slug);
+
+    console.log('✅ [HOME] Tenant configurado com sucesso');
+  }, [slug, tenantLoading]);
+
+  useEffect(() => {
+    // Aguardar tenant estar disponível antes de carregar dados
+    if (!slug || tenantLoading) {
+      console.log('⏳ [HOME] Aguardando tenant...');
+      return;
+    }
+
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     Promise.all([
       axios.get(`${API_URL}/api/public/config/modo_gratuito`),
@@ -96,7 +120,7 @@ function Home() {
       socket.off('fila:atualizada');
       socket.off('pedido:pago');
     };
-  }, [setFila, carregarCarrinho]);
+  }, [setFila, carregarCarrinho, slug, tenantLoading]);
 
   const handleBuscar = async (e) => {
     e.preventDefault();
