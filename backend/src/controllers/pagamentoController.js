@@ -134,35 +134,40 @@ async function webhook(req, res) {
     const io = req.app.get('io');
 
     if (resultado?.pedido) {
-      // Garantir que o vídeo esteja disponível antes de iniciar
-      if (resultado.deveIniciarReproducao) {
-        try {
-          await downloadService.baixarVideo(resultado.pedido.musicaYoutubeId);
-        } catch (error) {
-          console.error('❌ Erro ao garantir download antes da reprodução:', error);
-        }
-
-        try {
-          const estadoAtual = playerService.obterEstado();
-          const precisaReiniciar =
-            !estadoAtual.musicaAtual ||
-            estadoAtual.musicaAtual.id !== resultado.pedido.id ||
-            estadoAtual.status !== 'playing';
-
-          if (precisaReiniciar) {
-            await playerService.iniciarMusica(resultado.pedido);
-          }
-        } catch (error) {
-          console.error('❌ Erro ao iniciar reprodução automática:', error);
-        }
-      }
-
+      // Atualizar fila via WebSocket ANTES de tentar autoplay
       if (io) {
         const fila = await musicaService.buscarFilaMusicas();
         io.emit('fila:atualizada', fila);
+        console.log('📡 [WEBHOOK] Fila atualizada emitida via socket');
+      }
 
-        if (resultado.paymentInfo?.status === 'approved') {
-          // Emitir evento com pedidoId e pagamentoId
+      // 🎯 GARANTIR AUTOPLAY - Função centralizada e robusta
+      if (resultado.paymentInfo?.status === 'approved') {
+        console.log('💚 [WEBHOOK] Pagamento aprovado! Garantindo autoplay...');
+
+        try {
+          // Garantir download do vídeo ANTES de tentar iniciar
+          await downloadService.baixarVideo(resultado.pedido.musicaYoutubeId);
+          console.log('✅ [WEBHOOK] Vídeo disponível para reprodução');
+        } catch (error) {
+          console.error('❌ [WEBHOOK] Erro ao garantir download:', error.message);
+        }
+
+        try {
+          // CHAMAR FUNÇÃO CENTRALIZADA DE AUTOPLAY
+          const musicaIniciada = await playerService.garantirAutoplay();
+
+          if (musicaIniciada) {
+            console.log('✅ [WEBHOOK] Autoplay garantido! Música:', musicaIniciada.musicaTitulo);
+          } else {
+            console.log('ℹ️  [WEBHOOK] Autoplay não necessário (já está tocando ou fila vazia)');
+          }
+        } catch (error) {
+          console.error('❌ [WEBHOOK] Erro ao garantir autoplay:', error.message);
+        }
+
+        // Emitir evento de pagamento aprovado
+        if (io) {
           const eventData = {
             pedidoId: resultado.pedido.id,
             pagamentoId: resultado.pedido.pagamento?.id || resultado.pedido.pagamentoCarrinho?.id

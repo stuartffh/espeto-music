@@ -154,39 +154,20 @@ async function criar(req, res) {
         const fila = await musicaService.buscarFilaMusicas();
         console.log('📋 [MODO GRATUITO] Fila atual:', fila.length, 'músicas');
         io.emit('fila:atualizada', fila);
+      }
 
-        // Se não houver música tocando no playerService, iniciar
-        const estadoPlayer = playerService.obterEstado();
-        console.log('🎮 [MODO GRATUITO] Estado do player:', {
-          temMusicaAtual: !!estadoPlayer.musicaAtual,
-          status: estadoPlayer.status
-        });
+      // 🎯 GARANTIR AUTOPLAY - Função centralizada e robusta
+      console.log('💚 [MODO GRATUITO] Garantindo autoplay...');
+      try {
+        const musicaIniciada = await playerService.garantirAutoplay();
 
-        if (!estadoPlayer.musicaAtual) {
-          console.log('▶️ [MODO GRATUITO] Nenhuma música tocando no player, iniciando automaticamente...');
-
-          // Limpar qualquer música com status "tocando" no banco (dados stale)
-          const musicaStale = await musicaService.buscarMusicaAtual();
-          if (musicaStale) {
-            console.log('🧹 [MODO GRATUITO] Limpando música stale do banco:', musicaStale.id);
-            await prisma.pedidoMusica.update({
-              where: { id: musicaStale.id },
-              data: { status: 'pago' },
-            });
-          }
-
-          // Agora marcar a nova música como tocando
-          const musicaTocando = await prisma.pedidoMusica.update({
-            where: { id: pedidoPago.id },
-            data: { status: 'tocando' },
-          });
-          console.log('🎵 [MODO GRATUITO] Música marcada como tocando:', musicaTocando.id, musicaTocando.musicaTitulo);
-
-          await playerService.iniciarMusica(musicaTocando);
-          console.log('✅ [MODO GRATUITO] playerService.iniciarMusica() chamado com sucesso');
+        if (musicaIniciada) {
+          console.log('✅ [MODO GRATUITO] Autoplay garantido! Música:', musicaIniciada.musicaTitulo);
         } else {
-          console.log('⏭️ [MODO GRATUITO] Já existe música tocando, adicionando à fila');
+          console.log('ℹ️  [MODO GRATUITO] Autoplay não necessário (já está tocando ou fila vazia)');
         }
+      } catch (error) {
+        console.error('❌ [MODO GRATUITO] Erro ao garantir autoplay:', error.message);
       }
 
       if (io) {

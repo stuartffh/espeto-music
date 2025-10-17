@@ -37,7 +37,14 @@
       "WebFetch(domain:github.com)",
       "Bash(node test-moderation-crud.js)",
       "Bash(git pull:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(cmd //c \"where node 2>nul || echo Node.js nao encontrado no PATH\")",
+      "Read(//e/dev/**)",
+      "Bash(cmd //c \"where npm\")",
+      "Bash(cmd //c \"npm --version\")",
+      "Read(//c/Program Files/**)",
+      "Bash(git restore:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

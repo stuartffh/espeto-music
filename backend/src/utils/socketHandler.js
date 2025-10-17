@@ -97,23 +97,30 @@ function setupSocketHandlers(io) {
     // Cliente pagou música
     socket.on('pedido:pago', async (data) => {
       try {
-        console.log('💰 Pedido pago:', data);
+        console.log('💰 [SOCKET] Pedido pago recebido:', data);
 
         // Buscar estado atualizado
         const fila = await musicaService.buscarFilaMusicas();
 
         // Notificar todos os clientes
         io.emit('fila:atualizada', fila);
+        console.log('📡 [SOCKET] Fila atualizada emitida');
 
-        // Verificar se precisa iniciar música automaticamente
-        const musicaIniciada = await musicaService.iniciarProximaMusicaSeNecessario();
+        // 🎯 GARANTIR AUTOPLAY - Função centralizada e robusta
+        console.log('💚 [SOCKET] Garantindo autoplay...');
+        try {
+          const musicaIniciada = await playerService.garantirAutoplay();
 
-        if (musicaIniciada) {
-          console.log('🎵 Autoplay: Música iniciada automaticamente via socket');
-          await playerService.iniciarMusica(musicaIniciada);
+          if (musicaIniciada) {
+            console.log('✅ [SOCKET] Autoplay garantido! Música:', musicaIniciada.musicaTitulo);
+          } else {
+            console.log('ℹ️  [SOCKET] Autoplay não necessário (já está tocando ou fila vazia)');
+          }
+        } catch (error) {
+          console.error('❌ [SOCKET] Erro ao garantir autoplay:', error.message);
         }
       } catch (error) {
-        console.error('Erro ao processar pedido pago:', error);
+        console.error('❌ [SOCKET] Erro ao processar pedido pago:', error);
       }
     });
 

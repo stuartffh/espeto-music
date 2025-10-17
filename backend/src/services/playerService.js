@@ -408,19 +408,8 @@ function iniciarVerificadorAutoplay() {
 
   intervalAutoplay = setInterval(async () => {
     try {
-      // Se já há música tocando, não fazer nada
-      if (estadoMemoria.musicaAtual && estadoMemoria.status === 'playing') {
-        return;
-      }
-
-      // Buscar próxima música na fila
-      const musicaService = require('./musicaService');
-      const proximaMusica = await musicaService.iniciarProximaMusicaSeNecessario();
-
-      if (proximaMusica) {
-        console.log('🎵 Autoplay: Verificador detectou música aguardando e iniciou automaticamente');
-        await iniciarMusica(proximaMusica);
-      }
+      // 🎯 Usar função centralizada de autoplay
+      await garantirAutoplay();
     } catch (error) {
       console.error('❌ Erro no verificador de autoplay:', error);
     }
@@ -437,6 +426,90 @@ function pararVerificadorAutoplay() {
   }
 }
 
+/**
+ * 🎯 GARANTIR AUTOPLAY - Função centralizada e robusta
+ *
+ * Esta função SEMPRE garante que uma música seja iniciada se:
+ * 1. Não há música tocando atualmente
+ * 2. Existe música "pago" aguardando na fila
+ *
+ * Deve ser chamada em TODOS os pontos onde músicas podem entrar na fila:
+ * - Após criar pedido em modo gratuito
+ * - Após webhook aprovar pagamento
+ * - Após socket receber evento de pagamento
+ * - No verificador periódico
+ *
+ * @returns {Promise<Object|null>} Música iniciada ou null
+ */
+async function garantirAutoplay() {
+  try {
+    console.log('\n🎯 ═══════════════════════════════════════════════════════');
+    console.log('   GARANTIR AUTOPLAY - Verificação Iniciada');
+    console.log('   ═══════════════════════════════════════════════════════');
+
+    // 1. Verificar estado atual do player em memória
+    console.log('1️⃣ Verificando estado do player em memória...');
+    console.log(`   - Status: ${estadoMemoria.status}`);
+    console.log(`   - Música atual: ${estadoMemoria.musicaAtual?.musicaTitulo || 'Nenhuma'}`);
+    console.log(`   - ID: ${estadoMemoria.musicaAtual?.id || 'N/A'}`);
+
+    if (estadoMemoria.musicaAtual && estadoMemoria.status === 'playing') {
+      console.log('✅ Já existe música tocando, não precisa iniciar nova');
+      console.log('═══════════════════════════════════════════════════════\n');
+      return null;
+    }
+
+    // 2. Verificar no banco se há música com status "tocando"
+    console.log('\n2️⃣ Verificando música "tocando" no banco de dados...');
+    const musicaService = require('./musicaService');
+    const musicaTocandoBanco = await musicaService.buscarMusicaAtual();
+
+    if (musicaTocandoBanco) {
+      console.log(`⚠️  INCONSISTÊNCIA DETECTADA: Música no banco como "tocando" mas player parado`);
+      console.log(`   - Música: ${musicaTocandoBanco.musicaTitulo}`);
+      console.log(`   - ID: ${musicaTocandoBanco.id}`);
+      console.log(`   - Ação: Iniciando esta música no player...`);
+
+      await iniciarMusica(musicaTocandoBanco);
+      console.log('✅ Música inconsistente iniciada com sucesso');
+      console.log('═══════════════════════════════════════════════════════\n');
+      return musicaTocandoBanco;
+    }
+
+    // 3. Buscar primeira música paga na fila
+    console.log('\n3️⃣ Buscando primeira música "pago" na fila...');
+    const proximaMusica = await musicaService.iniciarProximaMusicaSeNecessario();
+
+    if (proximaMusica) {
+      console.log(`🎵 Música encontrada e marcada como "tocando":`);
+      console.log(`   - Título: ${proximaMusica.musicaTitulo}`);
+      console.log(`   - ID: ${proximaMusica.id}`);
+      console.log(`   - Cliente: ${proximaMusica.nomeCliente || 'Anônimo'}`);
+      console.log(`   - Ação: Iniciando no player...`);
+
+      await iniciarMusica(proximaMusica);
+      console.log('✅ AUTOPLAY BEM-SUCEDIDO! Música iniciada com sucesso');
+      console.log('═══════════════════════════════════════════════════════\n');
+      return proximaMusica;
+    }
+
+    // 4. Nenhuma música para tocar
+    console.log('\nℹ️  Nenhuma música aguardando na fila');
+    console.log('═══════════════════════════════════════════════════════\n');
+    return null;
+
+  } catch (error) {
+    console.error('\n❌ ═══════════════════════════════════════════════════════');
+    console.error('   ERRO AO GARANTIR AUTOPLAY');
+    console.error('   ═══════════════════════════════════════════════════════');
+    console.error('Tipo:', error.constructor.name);
+    console.error('Mensagem:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('═══════════════════════════════════════════════════════\n');
+    return null;
+  }
+}
+
 module.exports = {
   inicializar,
   iniciarMusica,
@@ -448,4 +521,5 @@ module.exports = {
   buscarTempo,
   obterEstado,
   musicaTerminou,
+  garantirAutoplay, // ⭐ NOVA FUNÇÃO EXPORTADA
 };
