@@ -162,12 +162,15 @@ async function baixarVideo(youtubeId) {
       ].join('/');
 
       // Flags do yt-dlp explicadas:
-      // -t mp4: Preset para garantir formato MP4 compatível (recomendado para players)
+      // -f: Seletor de formato (ordem de prioridade 720p → 1080p → 360p)
       // --merge-output-format mp4: Força saída em MP4 após merge de áudio+vídeo
+      // --remux-video mp4: Converte para MP4 se necessário
       // --no-check-formats: Evita verificação que pode causar erro 'NoneType'
       // --compat-options no-live-chat: Evita processar live chat (pode causar bugs)
       // --ffmpeg-location: Caminho absoluto do FFmpeg para merge correto
-      const command = `"${ytdlpPath}" "${videoUrl}" -f "${formatString}" -t mp4 --merge-output-format mp4 --no-check-formats --compat-options no-live-chat --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --progress --newline`;
+      // --no-playlist: Baixar apenas o vídeo, não playlist
+      // --progress --newline: Mostrar progresso linha por linha
+      const command = `"${ytdlpPath}" "${videoUrl}" -f "${formatString}" --merge-output-format mp4 --remux-video mp4 --no-check-formats --compat-options no-live-chat --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --progress --newline`;
 
       console.log(`🎬 Executando yt-dlp:`);
       console.log(`   URL: ${videoUrl}`);
@@ -181,6 +184,7 @@ async function baixarVideo(youtubeId) {
       });
 
       let lastProgress = 0;
+      let stderrOutput = ''; // Capturar stderr completo para mensagens de erro detalhadas
 
       ytdlp.stdout.on('data', (data) => {
         const output = data.toString();
@@ -214,9 +218,16 @@ async function baixarVideo(youtubeId) {
 
       ytdlp.stderr.on('data', (data) => {
         const error = data.toString();
-        // Ignorar avisos normais
-        if (!error.includes('WARNING')) {
-          console.error(`⚠️ yt-dlp stderr: ${error}`);
+        stderrOutput += error; // Acumular para análise posterior
+
+        // Log de erros críticos imediatamente
+        if (error.includes('ERROR')) {
+          console.error(`❌ yt-dlp ERROR: ${error.trim()}`);
+        } else if (error.includes('WARNING') && error.includes('SABR')) {
+          // SABR warnings são comuns do YouTube e não impedem o download
+          console.log(`⚠️ YouTube SABR streaming detectado (normal, não afeta o download)`);
+        } else if (!error.includes('WARNING')) {
+          console.error(`⚠️ yt-dlp stderr: ${error.trim()}`);
         }
       });
 
@@ -260,6 +271,23 @@ async function baixarVideo(youtubeId) {
           }
         } else {
           console.error(`❌ yt-dlp saiu com código ${code}`);
+          console.error(`❌ URL: ${videoUrl}`);
+
+          // Extrair mensagem de erro específica do stderr
+          let errorMessage = `yt-dlp falhou com código ${code}`;
+
+          if (stderrOutput) {
+            // Procurar por mensagens ERROR específicas
+            const errorLines = stderrOutput.split('\n').filter(line => line.includes('ERROR'));
+            if (errorLines.length > 0) {
+              const specificError = errorLines[errorLines.length - 1].replace(/^ERROR:\s*/, '').trim();
+              errorMessage = specificError || errorMessage;
+              console.error(`❌ Erro específico: ${specificError}`);
+            }
+
+            // Log completo do stderr para debug
+            console.error(`❌ Stderr completo:\n${stderrOutput}`);
+          }
 
           // Limpar arquivo temporário (tentar ambos os padrões)
           const actualTempPath = `${tempOutputTemplate}.mp4`;
@@ -268,7 +296,7 @@ async function baixarVideo(youtubeId) {
           }
 
           activeDownloads.delete(youtubeId);
-          reject(new Error(`yt-dlp falhou com código ${code}`));
+          reject(new Error(errorMessage));
         }
       });
 
