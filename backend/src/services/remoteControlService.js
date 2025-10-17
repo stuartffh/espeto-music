@@ -230,8 +230,8 @@ class RemoteControlService {
       return this.sendNack(socket, commandId, 'NO_TV_CONNECTED', 'Nenhuma TV conectada');
     }
 
-    // Mapear comando para evento do player
-    const playerCommand = this.mapCommandToPlayerEvent(type, params);
+    // Mapear comando para evento do player (incluindo commandId)
+    const playerCommand = this.mapCommandToPlayerEvent(type, params, commandId);
 
     // Emitir para todas as TVs conectadas
     tvClients.forEach(tvClient => {
@@ -254,28 +254,30 @@ class RemoteControlService {
   /**
    * Mapeia comando para evento do player
    */
-  mapCommandToPlayerEvent(type, params) {
+  mapCommandToPlayerEvent(type, params, commandId) {
+    const baseCommand = { commandId };
+
     switch (type) {
       case 'play':
-        return { type: 'play' };
+        return { ...baseCommand, type: 'play' };
       case 'pause':
-        return { type: 'pause' };
+        return { ...baseCommand, type: 'pause' };
       case 'stop':
-        return { type: 'stop' };
+        return { ...baseCommand, type: 'stop' };
       case 'seek':
-        return { type: 'seek', time: params.time };
+        return { ...baseCommand, type: 'seek', time: params.time };
       case 'volume':
-        return { type: 'set-volume', volume: params.level / 100 };
+        return { ...baseCommand, type: 'set-volume', volume: params.level / 100 };
       case 'mute':
-        return { type: 'set-muted', muted: true };
+        return { ...baseCommand, type: 'set-muted', muted: true };
       case 'unmute':
-        return { type: 'set-muted', muted: false };
+        return { ...baseCommand, type: 'set-muted', muted: false };
       case 'next':
-        return { type: 'next' };
+        return { ...baseCommand, type: 'next' };
       case 'previous':
-        return { type: 'previous' };
+        return { ...baseCommand, type: 'previous' };
       default:
-        return { type };
+        return { ...baseCommand, type };
     }
   }
 
