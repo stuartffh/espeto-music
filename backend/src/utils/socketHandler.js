@@ -116,6 +116,17 @@ function setupSocketHandlers(io) {
       }
     });
 
+    // TV envia atualização de tempo do player (YouTube)
+    socket.on('player:tempo-sync', (data) => {
+      try {
+        if (typeof data.tempo === 'number' && data.tempo >= 0) {
+          playerService.atualizarTempoAtual(data.tempo);
+        }
+      } catch (error) {
+        console.error('Erro ao sincronizar tempo do player:', error);
+      }
+    });
+
     // ========== DESCONEXÃO ==========
 
     socket.on('disconnect', (reason) => {

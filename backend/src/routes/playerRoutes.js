@@ -5,7 +5,6 @@ const authMiddleware = require('../middlewares/authMiddleware');
 
 // Rotas públicas (TV pode acessar)
 router.get('/estado', playerController.obterEstado);
-router.post('/tempo', playerController.atualizarTempo); // TV envia updates de tempo
 
 // Rota de reset (sem auth para debug)
 router.post('/reset', playerController.reset);

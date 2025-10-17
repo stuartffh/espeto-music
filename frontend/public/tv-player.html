@@ -1297,6 +1297,9 @@
             createYouTubePlayer(youtubeId, musica) {
                 console.log('🎥 Criando YouTube Player:', youtubeId);
 
+                // Parar sincronização de tempo do player anterior
+                this.stopYouTubeTimeSync();
+
                 // Destruir player anterior se existir
                 if (this.ytPlayer) {
                     this.ytPlayer.destroy();
@@ -1400,6 +1403,9 @@
                 if (event.data === YT.PlayerState.ENDED) {
                     console.log('✅ Vídeo terminou, notificando para tocar próxima música...');
 
+                    // Parar sincronização de tempo
+                    this.stopYouTubeTimeSync();
+
                     // Notificar parent que o vídeo terminou (para tocar próximo da fila)
                     window.parent.postMessage({
                         type: 'video-ended',
@@ -1428,11 +1434,13 @@
                 this.ytTimeSyncInterval = setInterval(() => {
                     if (this.ytPlayer && typeof this.ytPlayer.getCurrentTime === 'function') {
                         const currentTime = this.ytPlayer.getCurrentTime();
+                        const duration = this.ytPlayer.getDuration ? this.ytPlayer.getDuration() : 0;
 
                         // Enviar para o parent (Panel.jsx)
                         window.parent.postMessage({
                             type: 'player-time-update',
-                            time: currentTime
+                            time: currentTime,
+                            duration: duration
                         }, '*');
                     }
                 }, 1000); // Enviar a cada 1 segundo

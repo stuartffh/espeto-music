@@ -124,25 +124,6 @@ async function reset(req, res) {
   }
 }
 
-/**
- * Atualizar tempo atual do player (vindo do YouTube player no frontend)
- */
-function atualizarTempo(req, res) {
-  try {
-    const { tempo } = req.body;
-
-    if (typeof tempo !== 'number' || tempo < 0) {
-      return res.status(400).json({ error: 'Tempo inválido' });
-    }
-
-    playerService.atualizarTempoAtual(tempo);
-    res.json({ success: true, tempo });
-  } catch (error) {
-    console.error('Erro ao atualizar tempo:', error);
-    res.status(500).json({ error: error.message });
-  }
-}
-
 module.exports = {
   obterEstado,
   play,
@@ -151,5 +132,4 @@ module.exports = {
   skip,
   volume,
   reset,
-  atualizarTempo,
 };

@@ -461,10 +461,15 @@ function Panel() {
             // Atualizar estado local
             setCurrentTime(event.data.time);
 
-            // Enviar para o backend (throttle para não sobrecarregar)
+            // Atualizar duração se disponível
+            if (event.data.duration !== undefined && event.data.duration > 0) {
+              setDuration(event.data.duration);
+            }
+
+            // Enviar para o backend via WebSocket (mais eficiente que HTTP)
+            // Throttle de 2s para não sobrecarregar
             if (!window.lastTimeSyncSent || Date.now() - window.lastTimeSyncSent > 2000) {
-              api.post('/api/player/tempo', { tempo: event.data.time })
-                .catch(err => console.error('Erro ao sincronizar tempo:', err));
+              socket.emit('player:tempo-sync', { tempo: event.data.time });
               window.lastTimeSyncSent = Date.now();
             }
           }
