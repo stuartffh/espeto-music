@@ -1339,7 +1339,8 @@
                             // FORÇAR playback imediatamente
                             setTimeout(() => {
                                 event.target.playVideo();
-                                console.log('▶️ playVideo() executado');
+                                event.target.unMute();
+                                console.log('▶️ playVideo() + unMute() executado');
                             }, 100);
 
                             // Garantir novamente após 1 segundo (double-check)
@@ -1348,8 +1349,21 @@
                                 if (state !== 1) { // Se não está tocando
                                     console.warn('⚠️ Player não iniciou, forçando novamente...');
                                     event.target.playVideo();
+                                    event.target.unMute();
                                 }
                             }, 1000);
+
+                            // Triple-check após 2 segundos
+                            setTimeout(() => {
+                                const state = event.target.getPlayerState();
+                                if (state !== 1) { // Se não está tocando
+                                    console.warn('⚠️ Player AINDA não iniciou, tentativa final...');
+                                    event.target.playVideo();
+                                    event.target.unMute();
+                                } else {
+                                    console.log('✅ Player tocando com sucesso!');
+                                }
+                            }, 2000);
 
                             // Notificar parent que o vídeo iniciou
                             window.parent.postMessage({
