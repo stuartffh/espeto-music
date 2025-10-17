@@ -3,10 +3,17 @@ const themeService = require('../services/themeService');
 /**
  * GET /api/theme
  * Obter tema ativo
+ * MULTI-TENANT: Requer estabelecimentoId
  */
 async function obterTema(req, res) {
   try {
-    const tema = await themeService.obterTemaAtivo();
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ erro: 'Estabelecimento não identificado' });
+    }
+
+    const tema = await themeService.obterTemaAtivo(estabelecimentoId);
     res.json(tema);
   } catch (error) {
     console.error('Erro ao obter tema:', error);
@@ -17,10 +24,17 @@ async function obterTema(req, res) {
 /**
  * GET /api/theme/css
  * Obter CSS customizado baseado no tema
+ * MULTI-TENANT: Requer estabelecimentoId
  */
 async function obterCss(req, res) {
   try {
-    const tema = await themeService.obterTemaAtivo();
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).send('/* Estabelecimento não identificado */');
+    }
+
+    const tema = await themeService.obterTemaAtivo(estabelecimentoId);
     const css = themeService.gerarCssCustomizado(tema);
 
     res.setHeader('Content-Type', 'text/css');
@@ -34,17 +48,23 @@ async function obterCss(req, res) {
 /**
  * PUT /api/admin/theme
  * Atualizar tema (requer autenticação de admin)
+ * MULTI-TENANT: Requer estabelecimentoId
  */
 async function atualizarTema(req, res) {
   try {
     const dados = req.body;
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ erro: 'Estabelecimento não identificado' });
+    }
 
     // Validação básica
     if (dados.corPrimaria && !/^#[0-9A-F]{6}$/i.test(dados.corPrimaria)) {
       return res.status(400).json({ erro: 'Cor primária inválida. Use formato hexadecimal (#RRGGBB)' });
     }
 
-    const tema = await themeService.atualizarTema(dados);
+    const tema = await themeService.atualizarTema(estabelecimentoId, dados);
     res.json(tema);
   } catch (error) {
     console.error('Erro ao atualizar tema:', error);
@@ -55,10 +75,17 @@ async function atualizarTema(req, res) {
 /**
  * POST /api/admin/theme/reset
  * Resetar tema para valores padrão (requer autenticação de admin)
+ * MULTI-TENANT: Requer estabelecimentoId
  */
 async function resetarTema(req, res) {
   try {
-    const tema = await themeService.resetarTema();
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ erro: 'Estabelecimento não identificado' });
+    }
+
+    const tema = await themeService.resetarTema(estabelecimentoId);
     res.json(tema);
   } catch (error) {
     console.error('Erro ao resetar tema:', error);

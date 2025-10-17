@@ -44,13 +44,21 @@ async function listar(req, res) {
 /**
  * Adiciona música ao carrinho
  * POST /api/carrinho
+ * MULTI-TENANT: Busca preço do estabelecimento
  */
 async function adicionar(req, res) {
   try {
     const sessionId = gerarSessionId(req);
     const { titulo, youtubeId, thumbnail, duracao } = req.body;
+    const estabelecimentoId = req.estabelecimentoId;
 
     // Validação
+    if (!estabelecimentoId) {
+      return res.status(400).json({
+        error: 'Estabelecimento não identificado',
+      });
+    }
+
     if (!titulo || !youtubeId) {
       return res.status(400).json({
         error: 'Título e YouTube ID são obrigatórios',
@@ -60,15 +68,19 @@ async function adicionar(req, res) {
     console.log(`\n➕ ═══════════════════════════════════════════════════════`);
     console.log('   ADICIONANDO MÚSICA AO CARRINHO');
     console.log('   ═══════════════════════════════════════════════════════');
+    console.log(`🏢 Estabelecimento: ${estabelecimentoId}`);
     console.log(`📦 Session: ${sessionId}`);
     console.log(`🎵 Música: ${titulo}`);
     console.log(`🆔 YouTube ID: ${youtubeId}`);
     console.log('═══════════════════════════════════════════════════════\n');
 
-    // Buscar preço da música
+    // Buscar preço da música do estabelecimento específico
     const prisma = require('../config/database');
-    const configuracao = await prisma.configuracao.findUnique({
-      where: { chave: 'PRECO_MUSICA' },
+    const configuracao = await prisma.configuracao.findFirst({
+      where: {
+        estabelecimentoId, // ← Multi-tenant
+        chave: 'PRECO_MUSICA',
+      },
     });
     const valor = parseFloat(configuracao?.valor || 5.0);
 

@@ -2,18 +2,23 @@ const prisma = require('../config/database');
 
 /**
  * Obter o tema ativo
+ * MULTI-TENANT: Requer estabelecimentoId
  */
-async function obterTemaAtivo() {
+async function obterTemaAtivo(estabelecimentoId) {
+  if (!estabelecimentoId) {
+    throw new Error('estabelecimentoId é obrigatório');
+  }
+
   try {
     let tema = await prisma.tema.findUnique({
-      where: { id: 'active' }
+      where: { estabelecimentoId } // ← Multi-tenant: unique por estabelecimento
     });
 
     // Se não existir tema, criar com valores padrão
     if (!tema) {
       tema = await prisma.tema.create({
         data: {
-          id: 'active',
+          estabelecimentoId, // ← Multi-tenant
           nome: 'Espeto Music',
           corPrimaria: '#DC2626',
           corSecundaria: '#F97316',
@@ -38,17 +43,22 @@ async function obterTemaAtivo() {
 
 /**
  * Atualizar o tema ativo
+ * MULTI-TENANT: Requer estabelecimentoId
  */
-async function atualizarTema(dados) {
+async function atualizarTema(estabelecimentoId, dados) {
+  if (!estabelecimentoId) {
+    throw new Error('estabelecimentoId é obrigatório');
+  }
+
   try {
     const tema = await prisma.tema.upsert({
-      where: { id: 'active' },
+      where: { estabelecimentoId }, // ← Multi-tenant
       update: {
         ...dados,
         atualizadoEm: new Date()
       },
       create: {
-        id: 'active',
+        estabelecimentoId, // ← Multi-tenant
         nome: dados.nome || 'Espeto Music',
         corPrimaria: dados.corPrimaria || '#DC2626',
         corSecundaria: dados.corSecundaria || '#F97316',
@@ -75,11 +85,16 @@ async function atualizarTema(dados) {
 
 /**
  * Resetar tema para os valores padrão
+ * MULTI-TENANT: Requer estabelecimentoId
  */
-async function resetarTema() {
+async function resetarTema(estabelecimentoId) {
+  if (!estabelecimentoId) {
+    throw new Error('estabelecimentoId é obrigatório');
+  }
+
   try {
     const tema = await prisma.tema.upsert({
-      where: { id: 'active' },
+      where: { estabelecimentoId }, // ← Multi-tenant
       update: {
         nome: 'Espeto Music',
         corPrimaria: '#DC2626',
@@ -99,7 +114,7 @@ async function resetarTema() {
         atualizadoEm: new Date()
       },
       create: {
-        id: 'active',
+        estabelecimentoId, // ← Multi-tenant
         nome: 'Espeto Music',
         corPrimaria: '#DC2626',
         corSecundaria: '#F97316',
