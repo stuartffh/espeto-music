@@ -132,6 +132,98 @@ export const reconnectSocket = () => {
   }
 };
 
+/**
+ * MULTI-TENANT: Autenticar TV com código único
+ * @param {string} tvCode - Código único da TV
+ * @returns {Promise} Resolve quando autenticação for bem-sucedida
+ */
+export const authenticateTV = (tvCode) => {
+  return new Promise((resolve, reject) => {
+    const socket = getSocket();
+
+    if (!tvCode) {
+      reject(new Error('Código da TV é obrigatório'));
+      return;
+    }
+
+    console.log('📺 [SOCKET] Autenticando TV com código:', tvCode);
+
+    // Escutar resposta de autenticação
+    const onAuthSuccess = () => {
+      console.log('✅ [SOCKET] TV autenticada com sucesso');
+      socket.off('auth-failed', onAuthFailed);
+      resolve();
+    };
+
+    const onAuthFailed = (data) => {
+      console.error('❌ [SOCKET] Falha na autenticação da TV:', data.error);
+      socket.off('auth-success', onAuthSuccess);
+      reject(new Error(data.error || 'Falha na autenticação'));
+    };
+
+    // Registrar listeners temporários
+    socket.once('auth-success', onAuthSuccess);
+    socket.once('auth-failed', onAuthFailed);
+
+    // Emitir evento de autenticação
+    socket.emit('tv-authenticate', { tvCode });
+  });
+};
+
+/**
+ * MULTI-TENANT: Autenticar Admin com slug do estabelecimento
+ * @param {string} estabelecimentoSlug - Slug do estabelecimento
+ * @returns {Promise} Resolve quando autenticação for bem-sucedida
+ */
+export const authenticateAdmin = (estabelecimentoSlug) => {
+  return new Promise((resolve, reject) => {
+    const socket = getSocket();
+
+    if (!estabelecimentoSlug) {
+      reject(new Error('Slug do estabelecimento é obrigatório'));
+      return;
+    }
+
+    console.log('👤 [SOCKET] Autenticando Admin para estabelecimento:', estabelecimentoSlug);
+
+    // Escutar resposta de autenticação
+    const onAuthSuccess = () => {
+      console.log('✅ [SOCKET] Admin autenticado com sucesso');
+      socket.off('auth-failed', onAuthFailed);
+      resolve();
+    };
+
+    const onAuthFailed = (data) => {
+      console.error('❌ [SOCKET] Falha na autenticação do Admin:', data.error);
+      socket.off('auth-success', onAuthSuccess);
+      reject(new Error(data.error || 'Falha na autenticação'));
+    };
+
+    // Registrar listeners temporários
+    socket.once('auth-success', onAuthSuccess);
+    socket.once('auth-failed', onAuthFailed);
+
+    // Emitir evento de autenticação
+    socket.emit('admin-authenticate', { estabelecimentoSlug });
+  });
+};
+
+/**
+ * MULTI-TENANT: Cliente se junta à room do estabelecimento
+ * @param {string} slug - Slug do estabelecimento
+ */
+export const joinEstabelecimento = (slug) => {
+  const socket = getSocket();
+
+  if (!slug) {
+    console.warn('⚠️ [SOCKET] Slug não fornecido para joinEstabelecimento');
+    return;
+  }
+
+  console.log('🏢 [SOCKET] Cliente entrando na room do estabelecimento:', slug);
+  socket.emit('client-join', { estabelecimentoSlug: slug });
+};
+
 // Log de status
 console.log('🔌 [SOCKET] Módulo carregado');
 
