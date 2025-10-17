@@ -3,8 +3,10 @@ const { buscarDetalhesVideo } = require('../config/youtube');
 
 /**
  * Cria um novo pedido de música
+ * Multi-tenant: Requer estabelecimentoId
  */
 async function criarPedidoMusica({
+  estabelecimentoId, // ← NOVO: Multi-tenant
   nomeCliente,
   musicaTitulo,
   musicaYoutubeId,
@@ -12,15 +14,22 @@ async function criarPedidoMusica({
   musicaDuracao,
   valor,
 }) {
+  if (!estabelecimentoId) {
+    throw new Error('estabelecimentoId é obrigatório');
+  }
 
-  // Verificar limite de músicas na fila
-  const config = await prisma.configuracao.findUnique({
-    where: { chave: 'MAX_MUSICAS_FILA' },
+  // Verificar limite de músicas na fila (por estabelecimento)
+  const config = await prisma.configuracao.findFirst({
+    where: {
+      estabelecimentoId,
+      chave: 'MAX_MUSICAS_FILA'
+    },
   });
 
   const maxFila = config ? parseInt(config.valor) : 50;
   const totalNaFila = await prisma.pedidoMusica.count({
     where: {
+      estabelecimentoId, // ← Multi-tenant
       status: {
         in: ['pago', 'tocando'],
       },
@@ -32,8 +41,11 @@ async function criarPedidoMusica({
   }
 
   // Verificar se permite músicas duplicadas
-  const configDuplicadas = await prisma.configuracao.findUnique({
-    where: { chave: 'PERMITIR_MUSICAS_DUPLICADAS' },
+  const configDuplicadas = await prisma.configuracao.findFirst({
+    where: {
+      estabelecimentoId, // ← Multi-tenant
+      chave: 'PERMITIR_MUSICAS_DUPLICADAS'
+    },
   });
 
   const permiteDuplicadas = configDuplicadas ? configDuplicadas.valor === 'true' : false;
@@ -41,6 +53,7 @@ async function criarPedidoMusica({
   if (!permiteDuplicadas) {
     const musicaDuplicada = await prisma.pedidoMusica.findFirst({
       where: {
+        estabelecimentoId, // ← Multi-tenant
         musicaYoutubeId,
         status: {
           in: ['pago', 'tocando'],
@@ -56,6 +69,7 @@ async function criarPedidoMusica({
   // Criar pedido
   const pedido = await prisma.pedidoMusica.create({
     data: {
+      estabelecimentoId, // ← Multi-tenant
       nomeCliente,
       musicaTitulo,
       musicaYoutubeId,
@@ -71,10 +85,16 @@ async function criarPedidoMusica({
 
 /**
  * Busca fila de músicas (pagas e não tocadas)
+ * Multi-tenant: Requer estabelecimentoId
  */
-async function buscarFilaMusicas() {
+async function buscarFilaMusicas(estabelecimentoId) {
+  if (!estabelecimentoId) {
+    throw new Error('estabelecimentoId é obrigatório');
+  }
+
   return await prisma.pedidoMusica.findMany({
     where: {
+      estabelecimentoId, // ← Multi-tenant
       status: {
         in: ['pago', 'tocando'],
       },
@@ -88,19 +108,32 @@ async function buscarFilaMusicas() {
 
 /**
  * Busca música atual (tocando)
+ * Multi-tenant: Requer estabelecimentoId
  */
-async function buscarMusicaAtual() {
+async function buscarMusicaAtual(estabelecimentoId) {
+  if (!estabelecimentoId) {
+    throw new Error('estabelecimentoId é obrigatório');
+  }
+
   return await prisma.pedidoMusica.findFirst({
-    where: { status: 'tocando' },
+    where: {
+      estabelecimentoId, // ← Multi-tenant
+      status: 'tocando'
+    },
   });
 }
 
 /**
  * Marca música como tocando
+ * Multi-tenant: Recebe estabelecimentoId
  */
-async function tocarMusica(pedidoId) {
+async function tocarMusica(pedidoId, estabelecimentoId) {
+  if (!estabelecimentoId) {
+    throw new Error('estabelecimentoId é obrigatório');
+  }
+
   // Verificar se já existe música tocando
-  const musicaTocando = await buscarMusicaAtual();
+  const musicaTocando = await buscarMusicaAtual(estabelecimentoId);
 
   if (musicaTocando && musicaTocando.id !== pedidoId) {
     throw new Error('Já existe uma música tocando');
@@ -116,8 +149,13 @@ async function tocarMusica(pedidoId) {
 
 /**
  * Marca música como concluída e toca próxima
+ * Multi-tenant: Recebe estabelecimentoId
  */
-async function concluirMusica(pedidoId) {
+async function concluirMusica(pedidoId, estabelecimentoId) {
+  if (!estabelecimentoId) {
+    throw new Error('estabelecimentoId é obrigatório');
+  }
+
   await prisma.pedidoMusica.update({
     where: { id: pedidoId },
     data: { status: 'concluida' },
@@ -126,13 +164,14 @@ async function concluirMusica(pedidoId) {
   // Buscar próxima música na fila
   const proximaMusica = await prisma.pedidoMusica.findFirst({
     where: {
+      estabelecimentoId, // ← Multi-tenant
       status: 'pago',
     },
     orderBy: { criadoEm: 'asc' },
   });
 
   if (proximaMusica) {
-    return await tocarMusica(proximaMusica.id);
+    return await tocarMusica(proximaMusica.id, estabelecimentoId);
   }
 
   return null;
@@ -141,10 +180,15 @@ async function concluirMusica(pedidoId) {
 /**
  * Verifica se há músicas na fila aguardando e inicia automaticamente
  * Retorna a música iniciada ou null
+ * Multi-tenant: Recebe estabelecimentoId
  */
-async function iniciarProximaMusicaSeNecessario() {
+async function iniciarProximaMusicaSeNecessario(estabelecimentoId) {
+  if (!estabelecimentoId) {
+    throw new Error('estabelecimentoId é obrigatório');
+  }
+
   // Verificar se já há música tocando
-  const musicaTocando = await buscarMusicaAtual();
+  const musicaTocando = await buscarMusicaAtual(estabelecimentoId);
 
   if (musicaTocando) {
     return null; // Já há música tocando
@@ -153,6 +197,7 @@ async function iniciarProximaMusicaSeNecessario() {
   // Buscar primeira música paga na fila
   const proximaMusica = await prisma.pedidoMusica.findFirst({
     where: {
+      estabelecimentoId, // ← Multi-tenant
       status: 'pago',
     },
     orderBy: { criadoEm: 'asc' },
@@ -160,7 +205,7 @@ async function iniciarProximaMusicaSeNecessario() {
 
   if (proximaMusica) {
     console.log('🎵 Autoplay: Iniciando primeira música da fila:', proximaMusica.musicaTitulo);
-    return await tocarMusica(proximaMusica.id);
+    return await tocarMusica(proximaMusica.id, estabelecimentoId);
   }
 
   return null;
@@ -168,9 +213,10 @@ async function iniciarProximaMusicaSeNecessario() {
 
 /**
  * Pula música atual
+ * Multi-tenant: Recebe estabelecimentoId
  */
-async function pularMusica(pedidoId) {
-  return await concluirMusica(pedidoId);
+async function pularMusica(pedidoId, estabelecimentoId) {
+  return await concluirMusica(pedidoId, estabelecimentoId);
 }
 
 /**
@@ -201,10 +247,16 @@ async function cancelarPedido(pedidoId) {
 
 /**
  * Busca histórico de músicas
+ * Multi-tenant: Recebe estabelecimentoId
  */
-async function buscarHistorico(limite = 50) {
+async function buscarHistorico(estabelecimentoId, limite = 50) {
+  if (!estabelecimentoId) {
+    throw new Error('estabelecimentoId é obrigatório');
+  }
+
   return await prisma.pedidoMusica.findMany({
     where: {
+      estabelecimentoId, // ← Multi-tenant
       status: {
         in: ['concluida', 'cancelada'],
       },
