@@ -403,6 +403,9 @@
                 // Download local = armazena vídeo, controle total, sem dependência do YouTube
                 this.useYouTubeEmbed = true; // ALTERE PARA false PARA USAR DOWNLOAD LOCAL
 
+                // YouTube Player instance
+                this.ytPlayer = null;
+
                 this.init();
             }
 
@@ -1072,33 +1075,156 @@
                 this.errorMessage.classList.remove('visible');
                 this.hideLoading();
 
-                // Substituir elemento de vídeo por iframe do YouTube
                 const container = document.getElementById('player-container');
-                const oldVideo = this.video;
 
-                // Criar iframe do YouTube
-                const iframe = document.createElement('iframe');
-                iframe.id = 'youtube-player';
-                iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1&origin=${window.location.origin}`;
-                iframe.width = '100%';
-                iframe.height = '100%';
-                iframe.style.border = 'none';
-                iframe.style.width = '100%';
-                iframe.style.height = '100%';
-                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-                iframe.allowFullscreen = true;
+                // FADE OUT do player atual
+                container.style.transition = 'opacity 0.5s ease-in-out';
+                container.style.opacity = '0';
 
-                // Substituir vídeo pelo iframe
-                container.replaceChild(iframe, oldVideo);
+                setTimeout(() => {
+                    // Esconder elemento <video> HTML5 (não usar mais)
+                    if (this.video) {
+                        this.video.style.display = 'none';
+                        this.video.pause();
+                        this.video.src = '';
+                    }
 
-                console.log('✅ YouTube embed carregado com sucesso');
-                console.log('🎵 Música tocando via YouTube direto (qualidade automática)');
+                    // Limpar iframe anterior se existir
+                    const oldIframe = document.getElementById('youtube-player');
+                    if (oldIframe) {
+                        oldIframe.remove();
+                    }
 
-                // Notificar parent que o vídeo iniciou
+                    // Criar DIV para o YouTube Player (YouTube IFrame API precisa de DIV)
+                    const playerDiv = document.createElement('div');
+                    playerDiv.id = 'youtube-player';
+                    playerDiv.style.width = '100%';
+                    playerDiv.style.height = '100%';
+                    container.appendChild(playerDiv);
+
+                    // Carregar YouTube IFrame API se ainda não carregou
+                    if (!window.YT) {
+                        console.log('📥 Carregando YouTube IFrame API...');
+                        const tag = document.createElement('script');
+                        tag.src = 'https://www.youtube.com/iframe_api';
+                        const firstScriptTag = document.getElementsByTagName('script')[0];
+                        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+                        // Callback quando API carregar
+                        window.onYouTubeIframeAPIReady = () => {
+                            console.log('✅ YouTube IFrame API carregada');
+                            this.createYouTubePlayer(youtubeId, musica);
+                        };
+                    } else {
+                        // API já carregada, criar player diretamente
+                        this.createYouTubePlayer(youtubeId, musica);
+                    }
+
+                    // FADE IN do novo player
+                    setTimeout(() => {
+                        container.style.opacity = '1';
+                    }, 100);
+                }, 500); // Esperar fade out completar
+            }
+
+            createYouTubePlayer(youtubeId, musica) {
+                console.log('🎥 Criando YouTube Player:', youtubeId);
+
+                // Destruir player anterior se existir
+                if (this.ytPlayer) {
+                    this.ytPlayer.destroy();
+                }
+
+                // Criar novo player do YouTube
+                this.ytPlayer = new YT.Player('youtube-player', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: youtubeId,
+                    playerVars: {
+                        'autoplay': 1,           // Autoplay ligado
+                        'controls': 1,           // Mostrar controles
+                        'modestbranding': 1,     // Logo discreta do YouTube
+                        'rel': 0,                // Não mostrar vídeos relacionados
+                        'showinfo': 0,           // Não mostrar info do vídeo
+                        'iv_load_policy': 3,     // Sem anotações
+                        'cc_load_policy': 0,     // Sem legendas por padrão
+                        'playsinline': 1,        // Tocar inline (mobile)
+                        'enablejsapi': 1,        // Habilitar API JavaScript
+                        'origin': window.location.origin
+                    },
+                    events: {
+                        'onReady': (event) => {
+                            console.log('✅ YouTube Player pronto');
+                            console.log('🎵 Iniciando reprodução automática...');
+                            event.target.playVideo(); // Garantir autoplay
+
+                            // Notificar parent que o vídeo iniciou
+                            window.parent.postMessage({
+                                type: 'video-started',
+                                youtubeId: youtubeId,
+                                musica: musica
+                            }, '*');
+                        },
+                        'onStateChange': (event) => {
+                            this.handleYouTubeStateChange(event, youtubeId, musica);
+                        },
+                        'onError': (event) => {
+                            console.error('❌ Erro no YouTube Player:', event.data);
+                            this.handleYouTubeError(event);
+                        }
+                    }
+                });
+            }
+
+            handleYouTubeStateChange(event, youtubeId, musica) {
+                const states = {
+                    '-1': 'unstarted',
+                    '0': 'ended',
+                    '1': 'playing',
+                    '2': 'paused',
+                    '3': 'buffering',
+                    '5': 'cued'
+                };
+
+                const state = states[event.data] || 'unknown';
+                console.log(`🎬 YouTube Player State: ${state}`);
+
+                if (event.data === YT.PlayerState.ENDED) {
+                    console.log('✅ Vídeo terminou, notificando para tocar próxima música...');
+
+                    // Notificar parent que o vídeo terminou (para tocar próximo da fila)
+                    window.parent.postMessage({
+                        type: 'video-ended',
+                        youtubeId: youtubeId,
+                        musica: musica
+                    }, '*');
+                }
+
+                if (event.data === YT.PlayerState.PLAYING) {
+                    console.log('▶️  Reproduzindo com qualidade automática');
+                }
+            }
+
+            handleYouTubeError(event) {
+                const errors = {
+                    2: 'Parâmetro inválido',
+                    5: 'Erro de reprodução HTML5',
+                    100: 'Vídeo não encontrado ou privado',
+                    101: 'Vídeo não permite reprodução em embed',
+                    150: 'Vídeo não permite reprodução em embed'
+                };
+
+                const errorMsg = errors[event.data] || 'Erro desconhecido';
+                console.error(`❌ Erro YouTube: ${errorMsg} (código ${event.data})`);
+
+                this.errorMessage.textContent = `Erro ao carregar vídeo: ${errorMsg}`;
+                this.errorMessage.classList.add('visible');
+
+                // Notificar parent sobre erro (para pular para próxima)
                 window.parent.postMessage({
-                    type: 'video-started',
-                    youtubeId: youtubeId,
-                    musica: musica
+                    type: 'video-error',
+                    error: errorMsg,
+                    errorCode: event.data
                 }, '*');
             }
 

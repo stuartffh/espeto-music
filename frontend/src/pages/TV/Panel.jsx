@@ -426,6 +426,21 @@ function Panel() {
             videoRef.current.contentWindow.postMessage({ type: 'stop' }, '*');
           }
           break;
+        case 'video-ended':
+          // Vídeo do YouTube terminou, tocar próxima música da fila
+          console.log('🎬 Vídeo terminou, chamando handleVideoEnd para tocar próxima...');
+          handleVideoEnd();
+          break;
+        case 'video-error':
+          // Erro no vídeo do YouTube, pular para próxima
+          console.error('❌ Erro no YouTube Player:', event.data.error);
+          console.log('⏭️ Pulando para próxima música...');
+          handleVideoEnd();
+          break;
+        case 'video-started':
+          // Vídeo iniciado com sucesso
+          console.log('✅ Vídeo iniciado:', event.data.musica?.titulo);
+          break;
         default:
           break;
       }
