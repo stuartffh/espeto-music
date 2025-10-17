@@ -134,16 +134,19 @@ async function webhook(req, res) {
     const io = req.app.get('io');
 
     if (resultado?.pedido) {
+      // ← MULTI-TENANT: Obter estabelecimentoId do pedido
+      const estabelecimentoId = resultado.pedido.estabelecimentoId;
+
       // Atualizar fila via WebSocket ANTES de tentar autoplay
-      if (io) {
-        const fila = await musicaService.buscarFilaMusicas();
-        io.emit('fila:atualizada', fila);
-        console.log('📡 [WEBHOOK] Fila atualizada emitida via socket');
+      if (io && estabelecimentoId) {
+        const fila = await musicaService.buscarFilaMusicas(estabelecimentoId); // ← Multi-tenant
+        io.to(`estabelecimento:${estabelecimentoId}`).emit('fila:atualizada', fila); // ← Room específica
+        console.log(`📡 [WEBHOOK] Fila atualizada emitida via socket para estabelecimento ${estabelecimentoId}`);
       }
 
       // 🎯 GARANTIR AUTOPLAY - Função centralizada e robusta
       if (resultado.paymentInfo?.status === 'approved') {
-        console.log('💚 [WEBHOOK] Pagamento aprovado! Garantindo autoplay...');
+        console.log(`💚 [WEBHOOK] Pagamento aprovado! Garantindo autoplay para estabelecimento ${estabelecimentoId}...`);
 
         try {
           // Garantir download do vídeo ANTES de tentar iniciar
@@ -155,7 +158,7 @@ async function webhook(req, res) {
 
         try {
           // CHAMAR FUNÇÃO CENTRALIZADA DE AUTOPLAY
-          const musicaIniciada = await playerService.garantirAutoplay();
+          const musicaIniciada = await playerService.garantirAutoplay(estabelecimentoId); // ← Multi-tenant
 
           if (musicaIniciada) {
             console.log('✅ [WEBHOOK] Autoplay garantido! Música:', musicaIniciada.musicaTitulo);
@@ -167,19 +170,19 @@ async function webhook(req, res) {
         }
 
         // Emitir evento de pagamento aprovado
-        if (io) {
+        if (io && estabelecimentoId) {
           const eventData = {
             pedidoId: resultado.pedido.id,
             pagamentoId: resultado.pedido.pagamento?.id || resultado.pedido.pagamentoCarrinho?.id
           };
-          io.emit('pedido:pago', eventData);
+          io.to(`estabelecimento:${estabelecimentoId}`).emit('pedido:pago', eventData); // ← Room específica
           console.log('📡 [WEBHOOK] Evento pedido:pago emitido:', eventData);
         }
       }
     }
 
     if (io) {
-      io.emit('pagamento:atualizado', data);
+      io.emit('pagamento:atualizado', data); // ← Webhook pode ficar global para monitoramento
     }
 
     console.log('\n✅ ═══════════════════════════════════════════════════════');
