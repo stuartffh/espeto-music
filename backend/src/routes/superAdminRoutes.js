@@ -10,7 +10,10 @@ const router = express.Router();
 const superAdminController = require('../controllers/superAdminController');
 const { requireSuperAdmin } = require('../middleware/tenantContext');
 
-// Aplicar middleware de super admin em todas as rotas
+// ========== LOGIN (sem autenticação) ==========
+router.post('/login', superAdminController.login);
+
+// Aplicar middleware de super admin em TODAS as rotas abaixo
 router.use(requireSuperAdmin);
 
 // ========== DASHBOARD ==========

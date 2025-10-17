@@ -447,6 +447,74 @@ async function resetContadorMusicas(req, res) {
 }
 
 /**
+ * Login do Super Admin
+ */
+async function login(req, res) {
+  try {
+    const { username, senha } = req.body;
+
+    // Validações
+    if (!username || !senha) {
+      return res.status(400).json({
+        erro: 'Username e senha são obrigatórios'
+      });
+    }
+
+    // Buscar super admin
+    const superAdmin = await prisma.superAdmin.findUnique({
+      where: { username }
+    });
+
+    if (!superAdmin) {
+      return res.status(401).json({
+        erro: 'Credenciais inválidas'
+      });
+    }
+
+    // Verificar se está ativo
+    if (!superAdmin.ativo) {
+      return res.status(403).json({
+        erro: 'Conta desativada. Entre em contato com o administrador do sistema.'
+      });
+    }
+
+    // Verificar senha
+    const senhaValida = await bcrypt.compare(senha, superAdmin.senha);
+
+    if (!senhaValida) {
+      return res.status(401).json({
+        erro: 'Credenciais inválidas'
+      });
+    }
+
+    // Gerar token JWT (você pode usar jwt.sign se tiver configurado)
+    // Por enquanto, vamos usar um token simples
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(
+      {
+        id: superAdmin.id,
+        username: superAdmin.username,
+        tipo: 'super-admin'
+      },
+      process.env.JWT_SECRET || 'secret-super-admin-key',
+      { expiresIn: '24h' }
+    );
+
+    // Retornar dados (sem a senha)
+    const { senha: _, ...superAdminSemSenha } = superAdmin;
+
+    res.json({
+      token,
+      superAdmin: superAdminSemSenha,
+      message: 'Login realizado com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao fazer login:', error);
+    res.status(500).json({ erro: 'Erro ao fazer login' });
+  }
+}
+
+/**
  * Definir limites por plano
  */
 function getLimitesPorPlano(plano) {
@@ -460,6 +528,7 @@ function getLimitesPorPlano(plano) {
 }
 
 module.exports = {
+  login,
   dashboard,
   listarEstabelecimentos,
   buscarEstabelecimento,

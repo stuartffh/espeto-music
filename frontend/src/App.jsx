@@ -5,6 +5,8 @@ import Pagamento from './pages/Cliente/Pagamento';
 import AdminLogin from './pages/Admin/Login';
 import AdminDashboard from './pages/Admin/Dashboard';
 import TVPanel from './pages/TV/Panel';
+import SuperAdminLogin from './pages/SuperAdmin/Login';
+import SuperAdminDashboard from './pages/SuperAdmin/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -34,6 +36,18 @@ function App() {
 
           {/* TV Panel Route */}
           <Route path="/:slug/tv" element={<TVPanel />} />
+
+          {/* SUPER ADMIN ROUTES - Global routes (no slug) */}
+          <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+          <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
+          <Route
+            path="/super-admin/dashboard"
+            element={
+              <ProtectedRoute requireSuperAdmin>
+                <SuperAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
 
           {/* BACKWARD COMPATIBILITY - Redirect old routes to demo slug */}
           <Route path="/" element={<Navigate to="/demo" replace />} />
