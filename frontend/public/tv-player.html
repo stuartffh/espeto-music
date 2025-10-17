@@ -467,7 +467,8 @@
       osdTimer: null,
       dragging: false,
       currentMusicData: null,
-      currentQueue: []
+      currentQueue: [],
+      preloadNotified: false // Flag para evitar múltiplos avisos de pré-carregamento
     };
 
     // ========== DOM ELEMENTS ==========
@@ -518,13 +519,14 @@
           playerVars: {
             controls: 0,
             autoplay: 1,
-            mute: 0,
+            mute: 0, // IMPORTANTE: NÃO iniciar mutado
             rel: 0,
             modestbranding: 1,
             playsinline: 1,
             fs: 1,
             enablejsapi: 1,
-            origin: window.location.origin
+            origin: window.location.origin,
+            iv_load_policy: 3 // Desabilitar anotações
           },
           events: {
             onReady: async (event) => {
@@ -532,17 +534,43 @@
               hideError();
               hideLoading();
 
-              // Tentar unmute + play (até 3 tentativas)
-              for (let i = 0; i < 3; i++) {
+              // GARANTIR ÁUDIO: Múltiplas tentativas de unmute + play
+              let audioSuccess = false;
+              for (let i = 0; i < 5; i++) {
                 try {
-                  await event.target.unMute();
+                  // Forçar unmute
+                  event.target.unMute();
+                  event.target.setVolume(80); // Volume inicial 80%
+
+                  // Aguardar um pouco
+                  await new Promise(r => setTimeout(r, 300));
+
+                  // Verificar se está realmente unmuted
+                  const isMuted = event.target.isMuted();
+                  console.log(`🔊 Tentativa ${i + 1}: isMuted = ${isMuted}`);
+
+                  // Tocar vídeo
                   await event.target.playVideo();
-                  console.log(`▶️ Tentativa ${i + 1}: play executado`);
-                  if (event.target.getPlayerState() === 1) break;
+
+                  // Aguardar iniciar
+                  await new Promise(r => setTimeout(r, 500));
+
+                  // Verificar se está tocando COM áudio
+                  const playerState = event.target.getPlayerState();
+                  const volume = event.target.getVolume();
+
+                  if (playerState === 1 && !event.target.isMuted() && volume > 0) {
+                    console.log(`✅ SUCESSO: Tocando com áudio! (volume: ${volume}%)`);
+                    audioSuccess = true;
+                    break;
+                  }
                 } catch (e) {
                   console.warn(`⚠️ Tentativa ${i + 1} falhou:`, e);
                 }
-                await new Promise(r => setTimeout(r, 500));
+              }
+
+              if (!audioSuccess) {
+                console.warn('⚠️ AVISO: Player iniciou mas áudio pode não estar funcionando');
               }
 
               startUpdateLoop();
@@ -617,6 +645,23 @@
         els.fill.style.width = pct + '%';
         els.thumb.style.left = pct + '%';
         els.bar.setAttribute('aria-valuenow', Math.round(pct));
+
+        // PRÉ-CARREGAMENTO: Avisar quando estiver próximo do fim (últimos 10 segundos)
+        const timeRemaining = dur - cur;
+        if (timeRemaining <= 10 && timeRemaining > 9.5 && !state.preloadNotified) {
+          console.log('⏰ Música próxima do fim - avisar para pré-carregar próxima');
+          sendMessage('video-near-end', {
+            youtubeId: state.player.getVideoData().video_id,
+            timeRemaining,
+            queue: state.currentQueue
+          });
+          state.preloadNotified = true;
+        }
+
+        // Reset da flag quando longe do fim
+        if (timeRemaining > 15) {
+          state.preloadNotified = false;
+        }
       }
 
       els.clock.textContent = `${fmt(cur)} / ${fmt(dur)}`;
@@ -853,6 +898,7 @@
           if (musica) setMusicInfo(musica);
           if (youtubeId) {
             showLoading();
+            state.preloadNotified = false; // Reset flag ao carregar novo vídeo
             createPlayer(youtubeId);
           }
           break;

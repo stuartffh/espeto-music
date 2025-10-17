@@ -295,9 +295,9 @@ function Panel() {
     // ========== EVENTOS DA FILA ==========
 
     const handleFilaAtualizada = (novaFila) => {
-      // Mostrar apenas músicas pendentes (não tocando e não tocada)
-      const filaFiltrada = novaFila.filter(m => m.status === 'pendente');
-      console.log('📋 Fila atualizada:', filaFiltrada.length, 'músicas');
+      // Mostrar apenas músicas PAGAS (próximas a tocar) - não mostrar a que está tocando
+      const filaFiltrada = novaFila.filter(m => m.status === 'pago');
+      console.log('📋 Fila atualizada:', filaFiltrada.length, 'músicas próximas');
       setFila(filaFiltrada);
     };
 
