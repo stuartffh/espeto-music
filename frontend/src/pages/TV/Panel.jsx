@@ -92,6 +92,7 @@ function Panel() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [qrCodeData, setQrCodeData] = useState(null);
+  const [mostrarProximaMusica, setMostrarProximaMusica] = useState(false);
 
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -230,8 +231,8 @@ function Panel() {
     // Buscar fila inicial
     api.get('/api/musicas/fila')
       .then(res => {
-        // Filtrar músicas que não estão tocando E não são a música atual
-        const filaFiltrada = res.data.filter(m => m.status === 'pendente');
+        // Filtrar músicas que estão aguardando tocar (status "pago", NÃO "tocando")
+        const filaFiltrada = res.data.filter(m => m.status === 'pago');
         console.log('📋 Fila:', filaFiltrada.length, 'músicas');
         setFila(filaFiltrada);
       })
@@ -313,8 +314,8 @@ function Panel() {
     // ========== EVENTOS DA FILA ==========
 
     const handleFilaAtualizada = (novaFila) => {
-      // Mostrar apenas músicas pendentes (não tocando e não tocada)
-      const filaFiltrada = novaFila.filter(m => m.status === 'pendente');
+      // Mostrar apenas músicas aguardando tocar (status "pago", NÃO "tocando")
+      const filaFiltrada = novaFila.filter(m => m.status === 'pago');
       console.log('📋 Fila atualizada:', filaFiltrada.length, 'músicas');
       setFila(filaFiltrada);
     };
@@ -368,6 +369,21 @@ function Panel() {
       }, '*');
     }
   }, [fila, iframeReady]);
+
+  // 🔄 Alternar entre contador de fila e próxima música a cada 10 segundos
+  useEffect(() => {
+    // Só alterna se houver músicas na fila
+    if (fila.length === 0) {
+      setMostrarProximaMusica(false);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setMostrarProximaMusica((prev) => !prev);
+    }, 10000); // Alterna a cada 10 segundos
+
+    return () => clearInterval(interval);
+  }, [fila.length]);
 
   // Função para alternar fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -686,14 +702,46 @@ function Panel() {
 
           {/* Stats e Conexão */}
           <div className="flex items-center gap-4">
-            {/* Fila */}
-            <div className="text-center px-4 py-2 glass rounded-xl">
-              <div className="flex items-center gap-2 text-neon-cyan mb-1">
-                <Clock className="w-4 h-4" />
-                <span className="text-xl font-bold">{fila.length}</span>
-              </div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide">Na Fila</p>
-            </div>
+            {/* Fila - Alternância entre contador e próxima música */}
+            <AnimatePresence mode="wait">
+              {!mostrarProximaMusica || fila.length === 0 ? (
+                // Mostrar contador total (compacto)
+                <motion.div
+                  key="contador"
+                  className="text-center px-4 py-2 glass rounded-xl min-w-[180px]"
+                  initial={{ opacity: 0, width: 'auto' }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <div className="flex items-center gap-2 text-neon-cyan mb-1 justify-center">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-xl font-bold">
+                      {estadoPlayer?.musicaAtual ? fila.length + 1 : fila.length}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">Na Fila</p>
+                </motion.div>
+              ) : (
+                // Mostrar próxima música (expandido e legível)
+                <motion.div
+                  key="proxima"
+                  className="px-6 py-3 glass rounded-xl flex items-center gap-3"
+                  initial={{ opacity: 0, width: 180 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <Music className="w-5 h-5 text-neon-purple flex-shrink-0" />
+                  <div className="flex flex-col items-start min-w-0">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Próxima</p>
+                    <p className="text-base font-bold text-neon-purple whitespace-nowrap">
+                      {fila[0]?.musicaTitulo || 'Sem músicas'}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Status de conexão */}
             <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${isConnected ? 'bg-green-500/20 border-green-500' : 'bg-red-500/20 border-red-500'} border`}>
@@ -852,87 +900,6 @@ function Panel() {
             </>
           )}
         </div>
-
-        {/* Sidebar - Próximas Músicas */}
-        {fila.length > 0 && (
-          <motion.div
-            className="w-96 glass-heavy border-l border-white/10 flex-col overflow-hidden flex"
-            initial={{ x: 400, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.6, type: 'spring' }}
-          >
-            {/* Header da sidebar */}
-            <div className="p-6 border-b border-white/10 flex-shrink-0">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-gradient-to-br from-neon-cyan to-neon-purple p-3 rounded-xl">
-                  <Clock className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-black gradient-text">Próximas</h3>
-                  <p className="text-sm text-gray-400">
-                    {fila.length} música{fila.length > 1 ? 's' : ''} aguardando
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Lista da fila */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-              <AnimatePresence>
-                {fila.map((musica, index) => (
-                  <motion.div
-                    key={musica.id}
-                    className="glass rounded-xl p-4 hover:bg-white/5 transition-all group"
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -50, height: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Posição */}
-                      <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-neon-cyan to-neon-purple flex items-center justify-center font-black text-lg shadow-lg">
-                        {index + 1}
-                      </div>
-
-                      {/* Thumbnail */}
-                      {musica.musicaThumbnail && (
-                        <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden shadow-lg">
-                          <img
-                            src={musica.musicaThumbnail}
-                            alt={musica.musicaTitulo}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-white truncate leading-tight mb-2 group-hover:text-neon-cyan transition-colors">
-                          {musica.musicaTitulo}
-                        </p>
-                        <div className="flex items-center gap-2 mb-1">
-                          <User className="w-3 h-3 text-gray-400" />
-                          <p className="text-xs text-gray-400 truncate">
-                            {musica.nomeCliente || 'Anônimo'}
-                          </p>
-                        </div>
-                        {musica.musicaDuracao && (
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-3 h-3 text-gray-500" />
-                            <p className="text-xs text-gray-500 font-mono">
-                              {formatTime(musica.musicaDuracao)}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        )}
       </div>
     </div>
   );
