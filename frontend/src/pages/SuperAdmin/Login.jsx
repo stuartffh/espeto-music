@@ -1,43 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Shield, Lock, User, AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import useSuperAdminStore from '../../store/superAdminStore';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 function SuperAdminLogin() {
   const [username, setUsername] = useState('');
   const [senha, setSenha] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { login, loading, error, isAuthenticated, clearError } = useSuperAdminStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/super-admin/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    return () => clearError();
+  }, [clearError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const response = await axios.post(`${API_URL}/api/super-admin/login`, {
-        username,
-        senha,
-      });
-
-      // Salvar token e dados do super admin
-      localStorage.setItem('superAdminToken', response.data.token);
-      localStorage.setItem('superAdmin', JSON.stringify(response.data.superAdmin));
-
-      // Redirecionar para dashboard
+    const success = await login(username, senha);
+    if (success) {
       navigate('/super-admin/dashboard');
-    } catch (err) {
-      console.error('Erro ao fazer login:', err);
-      setError(err.response?.data?.erro || 'Erro ao fazer login. Verifique suas credenciais.');
-    } finally {
-      setLoading(false);
     }
   };
 

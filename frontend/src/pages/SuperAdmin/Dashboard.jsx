@@ -28,21 +28,19 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import StatsCard from '../../components/StatsCard';
+import useSuperAdminStore from '../../store/superAdminStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function SuperAdminDashboard() {
   const navigate = useNavigate();
+  const { token, superAdmin, logout } = useSuperAdminStore();
   const [loading, setLoading] = useState(true);
   const [estabelecimentos, setEstabelecimentos] = useState([]);
   const [stats, setStats] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [abaAtiva, setAbaAtiva] = useState('overview');
   const [error, setError] = useState('');
-
-  // Obter token e dados do Super Admin
-  const token = localStorage.getItem('superAdminToken');
-  const superAdmin = JSON.parse(localStorage.getItem('superAdmin') || '{}');
 
   useEffect(() => {
     if (!token) {
@@ -69,9 +67,8 @@ function SuperAdminDashboard() {
       setEstabelecimentos(estabelecimentosRes.data);
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
-      if (err.response?.status === 401) {
-        localStorage.removeItem('superAdminToken');
-        localStorage.removeItem('superAdmin');
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        logout();
         navigate('/super-admin/login');
       } else {
         setError('Erro ao carregar dados. Tente novamente.');
@@ -82,8 +79,7 @@ function SuperAdminDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('superAdminToken');
-    localStorage.removeItem('superAdmin');
+    logout();
     navigate('/super-admin/login');
   };
 
