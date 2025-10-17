@@ -251,7 +251,8 @@ function Panel() {
     const handlePlayerIniciar = (data) => {
       console.log('▶️ Backend: Iniciar música', data.musica.musicaTitulo);
       setEstadoPlayer(data.estado);
-      setCurrentTime(0);
+      // NÃO resetar currentTime aqui - deixar o iframe fazer isso
+      // O player-time-update vai atualizar com o tempo real
       if (data.estado.musicaAtual?.musicaDuracao) {
         setDuration(data.estado.musicaAtual.musicaDuracao);
       }
@@ -546,19 +547,9 @@ function Panel() {
     sendVideoToIframe(estadoPlayer.musicaAtual);
   }, [estadoPlayer?.musicaAtual, iframeReady, sendVideoToIframe]);
 
-  // Atualizar tempo atual a cada segundo quando tocando
-  useEffect(() => {
-    if (estadoPlayer?.status === 'playing') {
-      const interval = setInterval(() => {
-        setCurrentTime(prev => {
-          const next = prev + 1;
-          return next <= duration ? next : duration;
-        });
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [estadoPlayer?.status, duration]);
+  // REMOVIDO: interval local que causava conflito com tempo real do YouTube
+  // A barra de progresso é atualizada APENAS pelo player-time-update do iframe (linha 477-494)
+  // Isso garante sincronização perfeita com o YouTube Player sem "tic-tac"
 
   const musicaAtual = estadoPlayer?.musicaAtual;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;

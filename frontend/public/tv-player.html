@@ -899,7 +899,24 @@
           if (youtubeId) {
             showLoading();
             state.preloadNotified = false; // Reset flag ao carregar novo vídeo
-            createPlayer(youtubeId);
+
+            // IMPORTANTE: Destruir player antigo antes de criar novo
+            // Evita travamento ao trocar de música
+            if (state.player) {
+              console.log('🔄 Destruindo player antigo antes de carregar nova música...');
+              try {
+                stopUpdateLoop(); // Para o loop de atualização
+                state.player.destroy(); // Destroi o player do YouTube
+                state.player = null;
+              } catch (e) {
+                console.warn('⚠️ Erro ao destruir player antigo:', e);
+              }
+            }
+
+            // Criar novo player com delay para garantir limpeza
+            setTimeout(() => {
+              createPlayer(youtubeId);
+            }, 100);
           }
           break;
         case 'host-ready':
