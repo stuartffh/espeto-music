@@ -434,28 +434,6 @@
     <div id="loading" class="spinner" aria-hidden="true"></div>
     <div id="error" class="error" role="alert"></div>
 
-    <!-- Botão de Ativar Som -->
-    <div id="unmute-btn" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999;">
-      <button style="
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 30px 60px;
-        border-radius: 20px;
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        transition: all 0.3s ease;
-      " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-        <span style="font-size: 40px;">🔊</span>
-        <span>Ativar Som</span>
-      </button>
-    </div>
-
     <aside id="music-info" aria-live="polite">
       <div id="m-title" class="t">-</div>
       <div id="m-client" class="c">-</div>
@@ -572,78 +550,13 @@
                 console.log('🎬 Estado do player após play:', playerState);
 
                 if (playerState === YT.PlayerState.PLAYING || playerState === YT.PlayerState.BUFFERING) {
-                  // 5. Tentar ativar som automaticamente
-                  console.log('🔊 Vídeo tocando mutado! Tentando ativar som automaticamente...');
-
-                  setTimeout(async () => {
-                    try {
-                      console.log('🎵 Tentando desmutar automaticamente...');
-
-                      // Desmutar e ajustar volume
-                      event.target.unMute();
-                      event.target.setVolume(100);
-
-                      // Aguardar um pouco para verificar se funcionou
-                      await new Promise(r => setTimeout(r, 300));
-
-                      const newState = event.target.getPlayerState();
-                      const isMuted = event.target.isMuted();
-
-                      console.log('📊 Estado após unmute:');
-                      console.log('   - PlayerState:', newState);
-                      console.log('   - isMuted:', isMuted);
-                      console.log('   - Volume:', event.target.getVolume());
-
-                      // Se pausou, tentar retomar
-                      if (newState === YT.PlayerState.PAUSED) {
-                        console.log('⚠️ Player pausou após unmute, tentando retomar...');
-                        event.target.playVideo();
-
-                        // Aguardar e verificar novamente
-                        await new Promise(r => setTimeout(r, 300));
-                        const finalState = event.target.getPlayerState();
-
-                        if (finalState === YT.PlayerState.PAUSED) {
-                          console.log('❌ Autoplay com som bloqueado pelo navegador');
-                          console.log('🔔 Mostrando botão para interação manual...');
-                          showUnmuteButton();
-                        } else {
-                          console.log('✅ Som ativado com sucesso após retomar!');
-                          syncVolUI();
-                        }
-                      } else if (isMuted || event.target.getVolume() === 0) {
-                        console.log('⚠️ Som ainda está mutado, tentando novamente...');
-                        event.target.unMute();
-                        event.target.setVolume(100);
-
-                        await new Promise(r => setTimeout(r, 200));
-
-                        if (event.target.isMuted() || event.target.getVolume() === 0) {
-                          console.log('❌ Unmute automático bloqueado');
-                          console.log('🔔 Mostrando botão para interação manual...');
-                          showUnmuteButton();
-                        } else {
-                          console.log('✅ Som ativado com sucesso!');
-                          syncVolUI();
-                        }
-                      } else {
-                        console.log('✅ Som ativado com sucesso automaticamente!');
-                        syncVolUI();
-                      }
-
-                    } catch (e) {
-                      console.error('❌ Erro ao tentar ativar som:', e);
-                      console.log('🔔 Mostrando botão para interação manual...');
-                      showUnmuteButton();
-                    }
-                  }, 1000);
+                  // 5. Música tocando mutada - usuário pode clicar no volume para ativar
+                  console.log('🔊 Vídeo tocando mutado!');
+                  console.log('💡 Use o controle de volume (🔇) para ativar o som');
                 } else {
                   console.warn('⚠️ Vídeo não iniciou. Tentando novamente...');
                   await event.target.playVideo();
                   await new Promise(r => setTimeout(r, 500));
-                  if (event.target.getPlayerState() === YT.PlayerState.PLAYING) {
-                    showUnmuteButton();
-                  }
                 }
 
               } catch (e) {
@@ -890,49 +803,6 @@
       els.error.classList.remove('visible');
     }
 
-    // ========== UNMUTE BUTTON ==========
-    function showUnmuteButton() {
-      const btn = document.getElementById('unmute-btn');
-      if (btn) {
-        btn.style.display = 'block';
-        console.log('🔔 Botão de ativar som exibido');
-      }
-    }
-
-    function hideUnmuteButton() {
-      const btn = document.getElementById('unmute-btn');
-      if (btn) {
-        btn.style.display = 'none';
-        console.log('✅ Botão de ativar som ocultado');
-      }
-    }
-
-    function handleUnmuteClick() {
-      if (!state.player) return;
-
-      console.log('🎵 Usuário clicou para ativar o som!');
-
-      try {
-        // Desmutar e ativar volume
-        state.player.unMute();
-        state.player.setVolume(100);
-
-        // Garantir que está tocando
-        const playerState = state.player.getPlayerState();
-        if (playerState !== YT.PlayerState.PLAYING) {
-          console.log('▶️ Retomando reprodução...');
-          state.player.playVideo();
-        }
-
-        console.log('✅ Som ativado com sucesso!');
-        hideUnmuteButton();
-        syncVolUI();
-      } catch (e) {
-        console.error('❌ Erro ao ativar som:', e);
-      }
-    }
-
-
     // ========== OVERLAYS ==========
     function setMusicInfo(data) {
       if (!data) return;
@@ -1176,12 +1046,6 @@
     els.btnVol.addEventListener('click', toggleMute);
     els.volSlider.addEventListener('input', (e) => setVolume(e.target.value));
     els.btnFull.addEventListener('click', toggleFullscreen);
-
-    // Unmute button
-    const unmuteBtn = document.querySelector('#unmute-btn button');
-    if (unmuteBtn) {
-      unmuteBtn.addEventListener('click', handleUnmuteClick);
-    }
 
     // Progress bar
     els.bar.addEventListener('pointerdown', (e) => {
