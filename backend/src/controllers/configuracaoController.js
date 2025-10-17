@@ -5,10 +5,20 @@ const { invalidarCache } = require('../utils/configHelper');
 /**
  * GET /api/config
  * Lista todas as configurações
+ * MULTI-TENANT: Filtra por estabelecimentoId
  */
 async function listar(req, res) {
   try {
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({
+        erro: 'Estabelecimento não identificado',
+      });
+    }
+
     const configs = await prisma.configuracao.findMany({
+      where: { estabelecimentoId }, // ← Multi-tenant
       orderBy: { chave: 'asc' },
     });
 
@@ -24,13 +34,24 @@ async function listar(req, res) {
 /**
  * GET /api/config/:chave
  * Busca uma configuração específica
+ * MULTI-TENANT: Filtra por estabelecimentoId
  */
 async function buscar(req, res) {
   try {
     const { chave } = req.params;
+    const estabelecimentoId = req.estabelecimentoId;
 
-    const config = await prisma.configuracao.findUnique({
-      where: { chave },
+    if (!estabelecimentoId) {
+      return res.status(400).json({
+        erro: 'Estabelecimento não identificado',
+      });
+    }
+
+    const config = await prisma.configuracao.findFirst({
+      where: {
+        estabelecimentoId, // ← Multi-tenant
+        chave,
+      },
     });
 
     if (!config) {
@@ -51,11 +72,19 @@ async function buscar(req, res) {
 /**
  * PUT /api/config/:chave
  * Atualiza uma configuração
+ * MULTI-TENANT: Filtra por estabelecimentoId
  */
 async function atualizar(req, res) {
   try {
     const { chave } = req.params;
     const { valor } = req.body;
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({
+        erro: 'Estabelecimento não identificado',
+      });
+    }
 
     if (valor === undefined) {
       return res.status(400).json({
@@ -63,8 +92,22 @@ async function atualizar(req, res) {
       });
     }
 
+    // Buscar config primeiro para validar que existe e pertence ao estabelecimento
+    const configExistente = await prisma.configuracao.findFirst({
+      where: {
+        estabelecimentoId,
+        chave,
+      },
+    });
+
+    if (!configExistente) {
+      return res.status(404).json({
+        erro: 'Configuração não encontrada',
+      });
+    }
+
     const config = await prisma.configuracao.update({
-      where: { chave },
+      where: { id: configExistente.id },
       data: { valor: String(valor) },
     });
 
@@ -72,10 +115,11 @@ async function atualizar(req, res) {
     invalidarCache(chave);
 
     // Emitir evento WebSocket para atualizar configurações em tempo real
+    // ← MULTI-TENANT: Emitir apenas para o estabelecimento específico
     const io = req.app.get('io');
     if (io) {
-      console.log(`🔄 Emitindo atualização de configuração: ${chave} = ${valor}`);
-      io.emit('config:atualizada', { chave, valor: String(valor) });
+      console.log(`🔄 Emitindo atualização de configuração: ${chave} = ${valor} para estabelecimento ${estabelecimentoId}`);
+      io.to(`estabelecimento:${estabelecimentoId}`).emit('config:atualizada', { chave, valor: String(valor) });
     }
 
     res.json(config);
@@ -90,10 +134,18 @@ async function atualizar(req, res) {
 /**
  * POST /api/config
  * Cria uma nova configuração
+ * MULTI-TENANT: Associa ao estabelecimentoId
  */
 async function criar(req, res) {
   try {
     const { chave, valor, descricao, tipo } = req.body;
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({
+        erro: 'Estabelecimento não identificado',
+      });
+    }
 
     if (!chave || valor === undefined) {
       return res.status(400).json({
@@ -103,6 +155,7 @@ async function criar(req, res) {
 
     const config = await prisma.configuracao.create({
       data: {
+        estabelecimentoId, // ← Multi-tenant
         chave,
         valor: String(valor),
         descricao,
@@ -125,13 +178,35 @@ async function criar(req, res) {
 /**
  * DELETE /api/config/:chave
  * Remove uma configuração
+ * MULTI-TENANT: Filtra por estabelecimentoId
  */
 async function remover(req, res) {
   try {
     const { chave } = req.params;
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({
+        erro: 'Estabelecimento não identificado',
+      });
+    }
+
+    // Buscar config primeiro para validar que existe e pertence ao estabelecimento
+    const configExistente = await prisma.configuracao.findFirst({
+      where: {
+        estabelecimentoId,
+        chave,
+      },
+    });
+
+    if (!configExistente) {
+      return res.status(404).json({
+        erro: 'Configuração não encontrada',
+      });
+    }
 
     await prisma.configuracao.delete({
-      where: { chave },
+      where: { id: configExistente.id },
     });
 
     // Invalidar cache ao remover configuração
