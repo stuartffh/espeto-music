@@ -1,11 +1,12 @@
 /**
  * Middleware de Tenant Context (Multi-Tenancy)
  *
- * Detecta o estabelecimento a partir de:
- * 1. Slug na URL (/admin/:slug, /:slug/cliente)
- * 2. Código na URL (/:codigo/cliente)
- * 3. Header x-tenant-code (para APIs)
- * 4. Query param ?tenant=slug
+ * Detecta o estabelecimento a partir de (em ordem de prioridade):
+ * 1. JWT Token do Admin (estabelecimentoId no token) - PRIORITÁRIO
+ * 2. Slug na URL (/admin/:slug, /:slug/cliente)
+ * 3. Código na URL (/:codigo/cliente)
+ * 4. Header x-tenant-code ou x-tenant-slug (para APIs)
+ * 5. Query param ?tenant=slug
  *
  * Adiciona ao req:
  * - req.estabelecimentoId
@@ -75,18 +76,15 @@ async function tenantContext(req, res, next) {
       return next();
     }
 
-    // 2. Tentar extrair identificador do estabelecimento
-    let tenantIdentifier = extractTenantIdentifier(req);
-
-    // 2.1. Se não encontrou tenant na URL/header, tentar extrair do JWT token
-    if (!tenantIdentifier && req.headers.authorization) {
+    // 2. PRIORIDADE 1: Tentar extrair do JWT token primeiro (Admin autenticado)
+    if (req.headers.authorization) {
       try {
         const token = req.headers.authorization.replace('Bearer ', '');
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        // Se token tem estabelecimentoId, usar ele
-        if (decoded.estabelecimentoId) {
-          console.log('🔑 [TENANT] Estabelecimento extraído do JWT:', decoded.estabelecimentoId);
+        // Se token tem estabelecimentoId e tipo é 'admin', usar ele SEMPRE
+        if (decoded.estabelecimentoId && decoded.tipo === 'admin') {
+          console.log('🔑 [TENANT] Estabelecimento extraído do JWT Admin:', decoded.estabelecimentoId);
           req.estabelecimentoId = decoded.estabelecimentoId;
 
           // Buscar estabelecimento pelo ID
@@ -95,17 +93,34 @@ async function tenantContext(req, res, next) {
           });
 
           if (estabelecimento && estabelecimento.ativo) {
+            // Verificar expiração do plano
+            if (estabelecimento.dataExpiracao && estabelecimento.dataExpiracao < new Date()) {
+              return res.status(403).json({
+                error: 'Plano expirado',
+                message: 'O plano deste estabelecimento expirou. Renove para continuar usando o sistema.',
+                dataExpiracao: estabelecimento.dataExpiracao
+              });
+            }
+
             req.estabelecimento = estabelecimento;
             req.isSuperAdmin = false;
             console.log(`🏢 Tenant Context (do JWT): ${estabelecimento.nome} (${estabelecimento.slug})`);
             return next();
+          } else if (estabelecimento && !estabelecimento.ativo) {
+            return res.status(403).json({
+              error: 'Estabelecimento desativado',
+              message: 'Este estabelecimento foi desativado. Entre em contato com o suporte.'
+            });
           }
         }
       } catch (error) {
-        // Token inválido ou não tem estabelecimentoId - continua para verificar rotas públicas
-        console.log('⚠️  [TENANT] Não foi possível extrair estabelecimento do JWT');
+        // Token inválido ou expirado - continua para verificar outros métodos
+        console.log('⚠️  [TENANT] Token inválido ou sem estabelecimentoId:', error.message);
       }
     }
+
+    // 3. PRIORIDADE 2: Tentar extrair identificador do estabelecimento da URL/headers
+    let tenantIdentifier = extractTenantIdentifier(req);
 
     if (!tenantIdentifier) {
       // Rotas públicas que não precisam de tenant

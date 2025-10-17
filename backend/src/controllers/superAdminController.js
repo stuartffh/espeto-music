@@ -487,16 +487,16 @@ async function login(req, res) {
       });
     }
 
-    // Gerar token JWT (você pode usar jwt.sign se tiver configurado)
-    // Por enquanto, vamos usar um token simples
+    // Gerar token JWT
     const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'espeto-music-secret-key-change-in-production';
     const token = jwt.sign(
       {
         id: superAdmin.id,
         username: superAdmin.username,
         tipo: 'super-admin'
       },
-      process.env.JWT_SECRET || 'secret-super-admin-key',
+      JWT_SECRET,
       { expiresIn: '24h' }
     );
 
