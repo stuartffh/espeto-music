@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Music, User, Clock, Wifi, WifiOff } from 'lucide-react';
 import axios from 'axios';
-import socket from '../../services/socket';
+import { socket, authenticateTV } from '../../services/socket';
+import { setTenantSlug, setTenantCodigo } from '../../services/api';
+import { useTenant } from '../../hooks/useTenant';
 import EqualizerAnimation from '../../components/EqualizerAnimation';
 
 const sanitizeUrl = (url) => {
@@ -83,6 +85,9 @@ const formatTime = (seconds) => {
 };
 
 function Panel() {
+  // MULTI-TENANT: Obter tenant do contexto (pode ser slug ou código)
+  const { slug, codigo, hasTenant, isLoading: tenantLoading } = useTenant();
+
   const [fila, setFila] = useState([]);
   const [estadoPlayer, setEstadoPlayer] = useState(null);
   const [iframeReady, setIframeReady] = useState(false);
@@ -141,6 +146,42 @@ function Panel() {
 
     console.log('✅ [TV] Conexão limpa estabelecida - sem cookies, sem cache');
   }, []); // Executa apenas uma vez ao montar
+
+  // MULTI-TENANT: Configurar API e autenticar TV no WebSocket
+  useEffect(() => {
+    if (!hasTenant || tenantLoading) return;
+
+    console.log('🏢 [TV] Configurando tenant...');
+    console.log('   Slug:', slug);
+    console.log('   Código:', codigo);
+
+    // Configurar API com tenant
+    if (slug) {
+      setTenantSlug(slug);
+    }
+    if (codigo) {
+      setTenantCodigo(codigo);
+    }
+
+    // Autenticar TV no WebSocket
+    // Priorizar código da TV, mas aceitar slug como fallback
+    const tvIdentifier = codigo || slug;
+
+    if (tvIdentifier) {
+      authenticateTV(tvIdentifier)
+        .then(() => {
+          console.log('✅ [TV] Autenticado no WebSocket com sucesso');
+        })
+        .catch((error) => {
+          console.error('❌ [TV] Erro ao autenticar no WebSocket:', error);
+          // Continuar mesmo com erro de autenticação
+        });
+    } else {
+      console.warn('⚠️ [TV] Nenhum identificador de tenant disponível (slug ou código)');
+    }
+
+    console.log('✅ [TV] Tenant configurado');
+  }, [slug, codigo, hasTenant, tenantLoading]);
 
   const handleVideoEnd = useCallback(() => {
     if (estadoPlayer?.musicaAtual && socket) {
@@ -207,9 +248,15 @@ function Panel() {
 
   // Conectar WebSocket e buscar dados iniciais
   useEffect(() => {
-    console.log('🔌 Usando socket global compartilhado...');
+    // Aguardar tenant estar disponível antes de carregar dados
+    if (!hasTenant || tenantLoading) {
+      console.log('⏳ [TV] Aguardando tenant...');
+      return;
+    }
 
-    // Autenticar TV no controle remoto
+    console.log('🔌 [TV] Usando socket global compartilhado...');
+
+    // Autenticar TV no controle remoto (para funcionalidades de controle remoto)
     socket.emit('remote-control-auth', {
       token: 'tv-token', // Em produção, usar token real
       role: 'tv'
@@ -217,9 +264,9 @@ function Panel() {
 
     socket.on('remote-control-auth-response', (response) => {
       if (response.success) {
-        console.log('✅ TV autenticada no controle remoto:', response.sessionId);
+        console.log('✅ [TV] Autenticada no controle remoto:', response.sessionId);
       } else {
-        console.error('❌ Falha na autenticação do controle remoto:', response.reason);
+        console.error('❌ [TV] Falha na autenticação do controle remoto:', response.reason);
       }
     });
 
@@ -233,7 +280,7 @@ function Panel() {
       .then(res => {
         // Filtrar músicas que estão aguardando tocar (status "pago", NÃO "tocando")
         const filaFiltrada = res.data.filter(m => m.status === 'pago');
-        console.log('📋 Fila:', filaFiltrada.length, 'músicas');
+        console.log('📋 [TV] Fila:', filaFiltrada.length, 'músicas');
         setFila(filaFiltrada);
       })
       .catch(console.error);
@@ -241,7 +288,7 @@ function Panel() {
     // Buscar estado do player
     api.get('/api/player/estado')
       .then(res => {
-        console.log('🎮 Estado do player:', res.data);
+        console.log('🎮 [TV] Estado do player:', res.data);
         setEstadoPlayer(res.data);
       })
       .catch(console.error);
@@ -354,7 +401,7 @@ function Panel() {
       socket.off('fila:vazia', handleFilaVazia);
       socket.off('config:atualizada', handleConfigAtualizada);
     };
-  }, []);
+  }, [hasTenant, tenantLoading, handleVideoEnd]);
 
   // Enviar fila para o player sempre que ela mudar
   useEffect(() => {
