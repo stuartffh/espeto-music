@@ -549,6 +549,7 @@
 
                 // YouTube Player instance
                 this.ytPlayer = null;
+                this.ytTimeSyncInterval = null;
 
                 // Current music and queue data
                 this.currentMusicData = null;
@@ -1409,6 +1410,39 @@
 
                 if (event.data === YT.PlayerState.PLAYING) {
                     console.log('▶️  Reproduzindo com qualidade automática');
+                    // Iniciar envio de updates de tempo
+                    this.startYouTubeTimeSync();
+                }
+
+                if (event.data === YT.PlayerState.PAUSED) {
+                    console.log('⏸️ Vídeo pausado');
+                    // Parar envio de updates
+                    this.stopYouTubeTimeSync();
+                }
+            }
+
+            // Iniciar sincronização de tempo com o backend
+            startYouTubeTimeSync() {
+                this.stopYouTubeTimeSync(); // Limpar interval anterior
+
+                this.ytTimeSyncInterval = setInterval(() => {
+                    if (this.ytPlayer && typeof this.ytPlayer.getCurrentTime === 'function') {
+                        const currentTime = this.ytPlayer.getCurrentTime();
+
+                        // Enviar para o parent (Panel.jsx)
+                        window.parent.postMessage({
+                            type: 'player-time-update',
+                            time: currentTime
+                        }, '*');
+                    }
+                }, 1000); // Enviar a cada 1 segundo
+            }
+
+            // Parar sincronização de tempo
+            stopYouTubeTimeSync() {
+                if (this.ytTimeSyncInterval) {
+                    clearInterval(this.ytTimeSyncInterval);
+                    this.ytTimeSyncInterval = null;
                 }
             }
 
@@ -1496,7 +1530,9 @@
             toggleOverlays(isFullscreen) {
                 console.log('🖥️ Fullscreen:', isFullscreen);
 
-                if (isFullscreen) {
+                if (isFullscreen && this.currentMusicData) {
+                    // Atualizar informações antes de mostrar
+                    this.updateMusicInfo(this.currentMusicData);
                     this.musicInfoOverlay.classList.add('visible');
                     this.queueOverlay.classList.add('visible');
                 } else {
@@ -1681,14 +1717,32 @@
                     player.updateAutoplayConsent(e.data.value, { persist: true, notify: true });
                     break;
                 case 'play':
-                    player.video.play().catch(e => console.error('Erro ao reproduzir:', e));
+                    // Controlar YouTube player ou video element
+                    if (player.ytPlayer) {
+                        player.ytPlayer.playVideo();
+                        console.log('▶️ YouTube player: play');
+                    } else {
+                        player.video.play().catch(e => console.error('Erro ao reproduzir:', e));
+                    }
                     break;
                 case 'pause':
-                    player.video.pause();
+                    // Controlar YouTube player ou video element
+                    if (player.ytPlayer) {
+                        player.ytPlayer.pauseVideo();
+                        console.log('⏸️ YouTube player: pause');
+                    } else {
+                        player.video.pause();
+                    }
                     break;
                 case 'stop':
-                    player.video.pause();
-                    player.video.currentTime = 0;
+                    // Controlar YouTube player ou video element
+                    if (player.ytPlayer) {
+                        player.ytPlayer.stopVideo();
+                        console.log('⏹️ YouTube player: stop');
+                    } else {
+                        player.video.pause();
+                        player.video.currentTime = 0;
+                    }
                     break;
                 case 'set-volume':
                     if (typeof e.data.volume === 'number') {

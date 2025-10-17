@@ -455,6 +455,20 @@ function Panel() {
           // Vídeo iniciado com sucesso
           console.log('✅ Vídeo iniciado:', event.data.musica?.titulo);
           break;
+        case 'player-time-update':
+          // Receber update de tempo do YouTube player
+          if (event.data.time !== undefined) {
+            // Atualizar estado local
+            setCurrentTime(event.data.time);
+
+            // Enviar para o backend (throttle para não sobrecarregar)
+            if (!window.lastTimeSyncSent || Date.now() - window.lastTimeSyncSent > 2000) {
+              api.post('/api/player/tempo', { tempo: event.data.time })
+                .catch(err => console.error('Erro ao sincronizar tempo:', err));
+              window.lastTimeSyncSent = Date.now();
+            }
+          }
+          break;
         default:
           break;
       }

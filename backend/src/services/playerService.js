@@ -511,6 +511,21 @@ function pararSincronizacao() {
   }
 }
 
+/**
+ * Atualiza o tempo atual do player vindo do YouTube player (frontend)
+ * Usado para sincronizar o estado do backend com o player real
+ */
+function atualizarTempoAtual(tempo) {
+  // Só atualizar se houver música tocando ou pausada
+  if (estadoMemoria.musicaAtual && (estadoMemoria.status === 'playing' || estadoMemoria.status === 'paused')) {
+    estadoMemoria.tempoAtual = tempo;
+    estadoMemoria.ultimaAtualizacao = Date.now();
+
+    // Não precisa salvar no banco a cada update (muito frequente)
+    // O backup periódico já faz isso
+  }
+}
+
 module.exports = {
   inicializar,
   iniciarMusica,
@@ -522,4 +537,5 @@ module.exports = {
   buscarTempo,
   obterEstado,
   musicaTerminou,
+  atualizarTempoAtual,
 };
