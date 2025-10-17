@@ -1,0 +1,461 @@
+// ========================================
+// ESPETO MUSIC - SAAS MULTI-TENANT
+// ========================================
+// Arquitetura para múltiplos estabelecimentos
+// Cada estabelecimento é isolado com suas próprias:
+// - Configurações
+// - TVs
+// - Pedidos
+// - Pagamentos
+// - Gift Cards
+// ========================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// SUPER ADMIN (único no sistema)
+// ========================================
+model SuperAdmin {
+  id                String   @id @default(uuid())
+  username          String   @unique
+  password          String   // Hash bcrypt
+  nome              String
+  email             String   @unique
+  ativo             Boolean  @default(true)
+  ultimoAcesso      DateTime?
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("super_admins")
+}
+
+// ========================================
+// ESTABELECIMENTO (tenant)
+// ========================================
+model Estabelecimento {
+  id                String   @id @default(uuid())
+
+  // Identificação
+  nome              String   // Nome do estabelecimento (ex: "Espeto do João")
+  slug              String   @unique // URL amigável (ex: "espeto-do-joao")
+  codigo            String   @unique // Código único para acesso rápido (ex: "ESP001")
+
+  // Contato
+  email             String?
+  telefone          String?
+  endereco          String?
+  cidade            String?
+  estado            String?
+
+  // Status e plano
+  ativo             Boolean  @default(true)
+  plano             String   @default("basico") // basico, pro, enterprise
+  dataExpiracao     DateTime? // Data de expiração do plano
+
+  // Limites do plano
+  limiteTVs         Int      @default(2) // Número máximo de TVs
+  limiteMusicasMes  Int      @default(1000) // Limite de músicas por mês
+
+  // Contadores
+  totalMusicasMes   Int      @default(0) // Reset todo mês
+  ultimoResetMes    DateTime @default(now())
+
+  // Dados do admin do estabelecimento
+  adminNome         String
+  adminEmail        String
+  adminTelefone     String?
+
+  // Observações internas (visível apenas para super admin)
+  observacoes       String?
+
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  // Relações
+  admins            Admin[]
+  tvs               TV[]
+  configuracoes     Configuracao[]
+  pedidosMusica     PedidoMusica[]
+  pagamentos        Pagamento[]
+  giftCards         GiftCard[]
+  sugestoes         Sugestao[]
+  historicoBuscas   HistoricoBusca[]
+  estadosPlayer     EstadoPlayer[]
+  palavrasProibidas PalavraProibida[]
+  temas             Tema[]
+  carrinhos         Carrinho[]
+
+  @@map("estabelecimentos")
+  @@index([slug])
+  @@index([codigo])
+  @@index([ativo])
+}
+
+// ========================================
+// ADMIN DO ESTABELECIMENTO
+// ========================================
+model Admin {
+  id                   String   @id @default(uuid())
+  estabelecimentoId    String   // FK para estabelecimento
+
+  username             String
+  password             String   // Hash bcrypt
+  nome                 String
+  email                String?
+  ativo                Boolean  @default(true)
+  ultimoAcesso         DateTime?
+
+  // Permissões (futuro - RBAC)
+  permissoes           String?  // JSON com permissões específicas
+
+  criadoEm             DateTime @default(now())
+  atualizadoEm         DateTime @updatedAt
+
+  estabelecimento      Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+
+  @@unique([estabelecimentoId, username]) // Username único por estabelecimento
+  @@map("admins")
+  @@index([estabelecimentoId])
+}
+
+// ========================================
+// TV (Terminal de Exibição)
+// ========================================
+model TV {
+  id                   String   @id @default(uuid())
+  estabelecimentoId    String   // FK para estabelecimento
+
+  // Identificação
+  nome                 String   // Nome da TV (ex: "TV Salão Principal")
+  codigo               String   @unique // Código único para autenticação (ex: "TV-ABC123")
+
+  // Status
+  ativo                Boolean  @default(true)
+  online               Boolean  @default(false) // Se está conectada via WebSocket
+
+  // Última conexão
+  ultimaConexao        DateTime?
+  ipUltimaConexao      String?
+
+  // Observações
+  observacoes          String?
+
+  criadoEm             DateTime @default(now())
+  atualizadoEm         DateTime @updatedAt
+
+  estabelecimento      Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+
+  @@map("tvs")
+  @@index([estabelecimentoId])
+  @@index([codigo])
+}
+
+// ========================================
+// PEDIDO DE MÚSICA (multi-tenant)
+// ========================================
+model PedidoMusica {
+  id                  String   @id @default(uuid())
+  estabelecimentoId   String   // FK para estabelecimento
+
+  nomeCliente         String?
+  musicaTitulo        String
+  musicaYoutubeId     String
+  musicaThumbnail     String?
+  musicaDuracao       Int?     // em segundos
+  status              String   @default("pendente") // pendente, pago, tocando, concluida, cancelada, rejeitada
+  valor               Float
+  pagamentoId         String?  @unique
+  pagamentoCarrinhoId String?
+  posicaoFila         Int?
+  motivoRejeicao      String?
+  moderadoPor         String?  // "sistema" ou "admin"
+
+  criadoEm            DateTime @default(now())
+  atualizadoEm        DateTime @updatedAt
+
+  estabelecimento      Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+  pagamento            Pagamento? @relation(fields: [pagamentoId], references: [id])
+  pagamentoCarrinho    Pagamento? @relation("PagamentoCarrinho", fields: [pagamentoCarrinhoId], references: [id])
+  giftCard             GiftCard?
+
+  @@map("pedidos_musica")
+  @@index([estabelecimentoId])
+  @@index([estabelecimentoId, status])
+  @@index([criadoEm])
+}
+
+// ========================================
+// PAGAMENTO (multi-tenant)
+// ========================================
+model Pagamento {
+  id                      String   @id @default(uuid())
+  estabelecimentoId       String   // FK para estabelecimento
+
+  mercadoPagoPaymentId    String?  @unique
+  mercadoPagoPreferenceId String?  @unique
+  status                  String   @default("pending")
+  valor                   Float
+  metodoPagamento         String?
+
+  // Dados do pagador
+  emailPagador            String?
+  cpfPagador              String?
+  nomePagador             String?
+
+  // Dados do PIX
+  qrCode                  String?
+  qrCodeText              String?
+  pixExpirationDate       DateTime?
+
+  // Webhook
+  webhookData             String?
+  lastWebhookUpdate       DateTime?
+
+  criadoEm                DateTime @default(now())
+  atualizadoEm            DateTime @updatedAt
+
+  estabelecimento         Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+  pedidoMusica            PedidoMusica?
+  pedidosMusica           PedidoMusica[] @relation("PagamentoCarrinho")
+
+  @@map("pagamentos")
+  @@index([estabelecimentoId])
+  @@index([status])
+}
+
+// ========================================
+// CONFIGURAÇÃO (multi-tenant)
+// ========================================
+model Configuracao {
+  id                String   @id @default(uuid())
+  estabelecimentoId String   // FK para estabelecimento
+
+  chave             String
+  valor             String
+  descricao         String?
+  tipo              String   @default("text") // text, number, boolean, password, url, color
+
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+
+  @@unique([estabelecimentoId, chave]) // Chave única por estabelecimento
+  @@map("configuracoes")
+  @@index([estabelecimentoId])
+}
+
+// ========================================
+// ESTADO DO PLAYER (um por estabelecimento)
+// ========================================
+model EstadoPlayer {
+  id                String   @id @default(uuid())
+  estabelecimentoId String   @unique // Um estado por estabelecimento
+
+  musicaAtualId     String?
+  status            String   @default("stopped")
+  tempoAtual        Float    @default(0)
+  volume            Int      @default(80)
+  ultimaAtualizacao DateTime @default(now())
+
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+
+  @@map("estado_player")
+  @@index([estabelecimentoId])
+}
+
+// ========================================
+// GIFT CARD (multi-tenant)
+// ========================================
+model GiftCard {
+  id                String   @id @default(uuid())
+  estabelecimentoId String   // FK para estabelecimento
+
+  codigo            String   @unique
+  valor             Float
+  quantidadeMusicas Int
+  usado             Boolean  @default(false)
+  ativo             Boolean  @default(true)
+  dataExpiracao     DateTime?
+
+  usadoEm           DateTime?
+  usadoPor          String?
+  pedidoMusicaId    String?   @unique
+
+  observacao        String?
+
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+  pedidoMusica      PedidoMusica? @relation(fields: [pedidoMusicaId], references: [id])
+
+  @@map("gift_cards")
+  @@index([estabelecimentoId])
+  @@index([codigo])
+}
+
+// ========================================
+// SUGESTÃO (multi-tenant)
+// ========================================
+model Sugestao {
+  id                String   @id @default(uuid())
+  estabelecimentoId String   // FK para estabelecimento
+
+  categoria         String
+  titulo            String
+  youtubeId         String?
+  thumbnail         String?
+  tipo              String   @default("trending")
+  ordem             Int      @default(0)
+  ativo             Boolean  @default(true)
+
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+
+  @@map("sugestoes")
+  @@index([estabelecimentoId])
+  @@index([categoria, ativo])
+}
+
+// ========================================
+// HISTÓRICO DE BUSCA (multi-tenant)
+// ========================================
+model HistoricoBusca {
+  id                String   @id @default(uuid())
+  estabelecimentoId String   // FK para estabelecimento
+
+  termo             String
+  categoria         String?
+  resultados        Int      @default(0)
+  vezesBuscado      Int      @default(1)
+
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+
+  @@map("historico_buscas")
+  @@index([estabelecimentoId])
+  @@index([termo])
+}
+
+// ========================================
+// PALAVRA PROIBIDA (multi-tenant)
+// ========================================
+model PalavraProibida {
+  id                String   @id @default(uuid())
+  estabelecimentoId String   // FK para estabelecimento
+
+  palavra           String
+  categoria         String   @default("AMBOS")
+  severidade        String   @default("MEDIA")
+  ativo             Boolean  @default(true)
+
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+
+  @@map("palavras_proibidas")
+  @@index([estabelecimentoId])
+  @@index([categoria])
+}
+
+// ========================================
+// TEMA (multi-tenant)
+// ========================================
+model Tema {
+  id                  String   @id @default(uuid())
+  estabelecimentoId   String   @unique // Um tema por estabelecimento
+
+  nome                String   @default("Espeto Music")
+
+  // Cores
+  corPrimaria         String   @default("#DC2626")
+  corSecundaria       String   @default("#F97316")
+  corAcento           String   @default("#FBBF24")
+  corFundo            String   @default("#0F172A")
+  corFundoSecundario  String   @default("#1E293B")
+  corTexto            String   @default("#F8FAFC")
+  corTextoSecundario  String   @default("#CBD5E1")
+
+  // Imagens
+  logoUrl             String?
+  backgroundUrl       String?
+  iconUrl             String?
+
+  // Tipografia
+  fontePrimaria       String   @default("Inter")
+  fonteSecundaria     String   @default("Poppins")
+
+  // Estilo
+  borderRadius        String   @default("8px")
+  shadowIntensity     String   @default("medium")
+
+  criadoEm            DateTime @default(now())
+  atualizadoEm        DateTime @updatedAt
+
+  estabelecimento     Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+
+  @@map("temas")
+  @@index([estabelecimentoId])
+}
+
+// ========================================
+// CARRINHO (multi-tenant)
+// ========================================
+model Carrinho {
+  id                String   @id @default(uuid())
+  estabelecimentoId String   // FK para estabelecimento
+
+  sessionId         String
+  nomeCliente       String?
+  musicasTitulos    String
+  musicasIds        String
+  musicasThumbs     String
+  musicasDuracoes   String
+  valorTotal        Float
+  quantidadeItens   Int
+
+  expiraEm          DateTime
+
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+
+  @@map("carrinhos")
+  @@index([estabelecimentoId])
+  @@index([sessionId])
+  @@index([expiraEm])
+}
+
+// ========================================
+// RATE LIMIT (global - não multi-tenant)
+// ========================================
+model RateLimit {
+  id              String   @id @default(uuid())
+  ip              String
+  contador        Int      @default(1)
+  resetaEm        DateTime
+
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  @@map("rate_limits")
+  @@index([ip])
+  @@index([resetaEm])
+}
