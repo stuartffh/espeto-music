@@ -9,9 +9,17 @@ function gerarCodigo() {
 }
 
 // Listar todos os gift cards (admin)
+// MULTI-TENANT: Filtra por estabelecimentoId
 exports.listar = async (req, res) => {
   try {
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ erro: 'Estabelecimento não identificado' });
+    }
+
     const gifts = await prisma.giftCard.findMany({
+      where: { estabelecimentoId }, // ← Multi-tenant
       orderBy: { criadoEm: 'desc' },
       include: {
         pedidoMusica: {
@@ -32,9 +40,15 @@ exports.listar = async (req, res) => {
 };
 
 // Criar novo gift card (admin)
+// MULTI-TENANT: Associa ao estabelecimentoId
 exports.criar = async (req, res) => {
   try {
     const { valor, quantidadeMusicas, dataExpiracao, observacao } = req.body;
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ erro: 'Estabelecimento não identificado' });
+    }
 
     if (!quantidadeMusicas || quantidadeMusicas < 1) {
       return res.status(400).json({ erro: 'Quantidade de músicas inválida' });
@@ -44,6 +58,7 @@ exports.criar = async (req, res) => {
 
     const gift = await prisma.giftCard.create({
       data: {
+        estabelecimentoId, // ← Multi-tenant
         codigo,
         valor: valor || 0,
         quantidadeMusicas,
@@ -60,12 +75,21 @@ exports.criar = async (req, res) => {
 };
 
 // Validar gift card (público - para o cliente usar)
+// MULTI-TENANT: Valida que pertence ao estabelecimento
 exports.validar = async (req, res) => {
   try {
     const { codigo } = req.params;
+    const estabelecimentoId = req.estabelecimentoId;
 
-    const gift = await prisma.giftCard.findUnique({
-      where: { codigo: codigo.toUpperCase() }
+    if (!estabelecimentoId) {
+      return res.status(400).json({ erro: 'Estabelecimento não identificado' });
+    }
+
+    const gift = await prisma.giftCard.findFirst({
+      where: {
+        codigo: codigo.toUpperCase(),
+        estabelecimentoId // ← Multi-tenant: Gift card deve pertencer ao estabelecimento
+      }
     });
 
     if (!gift) {
@@ -100,12 +124,21 @@ exports.validar = async (req, res) => {
 };
 
 // Usar gift card (link com pedido de música)
+// MULTI-TENANT: Valida que gift card e pedido pertencem ao estabelecimento
 exports.usar = async (req, res) => {
   try {
     const { codigo, pedidoMusicaId, nomeCliente } = req.body;
+    const estabelecimentoId = req.estabelecimentoId;
 
-    const gift = await prisma.giftCard.findUnique({
-      where: { codigo: codigo.toUpperCase() }
+    if (!estabelecimentoId) {
+      return res.status(400).json({ erro: 'Estabelecimento não identificado' });
+    }
+
+    const gift = await prisma.giftCard.findFirst({
+      where: {
+        codigo: codigo.toUpperCase(),
+        estabelecimentoId // ← Multi-tenant
+      }
     });
 
     if (!gift || !gift.ativo || gift.usado) {
@@ -116,9 +149,12 @@ exports.usar = async (req, res) => {
       return res.status(400).json({ erro: 'Gift card expirado' });
     }
 
-    // Buscar o pedido de música
-    const pedido = await prisma.pedidoMusica.findUnique({
-      where: { id: pedidoMusicaId }
+    // Buscar o pedido de música (validar que pertence ao mesmo estabelecimento)
+    const pedido = await prisma.pedidoMusica.findFirst({
+      where: {
+        id: pedidoMusicaId,
+        estabelecimentoId // ← Multi-tenant
+      }
     });
 
     if (!pedido) {
@@ -126,6 +162,7 @@ exports.usar = async (req, res) => {
     }
 
     console.log('🎁 [GIFT CARD] Processando pagamento com gift card:', codigo);
+    console.log('🏢 [GIFT CARD] Estabelecimento:', estabelecimentoId);
     console.log('📥 [GIFT CARD] Aguardando download do vídeo:', pedido.musicaYoutubeId);
 
     // AGUARDAR o download completar (igual ao modo gratuito)
@@ -173,13 +210,13 @@ exports.usar = async (req, res) => {
 
     if (io) {
       const musicaService = require('../services/musicaService');
-      const fila = await musicaService.buscarFilaMusicas();
+      const fila = await musicaService.buscarFilaMusicas(estabelecimentoId); // ← Multi-tenant
       console.log('📋 [GIFT CARD] Fila atual:', fila.length, 'músicas');
-      io.emit('fila:atualizada', fila);
+      io.to(`estabelecimento:${estabelecimentoId}`).emit('fila:atualizada', fila); // ← Room específica
 
       // Se não houver música tocando no playerService, iniciar
       const playerService = require('../services/playerService');
-      const estadoPlayer = playerService.obterEstado();
+      const estadoPlayer = playerService.obterEstado(estabelecimentoId); // ← Multi-tenant
       console.log('🎮 [GIFT CARD] Estado do player:', {
         temMusicaAtual: !!estadoPlayer.musicaAtual,
         status: estadoPlayer.status
@@ -189,7 +226,7 @@ exports.usar = async (req, res) => {
         console.log('▶️ [GIFT CARD] Nenhuma música tocando no player, iniciando automaticamente...');
 
         // Limpar qualquer música com status "tocando" no banco (dados stale)
-        const musicaStale = await musicaService.buscarMusicaAtual();
+        const musicaStale = await musicaService.buscarMusicaAtual(estabelecimentoId); // ← Multi-tenant
         if (musicaStale) {
           console.log('🧹 [GIFT CARD] Limpando música stale do banco:', musicaStale.id);
           await prisma.pedidoMusica.update({
@@ -205,13 +242,13 @@ exports.usar = async (req, res) => {
         });
         console.log('🎵 [GIFT CARD] Música marcada como tocando:', musicaTocando.id, musicaTocando.musicaTitulo);
 
-        await playerService.iniciarMusica(musicaTocando);
+        await playerService.iniciarMusica(musicaTocando, estabelecimentoId); // ← Multi-tenant
         console.log('✅ [GIFT CARD] playerService.iniciarMusica() chamado com sucesso');
       } else {
         console.log('⏭️ [GIFT CARD] Já existe música tocando, adicionando à fila');
       }
 
-      io.emit('pedido:pago', { pedidoId: pedidoPago.id });
+      io.to(`estabelecimento:${estabelecimentoId}`).emit('pedido:pago', { pedidoId: pedidoPago.id }); // ← Room específica
     }
 
     res.json({
@@ -259,21 +296,31 @@ exports.deletar = async (req, res) => {
 };
 
 // Usar gift card para carrinho (múltiplas músicas)
+// MULTI-TENANT: Valida gift card do estabelecimento
 exports.usarCarrinho = async (req, res) => {
   try {
     const { codigo, nomeCliente, carrinho } = req.body;
+    const estabelecimentoId = req.estabelecimentoId;
 
     console.log('🎁 [GIFT CARD CARRINHO] Iniciando processamento...');
+    console.log('🏢 [GIFT CARD CARRINHO] Estabelecimento:', estabelecimentoId);
     console.log('📦 Carrinho:', { quantidadeItens: carrinho?.quantidadeItens, musicas: carrinho?.musicas?.length });
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ erro: 'Estabelecimento não identificado' });
+    }
 
     // Validações básicas
     if (!codigo || !nomeCliente || !carrinho || !carrinho.musicas || carrinho.musicas.length === 0) {
       return res.status(400).json({ erro: 'Dados inválidos para usar gift card no carrinho' });
     }
 
-    // Buscar gift card
-    const gift = await prisma.giftCard.findUnique({
-      where: { codigo: codigo.toUpperCase() }
+    // Buscar gift card (do estabelecimento)
+    const gift = await prisma.giftCard.findFirst({
+      where: {
+        codigo: codigo.toUpperCase(),
+        estabelecimentoId // ← Multi-tenant
+      }
     });
 
     if (!gift) {
@@ -358,6 +405,7 @@ exports.usarCarrinho = async (req, res) => {
       // Criar pedido (NOTA: musicaArtista NÃO existe no schema)
       const pedido = await prisma.pedidoMusica.create({
         data: {
+          estabelecimentoId, // ← Multi-tenant
           nomeCliente: nomeCliente.trim(),
           musicaTitulo,
           musicaThumbnail,
@@ -396,13 +444,13 @@ exports.usarCarrinho = async (req, res) => {
     const io = req.app.get('io');
     if (io) {
       const musicaService = require('../services/musicaService');
-      const fila = await musicaService.buscarFilaMusicas();
+      const fila = await musicaService.buscarFilaMusicas(estabelecimentoId); // ← Multi-tenant
       console.log('📋 [GIFT CARD CARRINHO] Fila atual:', fila.length, 'músicas');
-      io.emit('fila:atualizada', fila);
+      io.to(`estabelecimento:${estabelecimentoId}`).emit('fila:atualizada', fila); // ← Room específica
 
       // Se não houver música tocando, iniciar automaticamente
       const playerService = require('../services/playerService');
-      const estadoPlayer = playerService.obterEstado();
+      const estadoPlayer = playerService.obterEstado(estabelecimentoId); // ← Multi-tenant
 
       if (!estadoPlayer.musicaAtual) {
         console.log('▶️ [GIFT CARD CARRINHO] Nenhuma música tocando, iniciando primeira do carrinho...');
@@ -413,15 +461,15 @@ exports.usarCarrinho = async (req, res) => {
           data: { status: 'tocando' }
         });
 
-        await playerService.iniciarMusica(primeiraMusicaTocando);
+        await playerService.iniciarMusica(primeiraMusicaTocando, estabelecimentoId); // ← Multi-tenant
         console.log('✅ [GIFT CARD CARRINHO] Primeira música iniciada');
       } else {
         console.log('⏭️ [GIFT CARD CARRINHO] Já existe música tocando, carrinho adicionado à fila');
       }
 
-      // Emitir eventos para cada pedido
+      // Emitir eventos para cada pedido (room específica)
       pedidosCriados.forEach(pedido => {
-        io.emit('pedido:pago', { pedidoId: pedido.id });
+        io.to(`estabelecimento:${estabelecimentoId}`).emit('pedido:pago', { pedidoId: pedido.id }); // ← Room específica
       });
     }
 
