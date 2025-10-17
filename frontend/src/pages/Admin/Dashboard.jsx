@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import socket from '../../services/socket';
+import { socket, authenticateAdmin } from '../../services/socket';
 import {
   Play,
   Pause,
@@ -34,7 +34,8 @@ import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import QueueItem from '../../components/QueueItem';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { listarGiftCards, criarGiftCard, deletarGiftCard, desativarGiftCard } from '../../services/api';
+import { useTenant } from '../../hooks/useTenant';
+import { listarGiftCards, criarGiftCard, deletarGiftCard, desativarGiftCard, setTenantSlug } from '../../services/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -42,6 +43,9 @@ function AdminDashboard() {
   const { admin, logout, token } = useAuthStore();
   const navigate = useNavigate();
   const isMobile = useMediaQuery('(max-width: 768px)');
+
+  // MULTI-TENANT: Obter tenant do contexto
+  const { slug, hasTenant, isLoading: tenantLoading } = useTenant();
 
   // Estado da sidebar
   const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
@@ -98,8 +102,33 @@ function AdminDashboard() {
     configuracoes: 0,
   });
 
+  // MULTI-TENANT: Configurar API e autenticar Admin no WebSocket
+  useEffect(() => {
+    if (!slug || tenantLoading) return;
+
+    console.log('🏢 [ADMIN] Configurando tenant:', slug);
+
+    // Configurar API com tenant
+    setTenantSlug(slug);
+
+    // Autenticar Admin no WebSocket
+    authenticateAdmin(slug)
+      .then(() => {
+        console.log('✅ [ADMIN] Autenticado no WebSocket com sucesso');
+      })
+      .catch((error) => {
+        console.error('❌ [ADMIN] Erro ao autenticar no WebSocket:', error);
+        setError('Erro ao conectar ao servidor. Tente novamente.');
+      });
+
+    console.log('✅ [ADMIN] Tenant configurado com sucesso');
+  }, [slug, tenantLoading]);
+
   // Lazy loading: carregar dados apenas quando a aba for acessada
   useEffect(() => {
+    // Aguardar tenant estar disponível antes de carregar dados
+    if (!slug || tenantLoading) return;
+
     switch (abaAtiva) {
       case 'overview':
         carregarOverview();
@@ -128,7 +157,7 @@ function AdminDashboard() {
       default:
         break;
     }
-  }, [abaAtiva]);
+  }, [abaAtiva, slug, tenantLoading]);
 
   // WebSocket para sincronização em tempo real (usando singleton)
   useEffect(() => {
