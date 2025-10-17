@@ -1107,9 +1107,13 @@
                 console.log('🎬 Carregando YouTube embed:', youtubeId);
                 console.log('📋 Música:', musica.titulo || 'Sem título');
 
+                // Limpar todos os elementos de UI
                 this.hideInteractionPrompt();
-                this.errorMessage.classList.remove('visible');
                 this.hideLoading();
+
+                // Forçar esconder mensagem de erro (pode ter aparecido do <video> element)
+                this.errorMessage.style.display = 'none';
+                this.errorMessage.classList.remove('visible');
 
                 const container = document.getElementById('player-container');
 
@@ -1192,7 +1196,19 @@
                         'onReady': (event) => {
                             console.log('✅ YouTube Player pronto');
                             console.log('🎵 Iniciando reprodução automática...');
-                            event.target.playVideo(); // Garantir autoplay
+
+                            // Limpar mensagem de erro (caso tenha aparecido)
+                            this.errorMessage.style.display = 'none';
+                            this.errorMessage.classList.remove('visible');
+                            this.errorMessage.textContent = '';
+
+                            // Iniciar playback
+                            event.target.playVideo();
+
+                            // Garantir que erro não apareça novamente
+                            setTimeout(() => {
+                                this.errorMessage.style.display = 'none';
+                            }, 1000);
 
                             // Notificar parent que o vídeo iniciou
                             window.parent.postMessage({
