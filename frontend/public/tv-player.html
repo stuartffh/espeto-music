@@ -532,41 +532,39 @@
               hideError();
               hideLoading();
 
-              // ✅ ESTRATÉGIA: Iniciar mutado e mostrar botão para usuário desmutar
-              try {
-                // 1. Garantir que está mutado
-                event.target.mute();
-                console.log('🔇 Player mutado para permitir autoplay');
-
-                // 2. Tentar play (deve funcionar porque está mutado)
-                await event.target.playVideo();
-                console.log('▶️ Play executado com sucesso (mutado)');
-
-                // 3. Aguardar um pouco para garantir que começou
-                await new Promise(r => setTimeout(r, 1000));
-
-                // 4. Verificar se está tocando
-                const playerState = event.target.getPlayerState();
-                console.log('🎬 Estado do player após play:', playerState);
-
-                if (playerState === YT.PlayerState.PLAYING || playerState === YT.PlayerState.BUFFERING) {
-                  // 5. Música tocando mutada - usuário pode clicar no volume para ativar
-                  console.log('🔊 Vídeo tocando mutado!');
-                  console.log('💡 Use o controle de volume (🔇) para ativar o som');
-                } else {
-                  console.warn('⚠️ Vídeo não iniciou. Tentando novamente...');
-                  await event.target.playVideo();
-                  await new Promise(r => setTimeout(r, 500));
-                }
-
-              } catch (e) {
-                console.error('❌ Erro ao iniciar player:', e);
-                // Tentar fallback
+              // ✅ ESTRATÉGIA: Tentar unmute + play (até 3 tentativas)
+              // Esta é a estratégia que funciona no commit faf84d4
+              for (let i = 0; i < 3; i++) {
                 try {
+                  await event.target.unMute();
                   await event.target.playVideo();
-                  showUnmuteOverlay();
-                } catch (fallbackError) {
-                  console.error('❌ Fallback também falhou:', fallbackError);
+                  console.log(`▶️ Tentativa ${i + 1}: unmute + play executado`);
+
+                  // Aguardar um pouco para verificar se funcionou
+                  await new Promise(r => setTimeout(r, 500));
+
+                  const playerState = event.target.getPlayerState();
+                  if (playerState === YT.PlayerState.PLAYING) {
+                    console.log('✅ Autoplay COM SOM funcionou na tentativa', i + 1);
+                    break;
+                  }
+                } catch (e) {
+                  console.warn(`⚠️ Tentativa ${i + 1} falhou:`, e);
+                }
+              }
+
+              // Verificar resultado final
+              const finalState = event.target.getPlayerState();
+              if (finalState === YT.PlayerState.PLAYING) {
+                console.log('🎵 Música tocando com som!');
+              } else {
+                console.warn('⚠️ Autoplay com som bloqueado. Fallback: tocar mutado');
+                try {
+                  event.target.mute();
+                  await event.target.playVideo();
+                  console.log('▶️ Tocando mutado. Use o controle de volume para ativar o som.');
+                } catch (e) {
+                  console.error('❌ Erro crítico:', e);
                 }
               }
 
