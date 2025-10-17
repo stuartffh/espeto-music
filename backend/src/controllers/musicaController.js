@@ -62,6 +62,7 @@ async function detalhes(req, res) {
 
 /**
  * Cria um novo pedido de música
+ * Multi-tenant: Usa req.estabelecimentoId
  */
 async function criar(req, res) {
   try {
@@ -72,6 +73,14 @@ async function criar(req, res) {
       musicaThumbnail,
       musicaDuracao,
     } = req.body;
+
+    // ← MULTI-TENANT: Obter estabelecimentoId do middleware
+    const estabelecimentoId = req.estabelecimentoId;
+    if (!estabelecimentoId) {
+      return res.status(400).json({
+        error: 'Estabelecimento não identificado'
+      });
+    }
 
     // Validações
     if (!musicaTitulo || !musicaYoutubeId) {
@@ -102,12 +111,12 @@ async function criar(req, res) {
       });
     }
 
-    // Buscar configurações
+    // Buscar configurações (por estabelecimento)
     const prisma = require('../config/database');
     const [configPreco, configModoGratuito, configTempoMaximo] = await Promise.all([
-      prisma.configuracao.findUnique({ where: { chave: 'PRECO_MUSICA' } }),
-      prisma.configuracao.findUnique({ where: { chave: 'modo_gratuito' } }),
-      prisma.configuracao.findUnique({ where: { chave: 'TEMPO_MAXIMO_MUSICA' } }),
+      prisma.configuracao.findFirst({ where: { estabelecimentoId, chave: 'PRECO_MUSICA' } }),
+      prisma.configuracao.findFirst({ where: { estabelecimentoId, chave: 'modo_gratuito' } }),
+      prisma.configuracao.findFirst({ where: { estabelecimentoId, chave: 'TEMPO_MAXIMO_MUSICA' } }),
     ]);
 
     // Validar duração da música
@@ -124,6 +133,7 @@ async function criar(req, res) {
     const modoGratuito = configModoGratuito ? configModoGratuito.valor === 'true' : true;
 
     const pedido = await musicaService.criarPedidoMusica({
+      estabelecimentoId, // ← Multi-tenant
       nomeCliente,
       musicaTitulo,
       musicaYoutubeId,
@@ -168,7 +178,7 @@ async function criar(req, res) {
       console.log('🔌 [MODO GRATUITO] WebSocket io disponível?', !!io);
 
       if (io) {
-        const fila = await musicaService.buscarFilaMusicas();
+        const fila = await musicaService.buscarFilaMusicas(estabelecimentoId); // ← Multi-tenant
         console.log('📋 [MODO GRATUITO] Fila atual:', fila.length, 'músicas');
         io.emit('fila:atualizada', fila);
       }
@@ -217,10 +227,11 @@ async function criar(req, res) {
 
 /**
  * Busca fila de músicas
+ * Multi-tenant
  */
 async function fila(req, res) {
   try {
-    const musicas = await musicaService.buscarFilaMusicas();
+    const musicas = await musicaService.buscarFilaMusicas(req.estabelecimentoId);
     res.json(musicas);
   } catch (error) {
     console.error('Erro ao buscar fila de músicas:', error);
@@ -230,10 +241,11 @@ async function fila(req, res) {
 
 /**
  * Busca música atual
+ * Multi-tenant
  */
 async function atual(req, res) {
   try {
-    const musica = await musicaService.buscarMusicaAtual();
+    const musica = await musicaService.buscarMusicaAtual(req.estabelecimentoId);
     res.json(musica);
   } catch (error) {
     console.error('Erro ao buscar música atual:', error);
@@ -243,11 +255,12 @@ async function atual(req, res) {
 
 /**
  * Marca música como tocando
+ * Multi-tenant
  */
 async function tocar(req, res) {
   try {
     const { id } = req.params;
-    const musica = await musicaService.tocarMusica(id);
+    const musica = await musicaService.tocarMusica(id, req.estabelecimentoId);
 
     // Emitir evento via WebSocket
     const io = req.app.get('io');
@@ -264,11 +277,12 @@ async function tocar(req, res) {
 
 /**
  * Marca música como concluída
+ * Multi-tenant
  */
 async function concluir(req, res) {
   try {
     const { id } = req.params;
-    const proximaMusica = await musicaService.concluirMusica(id);
+    const proximaMusica = await musicaService.concluirMusica(id, req.estabelecimentoId);
 
     // Emitir eventos via WebSocket
     const io = req.app.get('io');
@@ -291,11 +305,12 @@ async function concluir(req, res) {
 
 /**
  * Pula música atual
+ * Multi-tenant
  */
 async function pular(req, res) {
   try {
     const { id } = req.params;
-    const proximaMusica = await musicaService.pularMusica(id);
+    const proximaMusica = await musicaService.pularMusica(id, req.estabelecimentoId);
 
     // Emitir eventos via WebSocket
     const io = req.app.get('io');
@@ -339,11 +354,12 @@ async function cancelar(req, res) {
 
 /**
  * Busca histórico de músicas
+ * Multi-tenant
  */
 async function historico(req, res) {
   try {
     const { limite } = req.query;
-    const musicas = await musicaService.buscarHistorico(parseInt(limite) || 50);
+    const musicas = await musicaService.buscarHistorico(req.estabelecimentoId, parseInt(limite) || 50);
     res.json(musicas);
   } catch (error) {
     console.error('Erro ao buscar histórico:', error);
