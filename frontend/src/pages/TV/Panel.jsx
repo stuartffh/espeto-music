@@ -626,19 +626,9 @@ function Panel() {
     sendVideoToIframe(estadoPlayer.musicaAtual);
   }, [estadoPlayer?.musicaAtual?.id, iframeReady, sendVideoToIframe]);
 
-  // Atualizar tempo atual a cada segundo quando tocando
-  useEffect(() => {
-    if (estadoPlayer?.status === 'playing') {
-      const interval = setInterval(() => {
-        setCurrentTime(prev => {
-          const next = prev + 1;
-          return next <= duration ? next : duration;
-        });
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [estadoPlayer?.status, duration]);
+  // REMOVIDO: useEffect que incrementava tempo artificialmente
+  // O tempo agora vem EXCLUSIVAMENTE do player YouTube via 'player-time-update' (atualizado a cada 500ms)
+  // Isso evita conflito e dessincronização da barra de progresso
 
   const musicaAtual = estadoPlayer?.musicaAtual;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
