@@ -184,8 +184,9 @@ function setupSocketHandlers(io) {
       remoteControlService.updateActivity(socket.id);
     });
 
-    // Resposta do player para comandos
+    // Resposta do player para comandos (repassar para o serviço de controle remoto)
     socket.on('player-command-response', (data) => {
+      // Emitir globalmente para o remoteControlService capturar
       io.emit('player-response', data);
     });
 
