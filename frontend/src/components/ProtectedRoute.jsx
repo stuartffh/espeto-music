@@ -2,17 +2,25 @@ import { Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import useAuthStore from '../store/authStore';
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, requireSuperAdmin = false }) {
   const { isAuthenticated, verificarToken } = useAuthStore();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Se requer Super Admin, verificar localStorage diferente
+      if (requireSuperAdmin) {
+        const token = localStorage.getItem('superAdminToken');
+        setChecking(false);
+        return;
+      }
+
+      // Verificação normal de Admin
       await verificarToken();
       setChecking(false);
     };
     checkAuth();
-  }, [verificarToken]);
+  }, [verificarToken, requireSuperAdmin]);
 
   if (checking) {
     return (
@@ -22,6 +30,16 @@ function ProtectedRoute({ children }) {
     );
   }
 
+  // Verificação de Super Admin
+  if (requireSuperAdmin) {
+    const token = localStorage.getItem('superAdminToken');
+    if (!token) {
+      return <Navigate to="/super-admin/login" replace />;
+    }
+    return children;
+  }
+
+  // Verificação de Admin normal
   if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
   }
