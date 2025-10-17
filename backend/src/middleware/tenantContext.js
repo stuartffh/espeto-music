@@ -14,6 +14,9 @@
  */
 
 const prisma = require('../config/database');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'espeto-music-secret-key-change-in-production';
 
 /**
  * Middleware principal - detecta e valida o estabelecimento
@@ -22,7 +25,53 @@ async function tenantContext(req, res, next) {
   try {
     // 1. Super Admin não precisa de tenant
     if (req.path.startsWith('/api/super-admin')) {
-      req.isSuperAdmin = true;
+      // Validar token JWT do Super Admin (exceto na rota de login)
+      if (!req.path.includes('/login')) {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+
+        if (!token) {
+          return res.status(401).json({
+            error: 'Token não fornecido',
+            message: 'Autenticação necessária'
+          });
+        }
+
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET);
+
+          // Verificar se é super admin
+          if (decoded.tipo !== 'super-admin') {
+            return res.status(403).json({
+              error: 'Acesso negado',
+              message: 'Esta rota é exclusiva para Super Administradores'
+            });
+          }
+
+          // Buscar super admin no banco
+          const superAdmin = await prisma.superAdmin.findUnique({
+            where: { id: decoded.id }
+          });
+
+          if (!superAdmin || !superAdmin.ativo) {
+            return res.status(403).json({
+              error: 'Acesso negado',
+              message: 'Super Admin inativo ou não encontrado'
+            });
+          }
+
+          req.superAdmin = superAdmin;
+          req.isSuperAdmin = true;
+        } catch (error) {
+          return res.status(401).json({
+            error: 'Token inválido',
+            message: error.message
+          });
+        }
+      } else {
+        // Rota de login do super admin
+        req.isSuperAdmin = true;
+      }
+
       return next();
     }
 

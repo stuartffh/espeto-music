@@ -26,7 +26,7 @@ function AdminLogin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await login(username, password);
+    const success = await login(username, password, slug);
     if (success) {
       navigate(`/${slug}/admin/dashboard`);
     }

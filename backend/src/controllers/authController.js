@@ -14,7 +14,18 @@ async function login(req, res) {
       });
     }
 
-    const resultado = await authService.login(username, password);
+    // MULTI-TENANT: Pegar estabelecimentoId do contexto (req.estabelecimentoId)
+    // O middleware tenantContext já detectou o estabelecimento pela URL
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({
+        erro: 'Estabelecimento não identificado',
+        message: 'Acesse via /{slug}/admin para fazer login'
+      });
+    }
+
+    const resultado = await authService.login(username, password, estabelecimentoId);
 
     res.json(resultado);
   } catch (error) {

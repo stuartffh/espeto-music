@@ -11,12 +11,17 @@ const useAuthStore = create((set) => ({
   error: null,
 
   // Login
-  login: async (username, password) => {
+  login: async (username, password, slug) => {
     set({ loading: true, error: null });
     try {
+      // MULTI-TENANT: Enviar slug no header x-tenant-slug
       const response = await axios.post(`${API_URL}/api/auth/login`, {
         username,
         password,
+      }, {
+        headers: {
+          'x-tenant-slug': slug
+        }
       });
 
       const { token, admin } = response.data;

@@ -11,14 +11,45 @@ const JWT_EXPIRES_IN = '24h';
  * Realiza login do administrador
  * @param {string} username - Nome de usuário
  * @param {string} password - Senha
+ * @param {string} estabelecimentoId - ID do estabelecimento (requerido em multi-tenant)
  * @returns {Promise<Object>} Token JWT e dados do admin
  */
-async function login(username, password) {
+async function login(username, password, estabelecimentoId = null) {
   try {
-    // Buscar admin pelo username
-    const admin = await prisma.admin.findUnique({
-      where: { username },
-    });
+    // MULTI-TENANT: Buscar admin pelo username E estabelecimentoId
+    // Nota: username NÃO é unique globalmente, apenas dentro do estabelecimento
+    let admin;
+
+    if (estabelecimentoId) {
+      // Se fornecido estabelecimentoId, buscar direto
+      admin = await prisma.admin.findFirst({
+        where: {
+          username,
+          estabelecimentoId
+        },
+        include: {
+          estabelecimento: true
+        }
+      });
+    } else {
+      // Fallback: buscar por username (pode retornar múltiplos em sistema multi-tenant)
+      const admins = await prisma.admin.findMany({
+        where: { username },
+        include: {
+          estabelecimento: true
+        }
+      });
+
+      if (admins.length === 0) {
+        throw new Error('Credenciais inválidas');
+      }
+
+      if (admins.length > 1) {
+        throw new Error('Múltiplos estabelecimentos encontrados. Informe o slug do estabelecimento na URL.');
+      }
+
+      admin = admins[0];
+    }
 
     if (!admin) {
       throw new Error('Credenciais inválidas');
@@ -47,6 +78,8 @@ async function login(username, password) {
         id: admin.id,
         username: admin.username,
         nome: admin.nome,
+        estabelecimentoId: admin.estabelecimentoId,
+        tipo: 'admin'
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
@@ -59,6 +92,13 @@ async function login(username, password) {
         username: admin.username,
         nome: admin.nome,
         ultimoAcesso: admin.ultimoAcesso,
+        estabelecimentoId: admin.estabelecimentoId,
+        estabelecimento: {
+          id: admin.estabelecimento.id,
+          nome: admin.estabelecimento.nome,
+          slug: admin.estabelecimento.slug,
+          codigo: admin.estabelecimento.codigo
+        }
       },
     };
   } catch (error) {
