@@ -52,6 +52,15 @@ WORKDIR /app/backend
 # Copiar package files do backend
 COPY backend/package*.json ./
 
+# Copiar schema.prisma ANTES do npm install (necessário para postinstall)
+COPY backend/prisma ./prisma
+
+# Copiar arquivos de seed ANTES do npm install (necessário para postinstall)
+COPY backend/auto-seed.js ./
+COPY backend/seed-all.js ./
+COPY backend/seed-config.js ./
+COPY backend/seed-moderation.js ./
+
 # Instalar apenas dependências de produção
 RUN npm install --only=production
 
@@ -66,8 +75,7 @@ RUN mkdir -p /app/backend/downloads \
     && mkdir -p /app/backend/prisma \
     && mkdir -p /app/backend/uploads
 
-# Gerar Prisma Client
-RUN npx prisma generate
+# Nota: Prisma Client já foi gerado no postinstall (npm install)
 
 # Expor porta
 EXPOSE 3000

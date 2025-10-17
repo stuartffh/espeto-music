@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Music, User, Clock, ChevronLeft, ChevronRight, Info } from 'lucide-react';
-import { buscarMusicas, criarPedidoMusica, criarPagamento, buscarFila } from '../../services/api';
+import { Search, Music, User, Clock, ChevronLeft, ChevronRight, Info, CreditCard, Gift, X, Loader2 } from 'lucide-react';
+import { buscarMusicas, criarPedidoMusica, buscarFila, validarGiftCard, usarGiftCard } from '../../services/api';
 import socket from '../../services/socket';
 import useStore from '../../store/useStore';
 import { categorias, getSugestoesDinamicas } from '../../data/musicSuggestions';
@@ -22,6 +22,10 @@ import MusicListItem from '../../components/MusicListItem';
 import QueueItem from '../../components/QueueItem';
 import CategoryCard from '../../components/CategoryCard';
 import ConfettiEffect from '../../components/ConfettiEffect';
+import CheckoutPix from '../../components/CheckoutPix';
+import CarrinhoModal from '../../components/CarrinhoModal';
+import CarrinhoButton from '../../components/CarrinhoButton';
+import useCarrinhoStore from '../../store/carrinhoStore';
 
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useToast } from '../../hooks/useToast';
@@ -43,18 +47,26 @@ function Home() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showFilaModal, setShowFilaModal] = useState(false);
   const [showNomeModal, setShowNomeModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCheckoutPix, setShowCheckoutPix] = useState(false);
+  const [giftCode, setGiftCode] = useState('');
+  const [validandoGift, setValidandoGift] = useState(false);
+  const [usandoGift, setUsandoGift] = useState(false);
+  const [pedidoPendente, setPedidoPendente] = useState(null);
 
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { toast, showToast, hideToast } = useToast();
+  const { adicionarMusica, carregarCarrinho } = useCarrinhoStore();
 
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     Promise.all([
-      axios.get(`${API_URL}/api/public/config/MODO_FILA`),
+      axios.get(`${API_URL}/api/public/config/modo_gratuito`),
       axios.get(`${API_URL}/api/public/config/TEMPO_MAXIMO_MUSICA`)
     ])
       .then(([resModo, resTempo]) => {
-        setModoGratuito(resModo.data.valor === 'gratuito');
+        // modo_gratuito: "true" = gratuito, "false" = pago
+        setModoGratuito(resModo.data.valor === 'true');
         const minutos = parseInt(resTempo.data.valor) || 10;
         setTempoMaximo(minutos);
       })
@@ -77,11 +89,14 @@ function Home() {
       buscarFila().then(res => setFila(res.data)).catch(console.error);
     });
 
+    // Carregar carrinho ao iniciar
+    carregarCarrinho();
+
     return () => {
       socket.off('fila:atualizada');
       socket.off('pedido:pago');
     };
-  }, [setFila]);
+  }, [setFila, carregarCarrinho]);
 
   const handleBuscar = async (e) => {
     e.preventDefault();
@@ -117,16 +132,11 @@ function Home() {
   };
 
   const handleEscolherMusica = async (musica) => {
-    if (!nomeCliente.trim()) {
-      setShowNomeModal(true);
-      return;
-    }
-
     setAdicionando(true);
 
     try {
       const pedido = await criarPedidoMusica({
-        nomeCliente: nomeCliente.trim(),
+        nomeCliente: 'Anônimo', // Nome padrão, será alterado no pagamento
         musicaTitulo: musica.titulo,
         musicaYoutubeId: musica.id,
         musicaThumbnail: musica.thumbnail,
@@ -134,6 +144,13 @@ function Home() {
       });
 
       if (modoGratuito) {
+        // Modo gratuito: pedir nome antes de adicionar
+        if (!nomeCliente.trim()) {
+          setPedidoPendente(pedido.data);
+          setShowNomeModal(true);
+          return;
+        }
+
         setShowConfetti(true);
         showToast('Música adicionada à fila com sucesso! 🎵', 'success');
         await buscarFila().then(res => setFila(res.data));
@@ -141,14 +158,93 @@ function Home() {
         setResultados([]);
         setCategoriaAtiva(null);
       } else {
-        const pagamento = await criarPagamento(pedido.data.id);
-        window.location.href = pagamento.data.initPoint;
+        // Modo pago: guardar pedido e ir para pagamento
+        setPedidoPendente(pedido.data);
+        setShowPaymentModal(true);
       }
     } catch (error) {
       console.error('Erro:', error);
       showToast(error.response?.data?.error || 'Erro ao processar pedido', 'error');
     } finally {
       setAdicionando(false);
+    }
+  };
+
+  const handlePayWithPix = () => {
+    setShowCheckoutPix(true);
+    setShowPaymentModal(false);
+  };
+
+  const handleValidateGiftCard = async () => {
+    if (!giftCode.trim()) {
+      showToast('Digite um código de gift card', 'error');
+      return;
+    }
+
+    setValidandoGift(true);
+    try {
+      const response = await validarGiftCard(giftCode.trim().toUpperCase());
+      showToast(`Gift card válido! ${response.data.quantidadeMusicas} música(s)`, 'success');
+    } catch (error) {
+      console.error('Erro:', error);
+      showToast(error.response?.data?.erro || 'Gift card inválido', 'error');
+    } finally {
+      setValidandoGift(false);
+    }
+  };
+
+  const handlePayWithGift = async () => {
+    if (!giftCode.trim()) {
+      showToast('Digite um código de gift card', 'error');
+      return;
+    }
+
+    if (!pedidoPendente) return;
+
+    setUsandoGift(true);
+    try {
+      await usarGiftCard(giftCode.trim().toUpperCase(), pedidoPendente.id, nomeCliente.trim());
+      setShowPaymentModal(false);
+      setShowConfetti(true);
+      showToast('Gift card usado com sucesso! Música adicionada à fila! 🎵', 'success');
+      await buscarFila().then(res => setFila(res.data));
+      setBusca('');
+      setResultados([]);
+      setCategoriaAtiva(null);
+      setGiftCode('');
+      setPedidoPendente(null);
+    } catch (error) {
+      console.error('Erro:', error);
+      showToast(error.response?.data?.erro || 'Erro ao usar gift card', 'error');
+    } finally {
+      setUsandoGift(false);
+    }
+  };
+
+  const handleAdicionarAoCarrinho = async (musica) => {
+    // Buscar preço da música
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    let preco = 5.0; // Padrão
+
+    try {
+      const configResponse = await axios.get(`${API_URL}/api/public/config/PRECO_MUSICA`);
+      preco = parseFloat(configResponse.data.valor) || 5.0;
+    } catch (error) {
+      console.error('Erro ao buscar preço:', error);
+    }
+
+    const resultado = await adicionarMusica({
+      titulo: musica.titulo,
+      youtubeId: musica.id,
+      thumbnail: musica.thumbnail,
+      duracao: musica.duracao || null,
+      valor: preco,
+    });
+
+    if (resultado.success) {
+      showToast('Música adicionada ao carrinho! 🛒', 'success');
+    } else {
+      showToast(resultado.error || 'Erro ao adicionar música ao carrinho', 'error');
     }
   };
 
@@ -293,15 +389,45 @@ function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Coluna Principal */}
           <div className="lg:col-span-2 space-y-6 md:space-y-8">
-            {/* Campo Nome */}
-            <Card variant="glass">
-              <Input
-                icon={User}
-                value={nomeCliente}
-                onChange={(e) => setNomeCliente(e.target.value)}
-                placeholder="Digite seu nome..."
-              />
-            </Card>
+            {/* Banner Explicativo - Como Funciona */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <Card variant="glass" className="border-2 border-neon-cyan/30">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 bg-gradient-to-br from-neon-cyan to-neon-purple p-3 rounded-xl">
+                    <Info className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold gradient-text mb-2">
+                      Como funciona?
+                    </h3>
+                    <ol className="space-y-2 text-sm text-gray-300">
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-cyan/20 text-neon-cyan flex items-center justify-center text-xs font-bold">1</span>
+                        <span>Busque pela música que deseja ouvir</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-purple/20 text-neon-purple flex items-center justify-center text-xs font-bold">2</span>
+                        <span>{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-pink/20 text-neon-pink flex items-center justify-center text-xs font-bold">3</span>
+                        <span>{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
+                      </li>
+                      {!modoGratuito && (
+                        <li className="flex items-start gap-2">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-green/20 text-neon-green flex items-center justify-center text-xs font-bold">4</span>
+                          <span>Após o pagamento, digite seu nome e aproveite!</span>
+                        </li>
+                      )}
+                    </ol>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
 
             {/* Busca */}
             <form onSubmit={handleBuscar} className="space-y-2 sm:space-y-0">
@@ -354,7 +480,8 @@ function Home() {
                       <motion.div key={musica.id} variants={staggerItem}>
                         <MusicListItem
                           musica={musica}
-                          onAdd={() => handleEscolherMusica(musica)}
+                          onAdd={() => modoGratuito ? handleEscolherMusica(musica) : handleAdicionarAoCarrinho(musica)}
+                          showCartIcon={!modoGratuito}
                           loading={adicionando}
                         />
                       </motion.div>
@@ -372,7 +499,8 @@ function Home() {
                       <motion.div key={musica.id} variants={staggerItem}>
                         <MusicCard
                           musica={musica}
-                          onAdd={() => handleEscolherMusica(musica)}
+                          onAdd={() => modoGratuito ? handleEscolherMusica(musica) : handleAdicionarAoCarrinho(musica)}
+                          showCartButton={!modoGratuito}
                           loading={adicionando}
                         />
                       </motion.div>
@@ -465,6 +593,112 @@ function Home() {
           ))}
         </BottomSheet>
 
+        {/* Modal Método de Pagamento */}
+        <Modal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setGiftCode('');
+          }}
+          title="Como você quer pagar?"
+          size="md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+              Escolha o método de pagamento para adicionar sua música à fila
+            </p>
+
+            {/* Opção PIX */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <button
+                onClick={handlePayWithPix}
+                className="w-full p-4 glass rounded-xl border-2 border-neon-cyan/20 hover:border-neon-cyan transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-neon-cyan/10 rounded-lg">
+                    <CreditCard className="w-6 h-6 text-neon-cyan" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <h3 className="font-bold text-white">Pagar com PIX</h3>
+                    <p className="text-sm text-gray-400">Pagamento via QR Code do Mercado Pago</p>
+                  </div>
+                </div>
+              </button>
+            </motion.div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent" />
+              <span className="text-sm text-gray-500">OU</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent" />
+            </div>
+
+            {/* Opção Gift Card */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="p-4 glass rounded-xl border-2 border-neon-purple/20 hover:border-neon-purple transition-all"
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-neon-purple/10 rounded-lg">
+                  <Gift className="w-6 h-6 text-neon-purple" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="font-bold text-white">Usar Gift Card</h3>
+                  <p className="text-sm text-gray-400">Digite seu código de presente</p>
+                </div>
+              </div>
+
+              <Input
+                value={giftCode}
+                onChange={(e) => setGiftCode(e.target.value.toUpperCase())}
+                placeholder="GIFT-XXXX-XXXX"
+                className="mb-2"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && giftCode.trim()) {
+                    handlePayWithGift();
+                  }
+                }}
+              />
+
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={handleValidateGiftCard}
+                  disabled={validandoGift || !giftCode.trim()}
+                  className="flex-1"
+                >
+                  {validandoGift ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Validando...
+                    </>
+                  ) : (
+                    'Validar'
+                  )}
+                </Button>
+                <Button
+                  onClick={handlePayWithGift}
+                  disabled={usandoGift || !giftCode.trim()}
+                  className="flex-1"
+                >
+                  {usandoGift ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Usando...
+                    </>
+                  ) : (
+                    'Usar Gift Card'
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </Modal>
+
         {/* Modal Nome */}
         <Modal
           isOpen={showNomeModal}
@@ -500,6 +734,33 @@ function Home() {
           isOpen={toast.isOpen}
           onClose={hideToast}
         />
+
+        {/* Checkout PIX Transparente */}
+        {showCheckoutPix && pedidoPendente && (
+          <CheckoutPix
+            pedido={pedidoPendente}
+            onClose={() => {
+              setShowCheckoutPix(false);
+              setPedidoPendente(null);
+            }}
+            onSuccess={async () => {
+              setShowCheckoutPix(false);
+              setShowConfetti(true);
+              showToast('Pagamento processado! Música será adicionada à fila! 🎵', 'success');
+              await buscarFila().then(res => setFila(res.data));
+              setBusca('');
+              setResultados([]);
+              setCategoriaAtiva(null);
+              setPedidoPendente(null);
+            }}
+          />
+        )}
+
+        {/* Carrinho Modal */}
+        <CarrinhoModal />
+
+        {/* Botão Flutuante do Carrinho */}
+        <CarrinhoButton />
       </div>
     </div>
   );

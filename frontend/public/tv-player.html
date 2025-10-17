@@ -29,6 +29,36 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
+            display: none; /* Esconder por padrão (usaremos YouTube embed) */
+        }
+
+        /* Mostrar video element apenas se não houver youtube player */
+        #player-container:not(:has(#youtube-player)) #video-element {
+            display: block;
+        }
+
+        /* YouTube Player - ocupa todo o espaço */
+        #youtube-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #youtube-player iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Z-index hierarchy - garantir camadas corretas */
+        .loading-spinner,
+        .error-message,
+        .interaction-prompt,
+        .volume-indicator {
+            z-index: 100 !important; /* Sempre no topo */
         }
 
         /* OSD Controls */
@@ -42,6 +72,12 @@
             transition: opacity 0.3s, transform 0.3s;
             opacity: 0;
             transform: translateY(100%);
+            z-index: 10; /* Acima do YouTube player */
+            pointer-events: none; /* Não bloquear cliques no player */
+        }
+
+        #osd-controls * {
+            pointer-events: auto; /* Mas permitir cliques nos controles */
         }
 
         #osd-controls.visible {
@@ -305,6 +341,95 @@
             background: #fff;
             transition: width 0.1s;
         }
+
+        /* Music Info Overlay - Aparece em fullscreen */
+        #music-info-overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,20,20,0.90));
+            padding: 20px 30px;
+            border-radius: 12px;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        #music-info-overlay.visible {
+            opacity: 1;
+        }
+
+        #music-info-overlay .music-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        #music-info-overlay .music-client {
+            font-size: 18px;
+            color: #aaa;
+        }
+
+        /* Queue Overlay - Lista de próximas músicas */
+        #queue-overlay {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,20,20,0.90));
+            padding: 20px;
+            border-radius: 12px;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 350px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        #queue-overlay.visible {
+            opacity: 1;
+        }
+
+        #queue-overlay .queue-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 10px;
+        }
+
+        #queue-overlay .queue-item {
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #e50914;
+        }
+
+        #queue-overlay .queue-item-title {
+            font-size: 14px;
+            color: #fff;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        #queue-overlay .queue-item-client {
+            font-size: 12px;
+            color: #999;
+        }
+
+        #queue-overlay .queue-empty {
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
@@ -320,6 +445,18 @@
             <div class="volume-bar">
                 <div class="volume-fill" id="volume-fill"></div>
             </div>
+        </div>
+
+        <!-- Overlay com informações da música atual -->
+        <div id="music-info-overlay">
+            <div class="music-title" id="music-title">-</div>
+            <div class="music-client" id="music-client">-</div>
+        </div>
+
+        <!-- Overlay com fila de próximas músicas -->
+        <div id="queue-overlay">
+            <div class="queue-title">📋 Próximas Músicas</div>
+            <div id="queue-list"></div>
         </div>
 
         <div id="osd-controls">
@@ -388,6 +525,13 @@
                 this.volumeFill = document.getElementById('volume-fill');
                 this.interactionPrompt = document.getElementById('interaction-prompt');
 
+                // Overlay elements
+                this.musicInfoOverlay = document.getElementById('music-info-overlay');
+                this.musicTitle = document.getElementById('music-title');
+                this.musicClient = document.getElementById('music-client');
+                this.queueOverlay = document.getElementById('queue-overlay');
+                this.queueList = document.getElementById('queue-list');
+
                 this.hls = null;
                 this.hideTimeout = null;
                 this.volumeTimeout = null;
@@ -397,6 +541,19 @@
                 this.wasMutedForAutoplay = false;
                 this.autoplayConsent = this.loadAutoplayConsent();
                 this.smartTVEnvironment = this.detectSmartTVEnvironment();
+
+                // Configuração: usar YouTube embed direto (true) ou download local (false)
+                // YouTube embed = sem download, qualidade automática, instantâneo
+                // Download local = armazena vídeo, controle total, sem dependência do YouTube
+                this.useYouTubeEmbed = true; // ALTERE PARA false PARA USAR DOWNLOAD LOCAL
+
+                // YouTube Player instance
+                this.ytPlayer = null;
+                this.ytTimeSyncInterval = null;
+
+                // Current music and queue data
+                this.currentMusicData = null;
+                this.currentQueue = [];
 
                 this.init();
             }
@@ -500,7 +657,8 @@
             }
 
             setAutoplayMutedState() {
-                if (this.autoplayConsent) {
+                // Para Smart TVs, sempre tentar com som primeiro
+                if (this.smartTVEnvironment || this.autoplayConsent) {
                     this.video.muted = false;
                     this.video.removeAttribute('muted');
                 } else {
@@ -600,10 +758,10 @@
                 document.addEventListener('mousemove', () => this.showOSD());
 
                 // Listen for fullscreen changes
-                document.addEventListener('fullscreenchange', () => this.updateFullscreenButton());
-                document.addEventListener('webkitfullscreenchange', () => this.updateFullscreenButton());
-                document.addEventListener('mozfullscreenchange', () => this.updateFullscreenButton());
-                document.addEventListener('MSFullscreenChange', () => this.updateFullscreenButton());
+                document.addEventListener('fullscreenchange', () => this.handleFullscreenChange());
+                document.addEventListener('webkitfullscreenchange', () => this.handleFullscreenChange());
+                document.addEventListener('mozfullscreenchange', () => this.handleFullscreenChange());
+                document.addEventListener('MSFullscreenChange', () => this.handleFullscreenChange());
             }
 
             setupKeyboardNavigation() {
@@ -842,6 +1000,20 @@
                 }
             }
 
+            handleFullscreenChange() {
+                // Atualizar botão de fullscreen
+                this.updateFullscreenButton();
+
+                // Verificar se está em fullscreen
+                const isFullscreen = !!(document.fullscreenElement ||
+                                       document.webkitFullscreenElement ||
+                                       document.mozFullScreenElement ||
+                                       document.msFullscreenElement);
+
+                // Mostrar/esconder overlays
+                this.toggleOverlays(isFullscreen);
+            }
+
             updateProgress() {
                 if (!this.video.duration) return;
                 const percent = (this.video.currentTime / this.video.duration) * 100;
@@ -1058,6 +1230,325 @@
                 }
             }
 
+            loadYouTubeEmbed(youtubeId, musica = {}) {
+                console.log('🎬 Carregando YouTube embed:', youtubeId);
+                console.log('📋 Música:', musica.titulo || 'Sem título');
+
+                // Limpar todos os elementos de UI
+                this.hideInteractionPrompt();
+                this.hideLoading();
+
+                // Forçar esconder mensagem de erro (pode ter aparecido do <video> element)
+                this.errorMessage.style.display = 'none';
+                this.errorMessage.classList.remove('visible');
+
+                const container = document.getElementById('player-container');
+
+                // FADE OUT do player atual
+                container.style.transition = 'opacity 0.5s ease-in-out';
+                container.style.opacity = '0';
+
+                setTimeout(() => {
+                    // Parar e limpar elemento <video> HTML5 (CSS já esconde automaticamente)
+                    if (this.video) {
+                        this.video.pause();
+                        this.video.src = '';
+                        this.video.load(); // Limpar completamente
+                    }
+
+                    // Limpar player YouTube anterior se existir
+                    const oldPlayer = document.getElementById('youtube-player');
+                    if (oldPlayer) {
+                        oldPlayer.remove();
+                    }
+
+                    // Criar DIV para o YouTube Player (YouTube IFrame API precisa de DIV)
+                    const playerDiv = document.createElement('div');
+                    playerDiv.id = 'youtube-player';
+                    playerDiv.style.width = '100%';
+                    playerDiv.style.height = '100%';
+                    container.appendChild(playerDiv);
+
+                    // Carregar YouTube IFrame API se ainda não carregou
+                    if (!window.YT) {
+                        console.log('📥 Carregando YouTube IFrame API...');
+                        const tag = document.createElement('script');
+                        tag.src = 'https://www.youtube.com/iframe_api';
+                        const firstScriptTag = document.getElementsByTagName('script')[0];
+                        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+                        // Callback quando API carregar
+                        window.onYouTubeIframeAPIReady = () => {
+                            console.log('✅ YouTube IFrame API carregada');
+                            this.createYouTubePlayer(youtubeId, musica);
+                        };
+                    } else {
+                        // API já carregada, criar player diretamente
+                        this.createYouTubePlayer(youtubeId, musica);
+                    }
+
+                    // FADE IN do novo player
+                    setTimeout(() => {
+                        container.style.opacity = '1';
+                    }, 100);
+                }, 500); // Esperar fade out completar
+            }
+
+            createYouTubePlayer(youtubeId, musica) {
+                console.log('🎥 Criando YouTube Player:', youtubeId);
+
+                // Parar sincronização de tempo do player anterior
+                this.stopYouTubeTimeSync();
+
+                // Destruir player anterior se existir
+                if (this.ytPlayer) {
+                    this.ytPlayer.destroy();
+                }
+
+                // Salvar dados da música atual para overlays
+                this.currentMusicData = musica;
+
+                // Atualizar overlay com informações da música
+                this.updateMusicInfo(musica);
+
+                // Criar novo player do YouTube
+                this.ytPlayer = new YT.Player('youtube-player', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: youtubeId,
+                    playerVars: {
+                        'autoplay': 1,           // Autoplay FORÇADO
+                        'mute': 0,               // COM SOM (não mutado)
+                        'controls': 1,           // Mostrar controles
+                        'modestbranding': 1,     // Logo discreta do YouTube
+                        'rel': 0,                // Não mostrar vídeos relacionados
+                        'showinfo': 0,           // Não mostrar info do vídeo
+                        'iv_load_policy': 3,     // Sem anotações
+                        'cc_load_policy': 0,     // Sem legendas por padrão
+                        'playsinline': 1,        // Tocar inline (mobile)
+                        'enablejsapi': 1,        // Habilitar API JavaScript
+                        'fs': 1,                 // Permitir fullscreen
+                        'origin': window.location.origin
+                    },
+                    events: {
+                        'onReady': (event) => {
+                            console.log('✅ YouTube Player pronto');
+                            console.log('🎵 FORÇANDO reprodução automática...');
+
+                            // Limpar mensagem de erro (caso tenha aparecido)
+                            this.errorMessage.style.display = 'none';
+                            this.errorMessage.classList.remove('visible');
+                            this.errorMessage.textContent = '';
+
+                            // FORÇAR playback imediatamente
+                            setTimeout(() => {
+                                event.target.playVideo();
+                                event.target.unMute();
+                                console.log('▶️ playVideo() + unMute() executado');
+                            }, 100);
+
+                            // Garantir novamente após 1 segundo (double-check)
+                            setTimeout(() => {
+                                const state = event.target.getPlayerState();
+                                if (state !== 1) { // Se não está tocando
+                                    console.warn('⚠️ Player não iniciou, forçando novamente...');
+                                    event.target.playVideo();
+                                    event.target.unMute();
+                                }
+                            }, 1000);
+
+                            // Triple-check após 2 segundos
+                            setTimeout(() => {
+                                const state = event.target.getPlayerState();
+                                if (state !== 1) { // Se não está tocando
+                                    console.warn('⚠️ Player AINDA não iniciou, tentativa final...');
+                                    event.target.playVideo();
+                                    event.target.unMute();
+                                } else {
+                                    console.log('✅ Player tocando com sucesso!');
+                                }
+                            }, 2000);
+
+                            // Notificar parent que o vídeo iniciou
+                            window.parent.postMessage({
+                                type: 'video-started',
+                                youtubeId: youtubeId,
+                                musica: musica
+                            }, '*');
+                        },
+                        'onStateChange': (event) => {
+                            this.handleYouTubeStateChange(event, youtubeId, musica);
+                        },
+                        'onError': (event) => {
+                            console.error('❌ Erro no YouTube Player:', event.data);
+                            this.handleYouTubeError(event);
+                        }
+                    }
+                });
+            }
+
+            handleYouTubeStateChange(event, youtubeId, musica) {
+                const states = {
+                    '-1': 'unstarted',
+                    '0': 'ended',
+                    '1': 'playing',
+                    '2': 'paused',
+                    '3': 'buffering',
+                    '5': 'cued'
+                };
+
+                const state = states[event.data] || 'unknown';
+                console.log(`🎬 YouTube Player State: ${state}`);
+
+                if (event.data === YT.PlayerState.ENDED) {
+                    console.log('✅ Vídeo terminou, notificando para tocar próxima música...');
+
+                    // Parar sincronização de tempo
+                    this.stopYouTubeTimeSync();
+
+                    // Notificar parent que o vídeo terminou (para tocar próximo da fila)
+                    window.parent.postMessage({
+                        type: 'video-ended',
+                        youtubeId: youtubeId,
+                        musica: musica
+                    }, '*');
+                }
+
+                if (event.data === YT.PlayerState.PLAYING) {
+                    console.log('▶️  Reproduzindo com qualidade automática');
+                    // Iniciar envio de updates de tempo
+                    this.startYouTubeTimeSync();
+                }
+
+                if (event.data === YT.PlayerState.PAUSED) {
+                    console.log('⏸️ Vídeo pausado');
+                    // Parar envio de updates
+                    this.stopYouTubeTimeSync();
+                }
+            }
+
+            // Iniciar sincronização de tempo com o backend
+            startYouTubeTimeSync() {
+                this.stopYouTubeTimeSync(); // Limpar interval anterior
+
+                this.ytTimeSyncInterval = setInterval(() => {
+                    if (this.ytPlayer && typeof this.ytPlayer.getCurrentTime === 'function') {
+                        const currentTime = this.ytPlayer.getCurrentTime();
+                        const duration = this.ytPlayer.getDuration ? this.ytPlayer.getDuration() : 0;
+
+                        // Enviar para o parent (Panel.jsx)
+                        window.parent.postMessage({
+                            type: 'player-time-update',
+                            time: currentTime,
+                            duration: duration
+                        }, '*');
+                    }
+                }, 1000); // Enviar a cada 1 segundo
+            }
+
+            // Parar sincronização de tempo
+            stopYouTubeTimeSync() {
+                if (this.ytTimeSyncInterval) {
+                    clearInterval(this.ytTimeSyncInterval);
+                    this.ytTimeSyncInterval = null;
+                }
+            }
+
+            handleYouTubeError(event) {
+                const errors = {
+                    2: 'Parâmetro inválido',
+                    5: 'Erro de reprodução HTML5',
+                    100: 'Vídeo não encontrado ou privado',
+                    101: 'Vídeo não permite reprodução em embed',
+                    150: 'Vídeo não permite reprodução em embed'
+                };
+
+                const errorMsg = errors[event.data] || 'Erro desconhecido';
+                console.error(`❌ Erro YouTube: ${errorMsg} (código ${event.data})`);
+
+                this.errorMessage.textContent = `Erro ao carregar vídeo: ${errorMsg}`;
+                this.errorMessage.classList.add('visible');
+
+                // Notificar parent sobre erro (para pular para próxima)
+                window.parent.postMessage({
+                    type: 'video-error',
+                    error: errorMsg,
+                    errorCode: event.data
+                }, '*');
+            }
+
+            // Atualizar overlay com informações da música atual
+            updateMusicInfo(musica) {
+                if (!musica) return;
+
+                console.log('🎵 Atualizando info da música:', musica);
+
+                this.currentMusicData = musica;
+                this.musicTitle.textContent = musica.titulo || '-';
+                this.musicClient.textContent = `Pedido por: ${musica.cliente || 'Anônimo'}`;
+            }
+
+            // Atualizar overlay com fila de próximas músicas
+            updateQueueOverlay(queue) {
+                console.log('📋 Atualizando fila:', queue);
+
+                this.currentQueue = queue || [];
+                this.queueList.innerHTML = '';
+
+                if (!queue || queue.length === 0) {
+                    const emptyMsg = document.createElement('div');
+                    emptyMsg.className = 'queue-empty';
+                    emptyMsg.textContent = 'Nenhuma música na fila';
+                    this.queueList.appendChild(emptyMsg);
+                    return;
+                }
+
+                // Mostrar apenas as próximas 5 músicas
+                const nextSongs = queue.slice(0, 5);
+
+                nextSongs.forEach((musica, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'queue-item';
+
+                    const title = document.createElement('div');
+                    title.className = 'queue-item-title';
+                    title.textContent = `${index + 1}. ${musica.titulo || musica.musicaTitulo || 'Sem título'}`;
+
+                    const client = document.createElement('div');
+                    client.className = 'queue-item-client';
+                    client.textContent = musica.cliente || musica.nomeCliente || 'Anônimo';
+
+                    item.appendChild(title);
+                    item.appendChild(client);
+                    this.queueList.appendChild(item);
+                });
+
+                // Adicionar contador se houver mais músicas
+                if (queue.length > 5) {
+                    const moreItem = document.createElement('div');
+                    moreItem.className = 'queue-item-client';
+                    moreItem.style.textAlign = 'center';
+                    moreItem.style.marginTop = '10px';
+                    moreItem.textContent = `+${queue.length - 5} música(s) na fila`;
+                    this.queueList.appendChild(moreItem);
+                }
+            }
+
+            // Mostrar/esconder overlays baseado em fullscreen
+            toggleOverlays(isFullscreen) {
+                console.log('🖥️ Fullscreen:', isFullscreen);
+
+                if (isFullscreen && this.currentMusicData) {
+                    // Atualizar informações antes de mostrar
+                    this.updateMusicInfo(this.currentMusicData);
+                    this.musicInfoOverlay.classList.add('visible');
+                    this.queueOverlay.classList.add('visible');
+                } else {
+                    this.musicInfoOverlay.classList.remove('visible');
+                    this.queueOverlay.classList.remove('visible');
+                }
+            }
+
             loadMP4(url) {
                 this.setNativeSource(url, 'video/mp4');
                 this.autoStartAfterSource();
@@ -1214,13 +1705,68 @@
                         player.updateAutoplayConsent(e.data.autoplayConsent, { persist: false, notify: true });
                     }
 
-                    player.loadVideo(e.data.url, e.data.format || 'auto');
+                    // Decidir entre YouTube embed ou download local
+                    if (player.useYouTubeEmbed && e.data.youtubeId) {
+                        console.log('🎬 Usando YouTube embed direto (sem download)');
+                        console.log('🆔 YouTube ID:', e.data.youtubeId);
+                        player.loadYouTubeEmbed(e.data.youtubeId, e.data.musica);
+                    } else if (e.data.streamUrl) {
+                        console.log('💾 Usando stream local (com download)');
+                        console.log('📡 Stream URL:', e.data.streamUrl);
+                        player.loadVideo(e.data.streamUrl, e.data.format || 'auto');
+                    } else {
+                        console.error('❌ Nem youtubeId nem streamUrl fornecidos');
+                    }
                     break;
                 case 'host-ready':
                     player.notifyPlayerReady();
                     break;
                 case 'set-autoplay-consent':
                     player.updateAutoplayConsent(e.data.value, { persist: true, notify: true });
+                    break;
+                case 'play':
+                    // Controlar YouTube player ou video element
+                    if (player.ytPlayer) {
+                        player.ytPlayer.playVideo();
+                        console.log('▶️ YouTube player: play');
+                    } else {
+                        player.video.play().catch(e => console.error('Erro ao reproduzir:', e));
+                    }
+                    break;
+                case 'pause':
+                    // Controlar YouTube player ou video element
+                    if (player.ytPlayer) {
+                        player.ytPlayer.pauseVideo();
+                        console.log('⏸️ YouTube player: pause');
+                    } else {
+                        player.video.pause();
+                    }
+                    break;
+                case 'stop':
+                    // Controlar YouTube player ou video element
+                    if (player.ytPlayer) {
+                        player.ytPlayer.stopVideo();
+                        console.log('⏹️ YouTube player: stop');
+                    } else {
+                        player.video.pause();
+                        player.video.currentTime = 0;
+                    }
+                    break;
+                case 'set-volume':
+                    if (typeof e.data.volume === 'number') {
+                        player.setVolume(e.data.volume);
+                    }
+                    break;
+                case 'set-muted':
+                    if (typeof e.data.muted === 'boolean') {
+                        player.video.muted = e.data.muted;
+                        player.updateVolumeDisplay();
+                    }
+                    break;
+                case 'update-queue':
+                    if (e.data.queue) {
+                        player.updateQueueOverlay(e.data.queue);
+                    }
                     break;
                 default:
                     break;

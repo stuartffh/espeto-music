@@ -19,9 +19,19 @@ const corsOptions = {
   credentials: true,
 };
 
-// Configurar Socket.io
+// Configurar Socket.io (SEM cookies, SEM sessão, conexão limpa)
 const io = new Server(server, {
   cors: corsOptions,
+  // Configurações para conexão limpa (sem cookies, sem persistência)
+  cookie: false, // NÃO usar cookies
+  transports: ['websocket', 'polling'], // WebSocket primeiro, depois polling
+  allowEIO3: true, // Compatibilidade com engine.io v3
+  pingTimeout: 60000, // 60 segundos antes de considerar desconectado
+  pingInterval: 25000, // Ping a cada 25 segundos
+  upgradeTimeout: 10000, // Timeout para upgrade de polling para websocket
+  maxHttpBufferSize: 1e6, // 1MB buffer máximo
+  allowUpgrades: true, // Permitir upgrade de polling para websocket
+  perMessageDeflate: false, // Desabilitar compressão (melhor performance)
 });
 
 // Middlewares
@@ -128,6 +138,31 @@ setupSocketHandlers(io);
 // Inicializar Download Service
 const downloadService = require('./services/downloadService');
 downloadService.inicializar();
+
+// Inicializar sistema de limpeza automática de carrinhos expirados
+const carrinhoService = require('./services/carrinhoService');
+
+// Função de limpeza periódica
+async function executarLimpezaPeriodica() {
+  try {
+    // Limpar carrinhos expirados (30 minutos sem atividade)
+    const carrinhosRemovidos = await carrinhoService.limparCarrinhosExpirados();
+    if (carrinhosRemovidos > 0) {
+      console.log(`🗑️  [LIMPEZA] ${carrinhosRemovidos} carrinho(s) expirado(s) removido(s)`);
+    }
+  } catch (error) {
+    console.error('❌ [LIMPEZA] Erro ao limpar carrinhos expirados:', error);
+  }
+}
+
+// Executar limpeza a cada 10 minutos
+const INTERVALO_LIMPEZA = 10 * 60 * 1000; // 10 minutos
+setInterval(executarLimpezaPeriodica, INTERVALO_LIMPEZA);
+
+// Executar limpeza inicial após 1 minuto do servidor iniciar
+setTimeout(executarLimpezaPeriodica, 60 * 1000);
+
+console.log('🧹 Sistema de limpeza automática iniciado (executa a cada 10 minutos)');
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;

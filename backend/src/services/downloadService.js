@@ -105,26 +105,75 @@ async function baixarVideo(youtubeId) {
   // Criar a Promise de download
   const downloadPromise = new Promise((resolve, reject) => {
     try {
-      // Detectar ambiente e usar o caminho apropriado do yt-dlp
+      // Detectar ambiente e usar o caminho apropriado do yt-dlp e FFmpeg
       const isWindows = process.platform === 'win32';
+
+      // yt-dlp path
       const ytdlpPath = isWindows
         ? 'C:\\Users\\User\\AppData\\Roaming\\Python\\Python313\\Scripts\\yt-dlp.exe'
         : 'yt-dlp'; // No Linux/Docker, yt-dlp estará no PATH
 
+      // FFmpeg path - usar caminho absoluto para garantir que seja encontrado
+      const ffmpegDir = path.join(__dirname, '../../ffmpeg/ffmpeg-8.0-essentials_build/bin');
       const ffmpegPath = isWindows
-        ? path.join(__dirname, '../../ffmpeg/ffmpeg-8.0-essentials_build/bin/ffmpeg.exe')
-        : 'ffmpeg'; // No Linux/Docker, ffmpeg estará no PATH
+        ? path.join(ffmpegDir, 'ffmpeg.exe')
+        : 'ffmpeg'; // No Linux/Docker, ffmpeg estará no PATH ou será instalado
 
-      // Construir comando completo com formato específico para browser
-      // Formato simples e robusto que evita bugs do yt-dlp com merge
-      // Prioriza formatos pre-merged (18=360p, 22=720p) que já contém áudio
-      // Fallback para best até 720p se pre-merged não disponível
-      const command = `"${ytdlpPath}" "${videoUrl}" -f "18/22/best[height<=720]" --merge-output-format mp4 --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --progress --newline`;
+      const ffprobePath = isWindows
+        ? path.join(ffmpegDir, 'ffprobe.exe')
+        : 'ffprobe';
+
+      // Verificar se FFmpeg existe (apenas em Windows, pois em Linux assume-se que está no PATH)
+      if (isWindows && !fs.existsSync(ffmpegPath)) {
+        console.error('❌ FFmpeg não encontrado em:', ffmpegPath);
+        console.error('💡 Certifique-se de que FFmpeg está instalado no projeto');
+        throw new Error('FFmpeg não encontrado');
+      }
+
+      console.log('🔧 Configuração de ferramentas:');
+      console.log(`   yt-dlp: ${ytdlpPath}`);
+      console.log(`   FFmpeg: ${ffmpegPath}`);
+      console.log(`   FFprobe: ${ffprobePath}`);
+
+      // Sistema inteligente de seleção de qualidade em ordem decrescente
+      // Tenta obter a melhor qualidade possível, fazendo fallback se não disponível
+      //
+      // Ordem de prioridade (prioriza formatos pre-merged para evitar bugs de merge):
+      // 1. Formato pre-merged 22 (720p com audio) - Mais estável
+      // 2. 720p (video 136 + audio 140) - Alta qualidade com merge
+      // 3. 1080p (video 137 + audio 140) - Melhor qualidade (requer merge)
+      // 4. Formato pre-merged 18 (360p com audio) - Fallback estável
+      // 5. Melhor video MP4 <= 1080p + melhor audio M4A
+      // 6. Melhor video <= 720p + melhor audio
+      // 7. Melhor MP4 disponível
+      // 8. Melhor qualidade disponível (último recurso)
+      //
+      // Nota: Priorizamos formatos pre-merged (22, 18) para evitar o bug
+      // 'NoneType' object has no attribute 'lower' durante o merge do ffmpeg
+      const formatString = [
+        '22',                                           // 720p pre-merged (PRIORIDADE - mais estável)
+        '136+140',                                      // 720p video + audio (merge seguro)
+        '137+140',                                      // 1080p video + audio (melhor qualidade)
+        '18',                                           // 360p pre-merged (fallback estável)
+        'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]', // Melhor <=1080p
+        'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]',  // Melhor <=720p
+        'best[ext=mp4]',                                // Melhor MP4 disponível
+        'best'                                          // Qualquer formato (último recurso)
+      ].join('/');
+
+      // Flags do yt-dlp explicadas:
+      // -t mp4: Preset para garantir formato MP4 compatível (recomendado para players)
+      // --merge-output-format mp4: Força saída em MP4 após merge de áudio+vídeo
+      // --no-check-formats: Evita verificação que pode causar erro 'NoneType'
+      // --compat-options no-live-chat: Evita processar live chat (pode causar bugs)
+      // --ffmpeg-location: Caminho absoluto do FFmpeg para merge correto
+      const command = `"${ytdlpPath}" "${videoUrl}" -f "${formatString}" -t mp4 --merge-output-format mp4 --no-check-formats --compat-options no-live-chat --ffmpeg-location "${ffmpegPath}" -o "${tempOutputTemplate}.%(ext)s" --no-playlist --progress --newline`;
 
       console.log(`🎬 Executando yt-dlp:`);
       console.log(`   URL: ${videoUrl}`);
       console.log(`   Output: ${tempOutputTemplate}.mp4`);
-      console.log(`   Formato: 18 (360p) ou 22 (720p) pre-merged`);
+      console.log(`   Formato: 720p pre-merged → 1080p merge → 360p (fallback)`);
+      console.log(`   Preset: MP4 (compatível com players de vídeo)`);
 
       const ytdlp = spawn(command, {
         shell: true,

@@ -6,7 +6,15 @@ echo "🚀 Iniciando Espeto Music..."
 # Executar migrações do Prisma
 echo "📦 Executando migrações do banco de dados..."
 cd /app/backend
-npx prisma migrate deploy || echo "⚠️ Nenhuma migração pendente ou erro ao migrar"
+
+# Tentar executar migrações
+if npx prisma migrate deploy 2>&1 | tee /tmp/migrate.log; then
+  echo "✅ Migrações executadas com sucesso"
+else
+  echo "⚠️  Erro ou nenhuma migração pendente"
+  echo "    Log das migrações:"
+  cat /tmp/migrate.log
+fi
 
 # Gerar Prisma Client (caso não tenha sido gerado)
 echo "🔧 Gerando Prisma Client..."
@@ -14,7 +22,7 @@ npx prisma generate
 
 # Verificar e semear banco de dados se necessário
 echo "🌱 Verificando se precisa semear o banco de dados..."
-node check-and-seed.js || echo "⚠️ Erro ao verificar/semear banco, continuando..."
+node auto-seed.js || echo "⚠️ Erro ao verificar/semear banco, continuando..."
 
 # Verificar se o diretório de frontend existe
 if [ -d "/app/frontend/dist" ]; then

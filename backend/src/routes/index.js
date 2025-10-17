@@ -12,6 +12,9 @@ const playerRoutes = require('./playerRoutes');
 const streamRoutes = require('./stream');
 const moderacaoRoutes = require('./moderacaoRoutes');
 const themeRoutes = require('./themeRoutes');
+const giftCardRoutes = require('./giftCardRoutes');
+const webhookRoutes = require('./webhookRoutes');
+const carrinhoRoutes = require('./carrinhoRoutes');
 
 // Health check
 router.get('/health', (req, res) => {
@@ -25,6 +28,12 @@ router.get('/health', (req, res) => {
 // Rotas públicas (sem autenticação)
 router.use('/public', publicRoutes);
 
+// Webhooks (sem autenticação - recebe de servidores externos)
+router.use('/webhooks', webhookRoutes);
+
+// Carrinho (público - identificado por IP)
+router.use('/carrinho', carrinhoRoutes);
+
 // Rotas protegidas
 router.use('/mesas', mesaRoutes);
 router.use('/musicas', musicaRoutes);
@@ -37,5 +46,6 @@ router.use('/stream', streamRoutes);
 router.use('/admin/moderacao', moderacaoRoutes);
 router.use('/theme', themeRoutes);
 router.use('/admin/theme', themeRoutes);
+router.use('/gifts', giftCardRoutes);
 
 module.exports = router;

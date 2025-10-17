@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
-import { Play, Clock } from 'lucide-react';
+import { Play, Clock, ShoppingCart } from 'lucide-react';
 import Button from './ui/Button';
 import Badge from './ui/Badge';
 import clsx from 'clsx';
 
-export default function MusicCard({ musica, onAdd, loading = false }) {
+export default function MusicCard({ musica, onAdd, loading = false, showCartButton = false }) {
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -52,16 +52,30 @@ export default function MusicCard({ musica, onAdd, loading = false }) {
           {musica.canal || musica.artista || 'Artista Desconhecido'}
         </p>
 
-        <Button
-          variant="primary"
-          size="sm"
-          className="w-full"
-          onClick={onAdd}
-          loading={loading}
-          disabled={loading}
-        >
-          Adicionar à Fila
-        </Button>
+        {showCartButton ? (
+          <Button
+            variant="primary"
+            size="sm"
+            className="w-full"
+            onClick={onAdd}
+            loading={loading}
+            disabled={loading}
+          >
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Adicionar ao Carrinho
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            size="sm"
+            className="w-full"
+            onClick={onAdd}
+            loading={loading}
+            disabled={loading}
+          >
+            Adicionar à Fila
+          </Button>
+        )}
       </div>
     </motion.div>
   );
