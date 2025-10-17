@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Lock, ArrowLeft } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
@@ -12,12 +12,13 @@ function AdminLogin() {
   const [password, setPassword] = useState('');
   const { login, loading, error, isAuthenticated, clearError } = useAuthStore();
   const navigate = useNavigate();
+  const { slug } = useParams();
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/admin/dashboard');
+      navigate(`/${slug}/admin/dashboard`);
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, slug]);
 
   useEffect(() => {
     return () => clearError();
@@ -27,7 +28,7 @@ function AdminLogin() {
     e.preventDefault();
     const success = await login(username, password);
     if (success) {
-      navigate('/admin/dashboard');
+      navigate(`/${slug}/admin/dashboard`);
     }
   };
 

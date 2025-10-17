@@ -24,7 +24,7 @@ function App() {
 
           {/* Admin Routes */}
           <Route path="/:slug/admin/login" element={<AdminLogin />} />
-          <Route path="/:slug/admin" element={<Navigate to="admin/dashboard" replace />} />
+          <Route path="/:slug/admin" element={<Navigate to="dashboard" replace />} />
           <Route
             path="/:slug/admin/dashboard"
             element={

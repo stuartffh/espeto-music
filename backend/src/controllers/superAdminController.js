@@ -479,7 +479,7 @@ async function login(req, res) {
     }
 
     // Verificar senha
-    const senhaValida = await bcrypt.compare(senha, superAdmin.senha);
+    const senhaValida = await bcrypt.compare(senha, superAdmin.password);
 
     if (!senhaValida) {
       return res.status(401).json({
