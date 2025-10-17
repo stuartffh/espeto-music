@@ -346,6 +346,44 @@ async function buscarPorId(req, res) {
   }
 }
 
+/**
+ * Atualiza um pedido (ex: nome do cliente no modo gratuito)
+ */
+async function atualizarPedido(req, res) {
+  try {
+    const { id } = req.params;
+    const { nomeCliente } = req.body;
+
+    if (!nomeCliente || !nomeCliente.trim()) {
+      return res.status(400).json({ error: 'Nome do cliente é obrigatório' });
+    }
+
+    const prisma = require('../config/database');
+
+    // Verificar se o pedido existe
+    const pedido = await prisma.pedidoMusica.findUnique({
+      where: { id }
+    });
+
+    if (!pedido) {
+      return res.status(404).json({ error: 'Pedido não encontrado' });
+    }
+
+    // Atualizar o nome do cliente
+    const pedidoAtualizado = await prisma.pedidoMusica.update({
+      where: { id },
+      data: { nomeCliente: nomeCliente.trim() }
+    });
+
+    console.log(`✅ Pedido ${id} atualizado com nome: ${nomeCliente.trim()}`);
+
+    res.json(pedidoAtualizado);
+  } catch (error) {
+    console.error('Erro ao atualizar pedido:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 module.exports = {
   buscar,
   detalhes,
@@ -358,4 +396,5 @@ module.exports = {
   cancelar,
   historico,
   buscarPorId,
+  atualizarPedido,
 };

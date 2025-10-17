@@ -135,8 +135,25 @@ function Home() {
     setAdicionando(true);
 
     try {
+      // Verificar se modo gratuito exige nome
+      if (modoGratuito && !nomeCliente.trim()) {
+        // Criar pedido temporário e pedir nome
+        const pedido = await criarPedidoMusica({
+          nomeCliente: 'Anônimo', // Temporário, será atualizado após modal
+          musicaTitulo: musica.titulo,
+          musicaYoutubeId: musica.id,
+          musicaThumbnail: musica.thumbnail,
+          musicaDuracao: musica.duracao || null,
+        });
+
+        setPedidoPendente(pedido.data);
+        setShowNomeModal(true);
+        return;
+      }
+
+      // Criar pedido com nome (modo gratuito com nome já preenchido ou modo pago)
       const pedido = await criarPedidoMusica({
-        nomeCliente: 'Anônimo', // Nome padrão, será alterado no pagamento
+        nomeCliente: nomeCliente.trim() || 'Anônimo',
         musicaTitulo: musica.titulo,
         musicaYoutubeId: musica.id,
         musicaThumbnail: musica.thumbnail,
@@ -144,13 +161,7 @@ function Home() {
       });
 
       if (modoGratuito) {
-        // Modo gratuito: pedir nome antes de adicionar
-        if (!nomeCliente.trim()) {
-          setPedidoPendente(pedido.data);
-          setShowNomeModal(true);
-          return;
-        }
-
+        // Modo gratuito: música já foi adicionada automaticamente
         setShowConfetti(true);
         showToast('Música adicionada à fila com sucesso! 🎵', 'success');
         await buscarFila().then(res => setFila(res.data));
@@ -218,6 +229,34 @@ function Home() {
       showToast(error.response?.data?.erro || 'Erro ao usar gift card', 'error');
     } finally {
       setUsandoGift(false);
+    }
+  };
+
+  const handleConfirmarNomeGratuito = async () => {
+    if (!nomeCliente.trim() || !pedidoPendente) return;
+
+    setAdicionando(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+      // Atualizar pedido com o nome do cliente
+      await axios.patch(`${API_URL}/api/musicas/pedido/${pedidoPendente.id}`, {
+        nomeCliente: nomeCliente.trim()
+      });
+
+      setShowNomeModal(false);
+      setShowConfetti(true);
+      showToast('Música adicionada à fila com sucesso! 🎵', 'success');
+      await buscarFila().then(res => setFila(res.data));
+      setBusca('');
+      setResultados([]);
+      setCategoriaAtiva(null);
+      setPedidoPendente(null);
+    } catch (error) {
+      console.error('Erro:', error);
+      showToast(error.response?.data?.error || 'Erro ao processar pedido', 'error');
+    } finally {
+      setAdicionando(false);
     }
   };
 
@@ -714,8 +753,9 @@ function Home() {
           />
           <Button
             className="w-full mt-4"
-            onClick={() => setShowNomeModal(false)}
-            disabled={!nomeCliente.trim()}
+            onClick={handleConfirmarNomeGratuito}
+            disabled={!nomeCliente.trim() || adicionando}
+            loading={adicionando}
           >
             Confirmar
           </Button>

@@ -23,6 +23,9 @@ router.get('/historico', musicaController.historico);
 // Busca pedido por ID
 router.get('/:id', musicaController.buscarPorId);
 
+// Atualiza pedido (ex: nome do cliente)
+router.patch('/pedido/:id', musicaController.atualizarPedido);
+
 // Marca música como tocando
 router.post('/:id/tocar', musicaController.tocar);
 
