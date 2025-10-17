@@ -9,6 +9,82 @@ const api = axios.create({
   },
 });
 
+/**
+ * MULTI-TENANT: Configuração de slug do estabelecimento
+ * Este valor será automaticamente incluído em todas as requisições
+ */
+let currentSlug = null;
+let currentCodigo = null;
+
+/**
+ * Define o slug do estabelecimento para as requisições
+ * @param {string} slug - Slug do estabelecimento
+ */
+export const setTenantSlug = (slug) => {
+  currentSlug = slug;
+  console.log('🏢 [API] Tenant slug definido:', slug);
+};
+
+/**
+ * Define o código do estabelecimento para as requisições
+ * @param {string} codigo - Código do estabelecimento
+ */
+export const setTenantCodigo = (codigo) => {
+  currentCodigo = codigo;
+  console.log('🔑 [API] Tenant código definido:', codigo);
+};
+
+/**
+ * Limpa os dados do tenant
+ */
+export const clearTenant = () => {
+  currentSlug = null;
+  currentCodigo = null;
+  console.log('🧹 [API] Tenant limpo');
+};
+
+// Interceptor de requisição: adiciona tenant em todas as chamadas
+api.interceptors.request.use(
+  (config) => {
+    // Adicionar slug como header (se disponível)
+    if (currentSlug) {
+      config.headers['X-Estabelecimento-Slug'] = currentSlug;
+    }
+
+    // Adicionar código como header (se disponível)
+    if (currentCodigo) {
+      config.headers['X-Estabelecimento-Codigo'] = currentCodigo;
+    }
+
+    // Adicionar slug como query parameter também (para maior compatibilidade)
+    if (currentSlug && !config.params?.slug) {
+      config.params = {
+        ...config.params,
+        slug: currentSlug,
+      };
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor de resposta: tratar erros multi-tenant
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 400) {
+      const message = error.response?.data?.erro || error.response?.data?.error;
+      if (message?.includes('Estabelecimento não identificado')) {
+        console.error('❌ [API] Estabelecimento não identificado. Verifique o slug/código.');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Músicas
 export const buscarMusicas = (query) => api.get(`/musicas/buscar?q=${encodeURIComponent(query)}`);
 export const criarPedidoMusica = (dados) => api.post('/musicas', dados);
