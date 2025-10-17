@@ -208,6 +208,25 @@ function Panel() {
   useEffect(() => {
     console.log('🔌 Usando socket global compartilhado...');
 
+    // Autenticar TV no controle remoto
+    socket.emit('remote-control-auth', {
+      token: 'tv-token', // Em produção, usar token real
+      role: 'tv'
+    });
+
+    socket.on('remote-control-auth-response', (response) => {
+      if (response.success) {
+        console.log('✅ TV autenticada no controle remoto:', response.sessionId);
+      } else {
+        console.error('❌ Falha na autenticação do controle remoto:', response.reason);
+      }
+    });
+
+    // Responder heartbeat
+    socket.on('heartbeat', (data) => {
+      socket.emit('heartbeat-response', { timestamp: Date.now() });
+    });
+
     // Buscar fila inicial
     api.get('/api/musicas/fila')
       .then(res => {

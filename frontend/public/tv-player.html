@@ -884,7 +884,92 @@
         case 'update-queue':
           setQueue(queue);
           break;
+        case 'remote-control':
+          handleRemoteControl(event.data);
+          break;
       }
+    }
+
+    // ========== REMOTE CONTROL HANDLER ==========
+    function handleRemoteControl(command) {
+      if (!state.player) {
+        sendCommandResponse(command.commandId, 'error', 'Player não inicializado');
+        return;
+      }
+
+      const { type, time, volume, muted, commandId } = command;
+
+      try {
+        switch (type) {
+          case 'play':
+            state.player.playVideo();
+            break;
+          case 'pause':
+            state.player.pauseVideo();
+            break;
+          case 'stop':
+            state.player.stopVideo();
+            state.player.seekTo(0);
+            break;
+          case 'seek':
+            if (typeof time === 'number') {
+              const dur = state.player.getDuration() || 0;
+              state.player.seekTo(clamp(time, 0, dur), true);
+            }
+            break;
+          case 'set-volume':
+            if (typeof volume === 'number') {
+              setVolume(volume * 100);
+            }
+            break;
+          case 'set-muted':
+            if (typeof muted === 'boolean') {
+              if (muted) state.player.mute();
+              else state.player.unMute();
+              syncVolUI();
+            }
+            break;
+          case 'next':
+            sendMessage('video-ended', { youtubeId: state.player.getVideoData().video_id });
+            break;
+        }
+
+        // Enviar resposta com estado atual
+        sendCommandResponse(commandId, 'success', getPlayerState());
+      } catch (error) {
+        console.error('Erro ao executar comando remoto:', error);
+        sendCommandResponse(commandId, 'error', error.message);
+      }
+    }
+
+    function getPlayerState() {
+      if (!state.player) return null;
+
+      try {
+        const playerState = state.player.getPlayerState();
+        const states = { '-1': 'unstarted', '0': 'ended', '1': 'playing', '2': 'paused', '3': 'buffering', '5': 'cued' };
+
+        return {
+          state: states[playerState] || 'unknown',
+          currentTime: state.player.getCurrentTime() || 0,
+          duration: state.player.getDuration() || 0,
+          volume: state.player.getVolume() || 0,
+          muted: state.player.isMuted() || false,
+          videoId: state.player.getVideoData()?.video_id || null
+        };
+      } catch (error) {
+        console.error('Erro ao obter estado do player:', error);
+        return null;
+      }
+    }
+
+    function sendCommandResponse(commandId, status, data) {
+      sendMessage('player-command-response', {
+        commandId,
+        status,
+        state: status === 'success' ? data : null,
+        error: status === 'error' ? data : null
+      });
     }
 
     // ========== EVENT LISTENERS ==========

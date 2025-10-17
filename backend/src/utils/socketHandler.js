@@ -1,5 +1,6 @@
 const musicaService = require('../services/musicaService');
 const playerService = require('../services/playerService');
+const remoteControlService = require('../services/remoteControlService');
 
 /**
  * 🔌 CONFIGURAÇÃO DE WEBSOCKET
@@ -13,6 +14,8 @@ const playerService = require('../services/playerService');
  * - request:musica-atual - Cliente solicita música atual
  * - musica:terminou - TV notifica que música terminou
  * - pedido:pago - Cliente notifica pagamento aprovado
+ * - remote-control-auth - Autenticação para controle remoto
+ * - remote-control-command - Comando de controle remoto
  *
  * Emissões do servidor:
  * - estado:inicial - Estado completo (fila + música atual)
@@ -25,10 +28,13 @@ const playerService = require('../services/playerService');
  * - player:parar - Parar reprodução
  * - config:atualizada - Configuração alterada
  * - pedido:pago - Confirmação de pagamento
+ * - remote-control - Comando para o player
+ * - remote-control-response - ACK/NACK de comandos
  */
 function setupSocketHandlers(io) {
-  // Inicializar playerService com io
+  // Inicializar serviços com io
   playerService.inicializar(io);
+  remoteControlService.initialize(io);
 
   console.log('🔌 [WEBSOCKET] Configurando handlers...');
 
@@ -135,12 +141,63 @@ function setupSocketHandlers(io) {
       }
     });
 
+    // ========== CONTROLE REMOTO ==========
+
+    // Autenticação para controle remoto
+    socket.on('remote-control-auth', async (credentials) => {
+      try {
+        const result = await remoteControlService.authenticate(socket, credentials);
+
+        if (result.success) {
+          socket.emit('remote-control-auth-response', {
+            success: true,
+            sessionId: result.sessionId,
+            role: result.role
+          });
+        } else {
+          socket.emit('remote-control-auth-response', {
+            success: false,
+            reason: result.reason
+          });
+        }
+      } catch (error) {
+        console.error('Erro na autenticação de controle remoto:', error);
+        socket.emit('remote-control-auth-response', {
+          success: false,
+          reason: 'Erro interno'
+        });
+      }
+    });
+
+    // Comando de controle remoto
+    socket.on('remote-control-command', async (command) => {
+      try {
+        remoteControlService.updateActivity(socket.id);
+        await remoteControlService.processCommand(socket, command);
+      } catch (error) {
+        console.error('Erro ao processar comando de controle remoto:', error);
+      }
+    });
+
+    // Resposta do heartbeat
+    socket.on('heartbeat-response', () => {
+      remoteControlService.updateActivity(socket.id);
+    });
+
+    // Resposta do player para comandos
+    socket.on('player-command-response', (data) => {
+      io.emit('player-response', data);
+    });
+
     // ========== DESCONEXÃO ==========
 
     socket.on('disconnect', (reason) => {
       console.log(`❌ [WEBSOCKET] Cliente desconectado: ${socket.id}`);
       console.log(`📋 [WEBSOCKET] Razão: ${reason}`);
       console.log(`📊 [WEBSOCKET] Total de clientes: ${io.engine.clientsCount}`);
+
+      // Remover do controle remoto
+      remoteControlService.removeClient(socket.id);
     });
 
     socket.on('error', (error) => {
