@@ -14,15 +14,17 @@ function App() {
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white transition-colors duration-300">
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
+          {/* MULTI-TENANT ROUTES - All routes now include /:slug */}
+
           {/* Cliente Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/pagamento/:status" element={<Pagamento />} />
+          <Route path="/:slug" element={<Home />} />
+          <Route path="/:slug/pagamento/:status" element={<Pagamento />} />
 
           {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/:slug/admin/login" element={<AdminLogin />} />
+          <Route path="/:slug/admin" element={<Navigate to="admin/dashboard" replace />} />
           <Route
-            path="/admin/dashboard"
+            path="/:slug/admin/dashboard"
             element={
               <ProtectedRoute>
                 <AdminDashboard />
@@ -31,10 +33,16 @@ function App() {
           />
 
           {/* TV Panel Route */}
-          <Route path="/tv" element={<TVPanel />} />
+          <Route path="/:slug/tv" element={<TVPanel />} />
 
-          {/* Redirect old routes for compatibility */}
-          <Route path="/cliente" element={<Navigate to="/" replace />} />
+          {/* BACKWARD COMPATIBILITY - Redirect old routes to demo slug */}
+          <Route path="/" element={<Navigate to="/demo" replace />} />
+          <Route path="/pagamento/:status" element={<Navigate to="/demo/pagamento/:status" replace />} />
+          <Route path="/admin/login" element={<Navigate to="/demo/admin/login" replace />} />
+          <Route path="/admin/dashboard" element={<Navigate to="/demo/admin/dashboard" replace />} />
+          <Route path="/admin" element={<Navigate to="/demo/admin" replace />} />
+          <Route path="/tv" element={<Navigate to="/demo/tv" replace />} />
+          <Route path="/cliente" element={<Navigate to="/demo" replace />} />
         </Routes>
       </AnimatePresence>
     </div>
