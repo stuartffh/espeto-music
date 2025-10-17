@@ -311,7 +311,15 @@ function Home() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center justify-between mb-4 md:mb-6">
-            <div className="w-8 md:w-12"></div>
+            <div className="w-8 md:w-12">
+              {/* MULTI-TENANT: Indicador de Estabelecimento */}
+              {slug && (
+                <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/50">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                  <span className="text-[10px] font-medium text-purple-300">/{slug}</span>
+                </div>
+              )}
+            </div>
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold gradient-text">
               🎵 Espeto Music
             </h1>

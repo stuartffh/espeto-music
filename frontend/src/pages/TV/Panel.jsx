@@ -794,6 +794,21 @@ function Panel() {
                 </>
               )}
             </div>
+
+            {/* MULTI-TENANT: Indicador de Estabelecimento */}
+            {(slug || codigo) && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/20 border-purple-500 border">
+                <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-purple-300">
+                    {slug ? `/${slug}` : codigo}
+                  </span>
+                  {codigo && slug && (
+                    <span className="text-[10px] text-purple-400">TV: {codigo}</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
