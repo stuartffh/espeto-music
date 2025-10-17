@@ -1,0 +1,251 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model PedidoMusica {
+  id                  String   @id @default(uuid())
+  nomeCliente         String?
+  musicaTitulo        String
+  musicaYoutubeId     String
+  musicaThumbnail     String?
+  musicaDuracao       Int?     // em segundos
+  status              String   @default("pendente") // pendente, pago, tocando, concluida, cancelada, rejeitada
+  valor               Float
+  pagamentoId         String?  @unique
+  pagamentoCarrinhoId String?  // ID do pagamento quando múltiplas músicas
+  posicaoFila         Int?
+  motivoRejeicao      String?  // Motivo da rejeição pela moderação
+  moderadoPor         String?  // "sistema" ou "admin"
+  criadoEm            DateTime @default(now())
+  atualizadoEm        DateTime @updatedAt
+
+  pagamento        Pagamento? @relation(fields: [pagamentoId], references: [id])
+  pagamentoCarrinho Pagamento? @relation("PagamentoCarrinho", fields: [pagamentoCarrinhoId], references: [id])
+  giftCard         GiftCard?
+
+  @@map("pedidos_musica")
+  @@index([status])
+  @@index([criadoEm])
+  @@index([pagamentoCarrinhoId])
+}
+
+model Pagamento {
+  id                      String   @id @default(uuid())
+  mercadoPagoPaymentId    String?  @unique
+  mercadoPagoPreferenceId String?  @unique
+  status                  String   @default("pending") // pending, approved, rejected, cancelled, refunded
+  valor                   Float
+  metodoPagamento         String?  // pix, credit_card, debit_card, etc
+
+  // Dados do pagador
+  emailPagador            String?
+  cpfPagador              String?
+  nomePagador             String?
+
+  // Dados do PIX
+  qrCode                  String?  // QR Code em base64
+  qrCodeText              String?  // Texto para copia e cola do PIX
+  pixExpirationDate       DateTime?
+
+  // Webhook e notificações
+  webhookData             String?  // JSON com dados do webhook
+  lastWebhookUpdate       DateTime?
+
+  criadoEm                DateTime @default(now())
+  atualizadoEm            DateTime @updatedAt
+
+  pedidoMusica  PedidoMusica?
+  pedidosMusica PedidoMusica[] @relation("PagamentoCarrinho")
+
+  @@map("pagamentos")
+  @@index([status])
+  @@index([mercadoPagoPaymentId])
+}
+
+model Configuracao {
+  id                String   @id @default(uuid())
+  chave             String   @unique
+  valor             String
+  descricao         String?
+  tipo              String   @default("text") // text, number, boolean, password
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("configuracoes")
+}
+
+model Admin {
+  id                String   @id @default(uuid())
+  username          String   @unique
+  password          String
+  nome              String
+  ativo             Boolean  @default(true)
+  ultimoAcesso      DateTime?
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Sugestao {
+  id                String   @id @default(uuid())
+  categoria         String   // sertanejo, pagode, funk, mpb, rock, forro, samba, gospel
+  titulo            String
+  youtubeId         String?
+  thumbnail         String?
+  tipo              String   @default("trending") // trending, popular, estatico
+  ordem             Int      @default(0)
+  ativo             Boolean  @default(true)
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("sugestoes")
+  @@index([categoria, ativo])
+  @@index([tipo])
+}
+
+model HistoricoBusca {
+  id                String   @id @default(uuid())
+  termo             String
+  categoria         String?
+  resultados        Int      @default(0)
+  vezesBuscado      Int      @default(1)
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("historico_buscas")
+  @@index([termo])
+  @@index([vezesBuscado])
+}
+
+model EstadoPlayer {
+  id                String   @id @default("singleton")
+  musicaAtualId     String?  // ID do pedido que está tocando
+  status            String   @default("stopped") // playing, paused, stopped
+  tempoAtual        Float    @default(0) // tempo em segundos
+  volume            Int      @default(80)
+  ultimaAtualizacao DateTime @default(now())
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("estado_player")
+}
+
+model PalavraProibida {
+  id                String   @id @default(uuid())
+  palavra           String
+  categoria         String   @default("AMBOS") // NOME_CLIENTE, TITULO_MUSICA, AMBOS
+  severidade        String   @default("MEDIA") // LEVE, MEDIA, SEVERA
+  ativo             Boolean  @default(true)
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  @@map("palavras_proibidas")
+  @@index([categoria])
+  @@index([severidade])
+  @@index([ativo])
+}
+
+model Tema {
+  id                  String   @id @default("active")
+  nome                String   @default("Espeto Music")
+
+  // Cores principais
+  corPrimaria         String   @default("#DC2626") // Vermelho churrasco
+  corSecundaria       String   @default("#F97316") // Laranja fogo
+  corAcento           String   @default("#FBBF24") // Amarelo dourado
+  corFundo            String   @default("#0F172A") // Azul escuro moderno
+  corFundoSecundario  String   @default("#1E293B") // Azul escuro secundário
+  corTexto            String   @default("#F8FAFC") // Texto claro
+  corTextoSecundario  String   @default("#CBD5E1") // Texto secundário
+
+  // Imagens
+  logoUrl             String?
+  backgroundUrl       String?
+  iconUrl             String?
+
+  // Tipografia
+  fontePrimaria       String   @default("Inter")
+  fonteSecundaria     String   @default("Poppins")
+
+  // Estilo
+  borderRadius        String   @default("8px")
+  shadowIntensity     String   @default("medium") // light, medium, strong
+
+  criadoEm            DateTime @default(now())
+  atualizadoEm        DateTime @updatedAt
+
+  @@map("temas")
+}
+
+model GiftCard {
+  id                String   @id @default(uuid())
+  codigo            String   @unique // Código único do gift card (ex: GIFT-XXXX-XXXX)
+  valor             Float    // Valor em R$ que o gift card representa
+  quantidadeMusicas Int      // Quantidade de músicas que o gift card permite
+  usado             Boolean  @default(false) // Se o gift card já foi usado
+  ativo             Boolean  @default(true) // Se o gift card está ativo
+  dataExpiracao     DateTime? // Data de expiração (opcional)
+
+  // Informações de uso
+  usadoEm           DateTime? // Quando foi usado
+  usadoPor          String?   // Nome do cliente que usou
+  pedidoMusicaId    String?   @unique // ID do pedido associado
+
+  // Observações
+  observacao        String?   // Observação do admin ao criar
+
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  pedidoMusica      PedidoMusica? @relation(fields: [pedidoMusicaId], references: [id])
+
+  @@map("gift_cards")
+  @@index([codigo])
+  @@index([usado])
+  @@index([ativo])
+}
+
+model Carrinho {
+  id              String   @id @default(uuid())
+  sessionId       String   // ID único da sessão (pode ser IP + fingerprint)
+  nomeCliente     String?  // Nome do cliente (opcional até finalizar)
+  musicasTitulos  String   // JSON array com títulos das músicas
+  musicasIds      String   // JSON array com IDs do YouTube
+  musicasThumbs   String   // JSON array com thumbnails
+  musicasDuracoes String   // JSON array com durações
+  valorTotal      Float    // Valor total do carrinho
+  quantidadeItens Int      // Quantidade de músicas no carrinho
+
+  // Controle de expiração
+  expiraEm        DateTime // Carrinho expira após 30 minutos
+
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  @@map("carrinhos")
+  @@index([sessionId])
+  @@index([expiraEm])
+}
+
+model RateLimit {
+  id              String   @id @default(uuid())
+  ip              String   // IP do cliente
+  contador        Int      @default(1) // Contador de pedidos
+  resetaEm        DateTime // Quando o contador reseta (30 minutos)
+
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  @@map("rate_limits")
+  @@index([ip])
+  @@index([resetaEm])
+}
