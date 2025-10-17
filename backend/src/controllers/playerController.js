@@ -1,24 +1,44 @@
 /**
  * Controller para controle do player da TV
  * Agora usa o playerService centralizado
+ * MULTI-TENANT: Todas as funções requerem estabelecimentoId
  */
 
 const playerService = require('../services/playerService');
 
 /**
  * Obter estado atual do player
+ * MULTI-TENANT: Requer estabelecimentoId
  */
 function obterEstado(req, res) {
-  const estado = playerService.obterEstado();
-  res.json(estado);
+  try {
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ error: 'Estabelecimento não identificado' });
+    }
+
+    const estado = playerService.obterEstado(estabelecimentoId);
+    res.json(estado);
+  } catch (error) {
+    console.error('Erro ao obter estado:', error);
+    res.status(500).json({ error: error.message });
+  }
 }
 
 /**
  * Play - Tocar/Resumir música
+ * MULTI-TENANT: Requer estabelecimentoId
  */
 async function play(req, res) {
   try {
-    const estado = playerService.retomar();
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ error: 'Estabelecimento não identificado' });
+    }
+
+    const estado = await playerService.retomar(estabelecimentoId);
     res.json({ success: true, estado });
   } catch (error) {
     console.error('Erro ao tocar:', error);
@@ -28,10 +48,17 @@ async function play(req, res) {
 
 /**
  * Pause - Pausar música
+ * MULTI-TENANT: Requer estabelecimentoId
  */
 async function pause(req, res) {
   try {
-    const estado = playerService.pausar();
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ error: 'Estabelecimento não identificado' });
+    }
+
+    const estado = await playerService.pausar(estabelecimentoId);
     res.json({ success: true, estado });
   } catch (error) {
     console.error('Erro ao pausar:', error);
@@ -41,10 +68,17 @@ async function pause(req, res) {
 
 /**
  * Stop - Parar música
+ * MULTI-TENANT: Requer estabelecimentoId
  */
 async function stop(req, res) {
   try {
-    const estado = playerService.parar();
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ error: 'Estabelecimento não identificado' });
+    }
+
+    const estado = await playerService.parar(estabelecimentoId);
     res.json({ success: true, estado });
   } catch (error) {
     console.error('Erro ao parar:', error);
@@ -54,10 +88,17 @@ async function stop(req, res) {
 
 /**
  * Skip - Pular para próxima música
+ * MULTI-TENANT: Requer estabelecimentoId
  */
 async function skip(req, res) {
   try {
-    const estado = await playerService.pularMusica();
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ error: 'Estabelecimento não identificado' });
+    }
+
+    const estado = await playerService.pularMusica(estabelecimentoId);
     res.json({ success: true, estado });
   } catch (error) {
     console.error('Erro ao pular música:', error);
@@ -67,16 +108,22 @@ async function skip(req, res) {
 
 /**
  * Ajustar volume
+ * MULTI-TENANT: Requer estabelecimentoId
  */
 async function volume(req, res) {
   try {
     const { nivel } = req.body;
+    const estabelecimentoId = req.estabelecimentoId;
+
+    if (!estabelecimentoId) {
+      return res.status(400).json({ error: 'Estabelecimento não identificado' });
+    }
 
     if (nivel === undefined || nivel < 0 || nivel > 100) {
       return res.status(400).json({ error: 'Volume deve estar entre 0 e 100' });
     }
 
-    const estado = playerService.ajustarVolume(nivel);
+    const estado = await playerService.ajustarVolume(nivel, estabelecimentoId);
     res.json({ success: true, volume: nivel, estado });
   } catch (error) {
     console.error('Erro ao ajustar volume:', error);
@@ -86,16 +133,25 @@ async function volume(req, res) {
 
 /**
  * Reset - Limpar músicas travadas com status "tocando"
+ * MULTI-TENANT: Requer estabelecimentoId
  */
 async function reset(req, res) {
   try {
     const prisma = require('../config/database');
+    const estabelecimentoId = req.estabelecimentoId;
 
-    console.log('🔧 [RESET] Limpando estado do player...');
+    if (!estabelecimentoId) {
+      return res.status(400).json({ error: 'Estabelecimento não identificado' });
+    }
 
-    // Limpar todas as músicas com status "tocando"
+    console.log(`🔧 [RESET] Limpando estado do player para estabelecimento ${estabelecimentoId}...`);
+
+    // Limpar todas as músicas com status "tocando" DESTE estabelecimento
     const musicasTocando = await prisma.pedidoMusica.findMany({
-      where: { status: 'tocando' }
+      where: {
+        estabelecimentoId, // ← Multi-tenant
+        status: 'tocando'
+      }
     });
 
     console.log(`📋 [RESET] Encontradas ${musicasTocando.length} música(s) com status "tocando"`);
@@ -104,12 +160,12 @@ async function reset(req, res) {
       console.log(`  - [RESET] ${musica.musicaTitulo} (ID: ${musica.id})`);
       await prisma.pedidoMusica.update({
         where: { id: musica.id },
-        data: { status: 'concluido' }
+        data: { status: 'concluida' }
       });
     }
 
-    // Resetar estado do player service
-    playerService.parar();
+    // Resetar estado do player service DESTE estabelecimento
+    await playerService.parar(estabelecimentoId);
 
     console.log('✅ [RESET] Estado limpo!');
 
