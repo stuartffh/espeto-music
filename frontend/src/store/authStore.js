@@ -27,6 +27,18 @@ const useAuthStore = create((set) => ({
       const { token, admin } = response.data;
 
       localStorage.setItem('admin_token', token);
+
+      // MULTI-TENANT: Salvar dados do estabelecimento no TenantContext
+      if (admin.estabelecimento) {
+        const tenantData = {
+          slug: admin.estabelecimento.slug,
+          estabelecimentoId: admin.estabelecimento.id,
+          nome: admin.estabelecimento.nome,
+          codigo: admin.estabelecimento.codigo,
+        };
+        localStorage.setItem('tenantData', JSON.stringify(tenantData));
+      }
+
       set({
         token,
         admin,
@@ -77,8 +89,21 @@ const useAuthStore = create((set) => ({
         }
       );
 
+      const { admin } = response.data;
+
+      // MULTI-TENANT: Salvar dados do estabelecimento no TenantContext
+      if (admin.estabelecimento) {
+        const tenantData = {
+          slug: admin.estabelecimento.slug,
+          estabelecimentoId: admin.estabelecimento.id,
+          nome: admin.estabelecimento.nome,
+          codigo: admin.estabelecimento.codigo,
+        };
+        localStorage.setItem('tenantData', JSON.stringify(tenantData));
+      }
+
       set({
-        admin: response.data.admin,
+        admin,
         isAuthenticated: true,
       });
 

@@ -119,6 +119,9 @@ async function verificarToken(token) {
     // Verificar se admin ainda existe e está ativo
     const admin = await prisma.admin.findUnique({
       where: { id: decoded.id },
+      include: {
+        estabelecimento: true // MULTI-TENANT: Incluir dados do estabelecimento
+      }
     });
 
     if (!admin || !admin.ativo) {
@@ -129,6 +132,14 @@ async function verificarToken(token) {
       id: admin.id,
       username: admin.username,
       nome: admin.nome,
+      ultimoAcesso: admin.ultimoAcesso,
+      estabelecimentoId: admin.estabelecimentoId,
+      estabelecimento: {
+        id: admin.estabelecimento.id,
+        nome: admin.estabelecimento.nome,
+        slug: admin.estabelecimento.slug,
+        codigo: admin.estabelecimento.codigo
+      }
     };
   } catch (error) {
     console.error('Erro ao verificar token:', error.message);

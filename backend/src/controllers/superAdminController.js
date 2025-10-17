@@ -451,10 +451,10 @@ async function resetContadorMusicas(req, res) {
  */
 async function login(req, res) {
   try {
-    const { username, senha } = req.body;
+    const { username, password } = req.body;
 
     // Validações
-    if (!username || !senha) {
+    if (!username || !password) {
       return res.status(400).json({
         erro: 'Username e senha são obrigatórios'
       });
@@ -479,7 +479,7 @@ async function login(req, res) {
     }
 
     // Verificar senha
-    const senhaValida = await bcrypt.compare(senha, superAdmin.password);
+    const senhaValida = await bcrypt.compare(password, superAdmin.password);
 
     if (!senhaValida) {
       return res.status(401).json({
