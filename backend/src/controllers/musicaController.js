@@ -132,29 +132,10 @@ async function criar(req, res) {
       valor,
     });
 
-    // Se modo gratuito, aguardar download completar ANTES de processar
+    // Se modo gratuito, processar imediatamente (sem necessidade de download)
+    // Música toca direto do YouTube via iframe/player (igual modo pago)
     if (modoGratuito) {
-      console.log('📥 [MODO GRATUITO] Aguardando download do vídeo:', musicaYoutubeId);
-
-      try {
-        // AGUARDAR o download completar
-        const downloadResult = await downloadService.baixarVideo(musicaYoutubeId);
-
-        if (downloadResult.cached) {
-          console.log(`✅ [MODO GRATUITO] Vídeo ${musicaYoutubeId} já estava em cache`);
-        } else {
-          console.log(`✅ [MODO GRATUITO] Download completo: ${musicaYoutubeId}`);
-        }
-      } catch (error) {
-        console.error(`❌ [MODO GRATUITO] Erro ao baixar vídeo ${musicaYoutubeId}:`, error.message);
-        return res.status(500).json({
-          error: 'Falha ao baixar o vídeo. Tente novamente.',
-          details: error.message
-        });
-      }
-
-      // Download completo! Agora pode processar
-      console.log('💰 [MODO GRATUITO] Processando pedido:', pedido.id);
+      console.log('💚 [MODO GRATUITO] Processando pedido gratuito (sem download):', pedido.id);
       const playerService = require('../services/playerService');
 
       const pedidoPago = await prisma.pedidoMusica.update({
