@@ -318,6 +318,20 @@ function Panel() {
     };
   }, []);
 
+  // Enviar fila para o player sempre que ela mudar
+  useEffect(() => {
+    if (!iframeReady || !videoRef.current) return;
+
+    const iframeWindow = videoRef.current.contentWindow;
+    if (iframeWindow) {
+      console.log('📤 Enviando fila atualizada para o player:', fila.length, 'músicas');
+      iframeWindow.postMessage({
+        type: 'update-queue',
+        queue: fila
+      }, '*');
+    }
+  }, [fila, iframeReady]);
+
   // Função para alternar fullscreen
   const toggleFullscreen = useCallback(() => {
     const container = containerRef.current;
