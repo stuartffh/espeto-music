@@ -92,10 +92,12 @@ function Panel() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [qrCodeData, setQrCodeData] = useState(null);
+  const [showQueue, setShowQueue] = useState(true); // Controle de visibilidade da fila
 
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const videoDescansoRef = useRef(null);
+  const queueTimerRef = useRef(null); // Timer para auto-hide da fila
 
   // 🧹 LIMPEZA AUTOMÁTICA: Sempre começar com conexão limpa na TV
   useEffect(() => {
@@ -551,6 +553,40 @@ function Panel() {
   // A barra de progresso é atualizada APENAS pelo player-time-update do iframe (linha 477-494)
   // Isso garante sincronização perfeita com o YouTube Player sem "tic-tac"
 
+  // Auto-hide da fila: Mostra por 5 segundos, esconde por 10 segundos
+  useEffect(() => {
+    if (fila.length === 0) {
+      setShowQueue(false);
+      return;
+    }
+
+    // Função para ciclo de mostrar/esconder
+    const startQueueCycle = () => {
+      // Mostrar fila
+      setShowQueue(true);
+
+      // Esconder após 5 segundos
+      queueTimerRef.current = setTimeout(() => {
+        setShowQueue(false);
+
+        // Mostrar novamente após 10 segundos escondida
+        queueTimerRef.current = setTimeout(() => {
+          startQueueCycle(); // Reiniciar o ciclo
+        }, 10000);
+      }, 5000);
+    };
+
+    // Iniciar ciclo
+    startQueueCycle();
+
+    // Cleanup
+    return () => {
+      if (queueTimerRef.current) {
+        clearTimeout(queueTimerRef.current);
+      }
+    };
+  }, [fila.length]); // Reiniciar quando fila mudar
+
   const musicaAtual = estadoPlayer?.musicaAtual;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -773,13 +809,16 @@ function Panel() {
           )}
         </div>
 
-        {/* Sidebar - Próximas Músicas */}
+        {/* Sidebar - Próximas Músicas (Auto-hide) */}
         {fila.length > 0 && (
           <motion.div
-            className="w-96 glass-heavy border-l border-white/10 flex-col overflow-hidden flex"
-            initial={{ x: 400, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.6, type: 'spring' }}
+            className="absolute top-4 right-4 w-96 glass-heavy border border-white/10 flex-col overflow-hidden flex rounded-2xl shadow-2xl z-50"
+            initial={{ y: -100, opacity: 0 }}
+            animate={{
+              y: showQueue ? 0 : -100,
+              opacity: showQueue ? 1 : 0
+            }}
+            transition={{ duration: 0.4, type: 'spring', damping: 20 }}
           >
             {/* Header da sidebar */}
             <div className="p-6 border-b border-white/10 flex-shrink-0">
@@ -796,10 +835,10 @@ function Panel() {
               </div>
             </div>
 
-            {/* Lista da fila */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+            {/* Lista da fila (máximo 3 músicas visíveis) */}
+            <div className="max-h-96 overflow-y-auto p-4 space-y-3 custom-scrollbar">
               <AnimatePresence>
-                {fila.map((musica, index) => (
+                {fila.slice(0, 5).map((musica, index) => (
                   <motion.div
                     key={musica.id}
                     className="glass rounded-xl p-4 hover:bg-white/5 transition-all group"
@@ -850,6 +889,13 @@ function Panel() {
                   </motion.div>
                 ))}
               </AnimatePresence>
+
+              {/* Indicador de mais músicas */}
+              {fila.length > 5 && (
+                <div className="text-center py-2 text-sm text-gray-400">
+                  + {fila.length - 5} música{fila.length - 5 > 1 ? 's' : ''} na fila
+                </div>
+              )}
             </div>
           </motion.div>
         )}
