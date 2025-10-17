@@ -29,6 +29,36 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
+            display: none; /* Esconder por padrão (usaremos YouTube embed) */
+        }
+
+        /* Mostrar video element apenas se não houver youtube player */
+        #player-container:not(:has(#youtube-player)) #video-element {
+            display: block;
+        }
+
+        /* YouTube Player - ocupa todo o espaço */
+        #youtube-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #youtube-player iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Z-index hierarchy - garantir camadas corretas */
+        .loading-spinner,
+        .error-message,
+        .interaction-prompt,
+        .volume-indicator {
+            z-index: 100 !important; /* Sempre no topo */
         }
 
         /* OSD Controls */
@@ -42,6 +72,12 @@
             transition: opacity 0.3s, transform 0.3s;
             opacity: 0;
             transform: translateY(100%);
+            z-index: 10; /* Acima do YouTube player */
+            pointer-events: none; /* Não bloquear cliques no player */
+        }
+
+        #osd-controls * {
+            pointer-events: auto; /* Mas permitir cliques nos controles */
         }
 
         #osd-controls.visible {
@@ -1082,17 +1118,17 @@
                 container.style.opacity = '0';
 
                 setTimeout(() => {
-                    // Esconder elemento <video> HTML5 (não usar mais)
+                    // Parar e limpar elemento <video> HTML5 (CSS já esconde automaticamente)
                     if (this.video) {
-                        this.video.style.display = 'none';
                         this.video.pause();
                         this.video.src = '';
+                        this.video.load(); // Limpar completamente
                     }
 
-                    // Limpar iframe anterior se existir
-                    const oldIframe = document.getElementById('youtube-player');
-                    if (oldIframe) {
-                        oldIframe.remove();
+                    // Limpar player YouTube anterior se existir
+                    const oldPlayer = document.getElementById('youtube-player');
+                    if (oldPlayer) {
+                        oldPlayer.remove();
                     }
 
                     // Criar DIV para o YouTube Player (YouTube IFrame API precisa de DIV)
