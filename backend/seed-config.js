@@ -139,6 +139,12 @@ async function main() {
       descricao: 'Limite de caracteres para busca de músicas',
       tipo: 'number'
     },
+    {
+      chave: 'SEARCH_FILTER_KEYWORD',
+      valor: 'musica',
+      descricao: 'Palavra-chave adicionada automaticamente em todas as buscas do cliente (ex: "musica" garante que só apareçam músicas)',
+      tipo: 'text'
+    },
 
     // ========== CONFIGURAÇÕES DE PLAYER ==========
     {

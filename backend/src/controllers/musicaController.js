@@ -15,7 +15,24 @@ async function buscar(req, res) {
       return res.status(400).json({ error: 'Parâmetro de busca é obrigatório' });
     }
 
-    const videos = await buscarVideos(q, parseInt(maxResults) || 10);
+    // Buscar configuração de filtro de busca
+    const prisma = require('../config/database');
+    const configFiltro = await prisma.configuracao.findUnique({
+      where: { chave: 'SEARCH_FILTER_KEYWORD' }
+    });
+
+    // Aplicar filtro automático se configurado
+    let queryFinal = q;
+    if (configFiltro && configFiltro.valor && configFiltro.valor.trim()) {
+      const keyword = configFiltro.valor.trim();
+      // Adicionar keyword apenas se não estiver já presente na busca
+      if (!q.toLowerCase().includes(keyword.toLowerCase())) {
+        queryFinal = `${q} ${keyword}`;
+        console.log(`🔍 Filtro aplicado: "${q}" → "${queryFinal}"`);
+      }
+    }
+
+    const videos = await buscarVideos(queryFinal, parseInt(maxResults) || 10);
 
     // Registrar busca no histórico (async, não bloquear resposta)
     registrarBusca(q, null, videos.length).catch(err =>
