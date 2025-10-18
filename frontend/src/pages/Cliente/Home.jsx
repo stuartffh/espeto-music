@@ -186,9 +186,6 @@ function Home() {
       setShowConfetti(true);
       showToast('Música adicionada à fila com sucesso! 🎵', 'success');
       await buscarFila().then(res => setFila(res.data));
-      setBusca('');
-      setResultados([]);
-      setCategoriaAtiva(null);
     } catch (error) {
       console.error('Erro:', error);
       showToast(error.response?.data?.error || 'Erro ao processar pedido', 'error');
@@ -265,9 +262,6 @@ function Home() {
       setShowConfetti(true);
       showToast('Gift card usado com sucesso! Música adicionada à fila! 🎵', 'success');
       await buscarFila().then(res => setFila(res.data));
-      setBusca('');
-      setResultados([]);
-      setCategoriaAtiva(null);
       setGiftCode('');
       setPedidoPendente(null);
     } catch (error) {
@@ -298,9 +292,6 @@ function Home() {
         setShowConfetti(true);
         showToast('Música adicionada à fila com sucesso! 🎵', 'success');
         await buscarFila().then(res => setFila(res.data));
-        setBusca('');
-        setResultados([]);
-        setCategoriaAtiva(null);
         setPedidoPendente(null);
       } else {
         // Lógica antiga (caso ainda existam pedidos criados sem nome)
@@ -314,9 +305,6 @@ function Home() {
         setShowConfetti(true);
         showToast('Música adicionada à fila com sucesso! 🎵', 'success');
         await buscarFila().then(res => setFila(res.data));
-        setBusca('');
-        setResultados([]);
-        setCategoriaAtiva(null);
         setPedidoPendente(null);
       }
     } catch (error) {
@@ -384,98 +372,148 @@ function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-light-bg dark:bg-dark-bg transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-light-bg via-gray-100 to-gray-200 dark:from-dark-bg dark:via-gray-900 dark:to-gray-950 transition-all duration-500">
       <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:p-8">
         {/* Header */}
         <motion.div
           className="text-center mb-6 md:mb-12"
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, type: 'spring', bounce: 0.3 }}
         >
-          <div className="flex items-center justify-between mb-4 md:mb-6">
-            <div className="w-8 md:w-12"></div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold gradient-text">
+          <div className="flex items-center justify-between mb-6 md:mb-8">
+            <div className="w-10 md:w-14"></div>
+            <motion.h1
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold bg-gradient-to-r from-neon-cyan via-neon-purple to-neon-pink bg-clip-text text-transparent drop-shadow-2xl"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5, type: 'spring' }}
+            >
               🎵 Espeto Music
-            </h1>
+            </motion.h1>
             <ThemeToggle />
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 max-w-xl mx-auto mt-6 md:mt-10">
-            <Card variant="glass" className="text-center p-4 sm:p-5 md:p-6 border-2 border-neon-cyan/30 hover:border-neon-cyan/60 transition-all duration-300">
-              <Music className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mx-auto text-neon-cyan mb-2 md:mb-3 drop-shadow-neon" />
-              <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1">{fila.length}</p>
-              <p className="text-xs sm:text-sm text-gray-300 dark:text-gray-300 font-medium">Músicas na Fila</p>
-            </Card>
+          <motion.div
+            className="grid grid-cols-2 gap-4 sm:gap-5 md:gap-8 max-w-2xl mx-auto mt-8 md:mt-12"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+          >
+            <motion.div
+              whileHover={{ scale: 1.05, y: -5 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
+              <Card variant="glass" className="text-center p-5 sm:p-6 md:p-8 border-2 border-neon-cyan/40 hover:border-neon-cyan hover:shadow-2xl hover:shadow-neon-cyan/20 transition-all duration-300 bg-gradient-to-br from-neon-cyan/5 to-transparent">
+                <div className="bg-gradient-to-br from-neon-cyan to-neon-purple p-3 md:p-4 rounded-2xl mx-auto w-fit mb-3 md:mb-4 shadow-lg">
+                  <Music className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 text-white drop-shadow-lg" />
+                </div>
+                <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 drop-shadow-lg">{fila.length}</p>
+                <p className="text-xs sm:text-sm md:text-base text-gray-200 dark:text-gray-200 font-semibold tracking-wide">Músicas na Fila</p>
+              </Card>
+            </motion.div>
 
-            <Card variant="glass" className="text-center p-4 sm:p-5 md:p-6 border-2 border-neon-purple/30 hover:border-neon-purple/60 transition-all duration-300">
-              <Clock className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mx-auto text-neon-purple mb-2 md:mb-3 drop-shadow-neon" />
-              <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1">{tempoMaximo}min</p>
-              <p className="text-xs sm:text-sm text-gray-300 dark:text-gray-300 font-medium">Tempo Máximo</p>
-            </Card>
-          </div>
+            <motion.div
+              whileHover={{ scale: 1.05, y: -5 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
+              <Card variant="glass" className="text-center p-5 sm:p-6 md:p-8 border-2 border-neon-purple/40 hover:border-neon-purple hover:shadow-2xl hover:shadow-neon-purple/20 transition-all duration-300 bg-gradient-to-br from-neon-purple/5 to-transparent">
+                <div className="bg-gradient-to-br from-neon-purple to-neon-pink p-3 md:p-4 rounded-2xl mx-auto w-fit mb-3 md:mb-4 shadow-lg">
+                  <Clock className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 text-white drop-shadow-lg" />
+                </div>
+                <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 drop-shadow-lg">{tempoMaximo}min</p>
+                <p className="text-xs sm:text-sm md:text-base text-gray-200 dark:text-gray-200 font-semibold tracking-wide">Tempo Máximo</p>
+              </Card>
+            </motion.div>
+          </motion.div>
 
           {/* Regras Toggle */}
-          <button
+          <motion.button
             onClick={() => setMostrarRegras(!mostrarRegras)}
-            className="mt-6 md:mt-8 px-4 py-2 rounded-lg glass border border-neon-cyan/30 hover:border-neon-cyan/60 text-sm sm:text-base text-neon-cyan hover:text-neon-purple transition-all duration-300 flex items-center gap-2 mx-auto font-medium shadow-md hover:shadow-lg"
+            className="mt-8 md:mt-10 px-6 py-3 rounded-xl glass border-2 border-neon-cyan/40 hover:border-neon-cyan text-sm sm:text-base text-neon-cyan hover:text-white hover:bg-neon-cyan/10 transition-all duration-300 flex items-center gap-3 mx-auto font-semibold shadow-lg hover:shadow-neon-cyan/30 hover:shadow-xl"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <Info className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Info className="w-5 h-5 sm:w-5 sm:h-5" />
             {mostrarRegras ? 'Ocultar Regras' : 'Ver Regras'}
-          </button>
+          </motion.button>
         </motion.div>
 
         {/* Regras */}
         <AnimatePresence>
           {mostrarRegras && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-8"
+              initial={{ opacity: 0, height: 0, y: -20 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+              className="mb-8 md:mb-12"
             >
-              <Card variant="glass" className="max-w-4xl mx-auto">
-                <h2 className="text-2xl font-bold gradient-text mb-6">📋 Regras</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-start gap-3">
-                    <Clock className="w-6 h-6 text-neon-cyan flex-shrink-0 mt-1" />
+              <Card variant="glass" className="max-w-4xl mx-auto border-2 border-neon-purple/30 shadow-xl">
+                <h2 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-neon-cyan to-neon-purple bg-clip-text text-transparent mb-8">
+                  📋 Regras do Espeto Music
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <motion.div
+                    className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-neon-cyan/5 to-transparent border border-neon-cyan/20 hover:border-neon-cyan/50 transition-all"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <div className="bg-gradient-to-br from-neon-cyan to-blue-500 p-2 rounded-lg">
+                      <Clock className="w-6 h-6 text-white flex-shrink-0" />
+                    </div>
                     <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">Tempo Máximo</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="font-bold text-white mb-1">Tempo Máximo</p>
+                      <p className="text-sm text-gray-300 dark:text-gray-300 leading-relaxed">
                         Até {tempoMaximo} minutos por música
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="flex items-start gap-3">
-                    <User className="w-6 h-6 text-neon-purple flex-shrink-0 mt-1" />
+                  <motion.div
+                    className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-neon-purple/5 to-transparent border border-neon-purple/20 hover:border-neon-purple/50 transition-all"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <div className="bg-gradient-to-br from-neon-purple to-purple-600 p-2 rounded-lg">
+                      <User className="w-6 h-6 text-white flex-shrink-0" />
+                    </div>
                     <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">Nome Obrigatório</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="font-bold text-white mb-1">Nome Obrigatório</p>
+                      <p className="text-sm text-gray-300 dark:text-gray-300 leading-relaxed">
                         Digite seu nome antes de escolher
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="flex items-start gap-3">
-                    <Music className="w-6 h-6 text-neon-pink flex-shrink-0 mt-1" />
+                  <motion.div
+                    className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-neon-pink/5 to-transparent border border-neon-pink/20 hover:border-neon-pink/50 transition-all"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <div className="bg-gradient-to-br from-neon-pink to-pink-600 p-2 rounded-lg">
+                      <Music className="w-6 h-6 text-white flex-shrink-0" />
+                    </div>
                     <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">Ordem FIFO</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="font-bold text-white mb-1">Ordem FIFO</p>
+                      <p className="text-sm text-gray-300 dark:text-gray-300 leading-relaxed">
                         Primeiro a pedir, primeiro a tocar
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl flex-shrink-0">📺</span>
+                  <motion.div
+                    className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-green-500/5 to-transparent border border-green-500/20 hover:border-green-500/50 transition-all"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-2 rounded-lg text-2xl flex items-center justify-center w-10 h-10">
+                      📺
+                    </div>
                     <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">Acompanhe na TV</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="font-bold text-white mb-1">Acompanhe na TV</p>
+                      <p className="text-sm text-gray-300 dark:text-gray-300 leading-relaxed">
                         Veja tocando em tempo real
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </Card>
             </motion.div>
@@ -489,34 +527,34 @@ function Home() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
             >
-              <Card variant="glass" className="border-2 border-neon-cyan/40 hover:border-neon-cyan/60 transition-all duration-300 bg-gradient-to-br from-gray-900/40 to-gray-800/40 dark:from-gray-900/60 dark:to-gray-800/60">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 bg-gradient-to-br from-neon-cyan to-neon-purple p-3 rounded-xl shadow-lg">
-                    <Info className="w-6 h-6 text-white drop-shadow-lg" />
+              <Card variant="glass" className="border-2 border-neon-cyan/40 hover:border-neon-cyan/60 transition-all duration-300 bg-gradient-to-br from-neon-cyan/10 via-neon-purple/5 to-neon-pink/10 shadow-xl hover:shadow-2xl">
+                <div className="flex items-start gap-5">
+                  <div className="flex-shrink-0 bg-gradient-to-br from-neon-cyan via-neon-purple to-neon-pink p-4 rounded-2xl shadow-lg">
+                    <Info className="w-7 h-7 text-white drop-shadow-lg" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold gradient-text mb-3 drop-shadow-md">
-                      Como funciona?
+                    <h3 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-neon-cyan via-neon-purple to-neon-pink bg-clip-text text-transparent mb-5 drop-shadow-md">
+                      ✨ Como funciona?
                     </h3>
-                    <ol className="space-y-3 text-sm sm:text-base">
-                      <li className="flex items-start gap-3">
-                        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-neon-cyan/30 text-neon-cyan flex items-center justify-center text-sm font-bold border border-neon-cyan/50 shadow-md">1</span>
-                        <span className="text-gray-100 dark:text-gray-100 font-medium pt-0.5">Busque pela música que deseja ouvir</span>
+                    <ol className="space-y-4 text-sm sm:text-base">
+                      <li className="flex items-start gap-4">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-neon-cyan to-blue-500 text-white flex items-center justify-center text-sm font-bold shadow-lg">1</span>
+                        <span className="text-white font-semibold pt-1 leading-relaxed">Busque pela música que deseja ouvir</span>
                       </li>
-                      <li className="flex items-start gap-3">
-                        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-neon-purple/30 text-neon-purple flex items-center justify-center text-sm font-bold border border-neon-purple/50 shadow-md">2</span>
-                        <span className="text-gray-100 dark:text-gray-100 font-medium pt-0.5">{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
+                      <li className="flex items-start gap-4">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-neon-purple to-purple-600 text-white flex items-center justify-center text-sm font-bold shadow-lg">2</span>
+                        <span className="text-white font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
                       </li>
-                      <li className="flex items-start gap-3">
-                        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-neon-pink/30 text-neon-pink flex items-center justify-center text-sm font-bold border border-neon-pink/50 shadow-md">3</span>
-                        <span className="text-gray-100 dark:text-gray-100 font-medium pt-0.5">{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
+                      <li className="flex items-start gap-4">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-neon-pink to-pink-600 text-white flex items-center justify-center text-sm font-bold shadow-lg">3</span>
+                        <span className="text-white font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
                       </li>
                       {!modoGratuito && (
-                        <li className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-green-400/30 text-green-400 flex items-center justify-center text-sm font-bold border border-green-400/50 shadow-md">4</span>
-                          <span className="text-gray-100 dark:text-gray-100 font-medium pt-0.5">Após o pagamento, digite seu nome e aproveite!</span>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 text-white flex items-center justify-center text-sm font-bold shadow-lg">4</span>
+                          <span className="text-white font-semibold pt-1 leading-relaxed">Após o pagamento, digite seu nome e aproveite!</span>
                         </li>
                       )}
                     </ol>
@@ -605,17 +643,23 @@ function Home() {
                 </>
               ) : (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
                 >
-                  <Card variant="glass" className="text-center py-12 sm:py-16 border-2 border-dashed border-gray-600 dark:border-gray-700">
-                    <Music className="w-16 h-16 sm:w-20 sm:h-20 mx-auto text-neon-cyan/50 mb-4 sm:mb-6 drop-shadow-neon" />
-                    <h3 className="text-lg sm:text-xl font-bold text-white mb-3">
-                      Pronto para escolher sua música?
+                  <Card variant="glass" className="text-center py-16 sm:py-20 border-2 border-dashed border-neon-cyan/30 hover:border-neon-cyan/60 transition-all duration-300 bg-gradient-to-br from-neon-cyan/5 to-transparent shadow-lg">
+                    <motion.div
+                      animate={{ y: [0, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                    >
+                      <Music className="w-20 h-20 sm:w-24 sm:h-24 mx-auto text-neon-cyan mb-6 sm:mb-8 drop-shadow-neon" />
+                    </motion.div>
+                    <h3 className="text-xl sm:text-2xl font-extrabold text-white mb-4">
+                      🎧 Pronto para escolher sua música?
                     </h3>
-                    <p className="text-sm sm:text-base text-gray-200 dark:text-gray-200 max-w-md mx-auto px-4 leading-relaxed">
-                      Digite o nome da música ou artista no campo de busca acima e clique em <span className="font-semibold text-neon-cyan">"Buscar Músicas"</span> para começar!
+                    <p className="text-sm sm:text-base text-gray-200 dark:text-gray-200 max-w-lg mx-auto px-4 leading-relaxed">
+                      Digite o nome da música ou artista no campo de busca acima e clique em <span className="font-bold text-neon-cyan bg-neon-cyan/10 px-2 py-1 rounded">"Buscar Músicas"</span> para começar!
                     </p>
                   </Card>
                 </motion.div>
@@ -626,10 +670,20 @@ function Home() {
           {/* Fila - Desktop */}
           {!isMobile && (
             <div className="lg:col-span-1">
-              <Card variant="glass" className="sticky top-4">
-                <h3 className="text-xl font-bold gradient-text mb-4">
-                  Fila de Músicas
-                </h3>
+              <Card variant="glass" className="sticky top-4 border-2 border-neon-purple/30 shadow-xl">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-gradient-to-br from-neon-purple to-neon-pink p-2 rounded-lg">
+                    <Music className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-xl font-extrabold bg-gradient-to-r from-neon-purple to-neon-pink bg-clip-text text-transparent">
+                    Fila de Músicas
+                  </h3>
+                  {fila.length > 0 && (
+                    <Badge variant="neon" className="ml-auto">
+                      {fila.length}
+                    </Badge>
+                  )}
+                </div>
                 <AnimatePresence>
                   {fila.length > 0 ? (
                     fila.map((musica, index) => (
@@ -641,11 +695,21 @@ function Home() {
                       />
                     ))
                   ) : (
-                    <div className="text-center py-12">
-                      <Music className="w-16 h-16 mx-auto text-neon-purple/40 mb-4 drop-shadow-neon" />
-                      <p className="text-gray-200 dark:text-gray-200 font-medium">Fila vazia</p>
-                      <p className="text-sm text-gray-300 dark:text-gray-300 mt-2">Seja o primeiro a adicionar uma música!</p>
-                    </div>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="text-center py-12 bg-gradient-to-br from-neon-purple/5 to-transparent rounded-xl border border-dashed border-neon-purple/20"
+                    >
+                      <motion.div
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                      >
+                        <Music className="w-16 h-16 mx-auto text-neon-purple/50 mb-4 drop-shadow-neon" />
+                      </motion.div>
+                      <p className="text-white font-bold mb-1">Fila vazia</p>
+                      <p className="text-sm text-gray-300 dark:text-gray-300 mt-2 px-4">Seja o primeiro a adicionar uma música!</p>
+                    </motion.div>
                   )}
                 </AnimatePresence>
               </Card>
@@ -656,15 +720,17 @@ function Home() {
         {/* FAB Mobile */}
         {isMobile && (
           <motion.button
-            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 glass p-3 sm:p-4 rounded-full z-30 shadow-neon-cyan"
+            className="fixed bottom-6 right-6 bg-gradient-to-br from-neon-cyan via-neon-purple to-neon-pink p-4 rounded-full z-30 shadow-2xl shadow-neon-cyan/50 border-2 border-white/20"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             onClick={() => setShowFilaModal(true)}
           >
-            <Music className="w-5 h-5 sm:w-6 sm:h-6 text-neon-cyan" />
+            <Music className="w-6 h-6 text-white drop-shadow-lg" />
             {fila.length > 0 && (
               <Badge
-                className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 text-[10px] sm:text-xs"
+                className="absolute -top-2 -right-2 text-xs font-bold"
                 variant="neon"
                 pulse
               >
@@ -1024,9 +1090,6 @@ function Home() {
               setShowConfetti(true);
               showToast('Pagamento processado! Música será adicionada à fila! 🎵', 'success');
               await buscarFila().then(res => setFila(res.data));
-              setBusca('');
-              setResultados([]);
-              setCategoriaAtiva(null);
               setPedidoPendente(null);
             }}
           />
