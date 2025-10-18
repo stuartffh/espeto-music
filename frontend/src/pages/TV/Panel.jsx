@@ -4,7 +4,6 @@ import { Music, User, Clock, Wifi, WifiOff } from 'lucide-react';
 import axios from 'axios';
 import socket from '../../services/socket';
 import EqualizerAnimation from '../../components/EqualizerAnimation';
-import FullscreenOverlay from '../../components/FullscreenOverlay';
 
 const sanitizeUrl = (url) => {
   if (!url) {
@@ -783,8 +782,8 @@ function Panel() {
 
     // Também escutar mensagens do iframe
     const handleMessage = (event) => {
-      if (event.data.type === 'fullscreen-changed') {
-        console.log('📺 Iframe fullscreen mudou:', event.data.isFullscreen);
+      if (event.data && event.data.type === 'fullscreen-changed') {
+        console.log('📺 [PANEL] Recebendo mensagem de fullscreen do iframe:', event.data.isFullscreen);
         setIsFullscreen(event.data.isFullscreen);
       }
     };
@@ -825,22 +824,17 @@ function Panel() {
   const musicaAtual = estadoPlayer?.musicaAtual;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // Log para debug de fullscreen
+  useEffect(() => {
+    console.log('🎬 [PANEL] Estado de fullscreen:', isFullscreen);
+  }, [isFullscreen]);
+
   return (
     <div
       ref={containerRef}
       className="h-screen w-screen flex flex-col bg-gradient-to-br from-dark-bg via-dark-surface to-dark-bg text-white overflow-hidden"
     >
-      {/* Fullscreen Overlay */}
-      {isFullscreen && (
-        <FullscreenOverlay
-          qrCodeData={qrCodeData}
-          musicaAtual={estadoPlayer?.musicaAtual}
-          proximaMusica={fila.length > 0 ? fila[0] : null}
-          showProxima={showProximaFullscreen}
-          fila={fila}
-          configs={configs}
-        />
-      )}
+      {/* Fullscreen Overlay - REMOVIDO: Agora usando overlays permanentes dentro do player */}
 
       {/* Header Superior - Informações (esconder em fullscreen) */}
       {!isFullscreen && (
@@ -1045,15 +1039,37 @@ function Panel() {
           )}
 
           {/* ========== OVERLAYS PERMANENTES ========== */}
+          {/* Nota: Estes overlays só aparecem em FULLSCREEN para evitar duplicação com o header */}
 
-          {/* 1. OVERLAY: Música Atual (Top-Left) - Sempre visível quando há música */}
-          {musicaAtual && (
+          {/* 0. OVERLAY: Contagem da Fila (Top-Left, acima da música) - Visível em fullscreen */}
+          {isFullscreen && fila.length > 0 && (
             <motion.div
-              className="absolute top-4 left-4 z-50 glass-heavy border-2 border-neon-cyan/40 rounded-xl shadow-2xl overflow-hidden max-w-sm"
+              className="absolute top-4 left-4 z-50 glass-heavy border-2 border-neon-cyan/40 rounded-xl shadow-2xl overflow-hidden"
+              initial={{ y: -100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -100, opacity: 0 }}
+              transition={{ duration: 0.5, type: 'spring', damping: 20 }}
+            >
+              <div className="flex items-center gap-3 p-4">
+                <div className="bg-gradient-to-br from-neon-cyan to-blue-500 p-2 rounded-lg">
+                  <Clock className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{fila.length}</p>
+                  <p className="text-xs text-gray-300 uppercase tracking-wide">Na Fila</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 1. OVERLAY: Música Atual (Top-Left, abaixo da fila) - Visível em fullscreen quando há música */}
+          {isFullscreen && musicaAtual && (
+            <motion.div
+              className="absolute top-24 left-4 z-50 glass-heavy border-2 border-neon-purple/40 rounded-xl shadow-2xl overflow-hidden max-w-sm"
               initial={{ x: -100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -100, opacity: 0 }}
-              transition={{ duration: 0.5, type: 'spring', damping: 20 }}
+              transition={{ duration: 0.5, type: 'spring', damping: 20, delay: 0.1 }}
             >
               <div className="flex items-center gap-3 p-4">
                 {/* Thumbnail com animação de pulse */}
@@ -1075,8 +1091,8 @@ function Panel() {
                 <div className="flex-1 min-w-0">
                   {/* Label "Tocando Agora" */}
                   <div className="flex items-center gap-2 mb-1">
-                    <Music className="w-3 h-3 text-neon-cyan flex-shrink-0" />
-                    <span className="text-[10px] font-bold text-neon-cyan uppercase tracking-wider">Tocando Agora</span>
+                    <Music className="w-3 h-3 text-neon-purple flex-shrink-0" />
+                    <span className="text-[10px] font-bold text-neon-purple uppercase tracking-wider">Tocando Agora</span>
                     <EqualizerAnimation />
                   </div>
 
@@ -1095,8 +1111,8 @@ function Panel() {
             </motion.div>
           )}
 
-          {/* 2. OVERLAY: QR Code (Bottom-Left) - Sempre visível quando disponível */}
-          {qrCodeData && (
+          {/* 2. OVERLAY: QR Code (Bottom-Left) - Visível em fullscreen quando disponível */}
+          {isFullscreen && qrCodeData && (
             <motion.div
               className="absolute bottom-4 left-4 z-50 glass-heavy border-2 border-neon-purple/40 rounded-xl shadow-2xl overflow-hidden"
               initial={{ x: -100, opacity: 0 }}
@@ -1131,8 +1147,8 @@ function Panel() {
             </motion.div>
           )}
 
-          {/* 3. OVERLAY: Próxima Música (Bottom-Right) - Aparece 10s antes do fim */}
-          {showProximaFullscreen && fila.length > 0 && fila[0] && (
+          {/* 3. OVERLAY: Próxima Música (Bottom-Right) - Aparece 10s antes do fim em fullscreen */}
+          {isFullscreen && showProximaFullscreen && fila.length > 0 && fila[0] && (
             <motion.div
               className="absolute bottom-4 right-4 z-50 glass-heavy border-2 border-neon-pink/40 rounded-xl shadow-2xl overflow-hidden max-w-xs"
               initial={{ x: 100, opacity: 0 }}
