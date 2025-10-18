@@ -106,6 +106,7 @@ function Panel() {
   const queueTimerRef = useRef(null); // Timer para auto-hide da fila
   const ambientePlayerRef = useRef(null); // Ref para o player de música ambiente
   const dedicatoriaTimerRef = useRef(null); // Timer para auto-hide da dedicatória
+  const lastLoadedVideoIdRef = useRef(null); // Rastrear último vídeo enviado para evitar duplicação
 
   // 🧹 LIMPEZA AUTOMÁTICA: Sempre começar com conexão limpa na TV
   useEffect(() => {
@@ -155,6 +156,8 @@ function Panel() {
     if (estadoPlayer?.musicaAtual && socket) {
       console.log('🔚 Finalizando música:', estadoPlayer.musicaAtual.id);
       socket.emit('musica:terminou', { pedidoId: estadoPlayer.musicaAtual.id });
+      // Limpar ref para permitir que próxima música seja carregada
+      lastLoadedVideoIdRef.current = null;
     }
   }, [estadoPlayer?.musicaAtual, socket]);
 
@@ -655,6 +658,12 @@ function Panel() {
       return;
     }
 
+    // Evitar enviar o mesmo vídeo múltiplas vezes
+    if (lastLoadedVideoIdRef.current === musica.musicaYoutubeId) {
+      console.log('⏭️ [TV] Vídeo já foi enviado, ignorando duplicação:', musica.musicaYoutubeId);
+      return;
+    }
+
     const iframeWindow = videoRef.current?.contentWindow;
 
     if (!iframeWindow) {
@@ -679,6 +688,8 @@ function Panel() {
       }
     }, '*');
 
+    // Marcar como enviado
+    lastLoadedVideoIdRef.current = musica.musicaYoutubeId;
     console.log('✅ [TV] PostMessage enviado para iframe!');
   }, [autoplayConsent]);
 
