@@ -526,13 +526,38 @@
             fs: 1,
             enablejsapi: 1,
             origin: window.location.origin,
-            iv_load_policy: 3 // Desabilitar anotações
+            iv_load_policy: 3, // Desabilitar anotações
+            vq: 'hd720', // Forçar qualidade HD 720p (melhor FPS)
+            hd: 1, // Preferir HD
+            html5: 1 // Forçar player HTML5 (melhor performance)
           },
           events: {
             onReady: async (event) => {
               console.log('✅ Player pronto');
               hideError();
               hideLoading();
+
+              // FORÇAR QUALIDADE HD para melhor FPS
+              try {
+                const availableQualityLevels = event.target.getAvailableQualityLevels();
+                console.log('📊 Qualidades disponíveis:', availableQualityLevels);
+
+                // Tentar definir a melhor qualidade disponível (priorizar HD)
+                if (availableQualityLevels.includes('hd1080')) {
+                  event.target.setPlaybackQuality('hd1080');
+                  console.log('🎬 Qualidade definida: HD 1080p (60fps)');
+                } else if (availableQualityLevels.includes('hd720')) {
+                  event.target.setPlaybackQuality('hd720');
+                  console.log('🎬 Qualidade definida: HD 720p (60fps)');
+                } else if (availableQualityLevels.includes('large')) {
+                  event.target.setPlaybackQuality('large');
+                  console.log('🎬 Qualidade definida: 480p');
+                } else {
+                  console.warn('⚠️ Nenhuma qualidade HD disponível');
+                }
+              } catch (err) {
+                console.warn('⚠️ Não foi possível definir qualidade:', err);
+              }
 
               // GARANTIR ÁUDIO: Múltiplas tentativas de unmute + play
               let audioSuccess = false;
