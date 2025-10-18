@@ -24,6 +24,9 @@ import {
   Calendar,
   Copy,
   Check,
+  Clock,
+  Users,
+  DollarSign,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import AdminSidebar from '../../components/AdminSidebar';
@@ -72,6 +75,18 @@ function AdminDashboard() {
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [filtroSeveridade, setFiltroSeveridade] = useState('');
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+
+  // Histórico
+  const [historico, setHistorico] = useState([]);
+  const [estatisticas, setEstatisticas] = useState(null);
+  const [loadingHistorico, setLoadingHistorico] = useState(false);
+  const [periodoEstatisticas, setPeriodoEstatisticas] = useState('hoje');
+  const [paginaHistorico, setPaginaHistorico] = useState(1);
+  const [totalPaginasHistorico, setTotalPaginasHistorico] = useState(1);
+  const [filtroDataInicio, setFiltroDataInicio] = useState('');
+  const [filtroDataFim, setFiltroDataFim] = useState('');
+  const [filtroCliente, setFiltroCliente] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState('');
   const [palavraEditando, setPalavraEditando] = useState(null);
   const [novaPalavra, setNovaPalavra] = useState({ palavra: '', categoria: 'AMBOS', severidade: 'MEDIA' });
   const [textoTeste, setTextoTeste] = useState('');
@@ -114,6 +129,10 @@ function AdminDashboard() {
       case 'player':
         carregarEstadoPlayer();
         carregarFilaPlayer();
+        break;
+      case 'historico':
+        carregarHistorico();
+        carregarEstatisticas();
         break;
       case 'moderacao':
         if (palavras.length === 0) {
@@ -1342,6 +1361,51 @@ function AdminDashboard() {
     }
   };
 
+  // Funções do Histórico
+  const carregarHistorico = async () => {
+    setLoadingHistorico(true);
+    try {
+      const params = new URLSearchParams();
+      params.append('page', paginaHistorico);
+      params.append('limit', 20);
+      if (filtroDataInicio) params.append('dataInicio', filtroDataInicio);
+      if (filtroDataFim) params.append('dataFim', filtroDataFim);
+      if (filtroCliente) params.append('nomeCliente', filtroCliente);
+      if (filtroTipo) params.append('tipo', filtroTipo);
+
+      const response = await axios.get(`${API_URL}/api/historico?${params}`);
+      setHistorico(response.data.historico);
+      setTotalPaginasHistorico(response.data.paginacao.totalPages);
+    } catch (err) {
+      console.error('Erro ao carregar histórico:', err);
+      setError('Erro ao carregar histórico');
+    } finally {
+      setLoadingHistorico(false);
+    }
+  };
+
+  const carregarEstatisticas = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/historico/estatisticas?periodo=${periodoEstatisticas}`);
+      setEstatisticas(response.data);
+    } catch (err) {
+      console.error('Erro ao carregar estatísticas:', err);
+    }
+  };
+
+  const aplicarFiltrosHistorico = () => {
+    setPaginaHistorico(1);
+    carregarHistorico();
+  };
+
+  const limparFiltrosHistorico = () => {
+    setFiltroDataInicio('');
+    setFiltroDataFim('');
+    setFiltroCliente('');
+    setFiltroTipo('');
+    setPaginaHistorico(1);
+  };
+
   const handleCriarGift = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -1404,6 +1468,285 @@ function AdminDashboard() {
         return true;
       })
     : giftCards;
+
+  // Render do Histórico
+  const renderHistorico = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      <div>
+        <h2 className="text-3xl font-bold gradient-text mb-2">Histórico de Músicas</h2>
+        <p className="text-gray-500 dark:text-gray-400">Visualize todas as músicas tocadas e estatísticas</p>
+      </div>
+
+      {/* Seletor de Período para Estatísticas */}
+      <div className="flex gap-2 flex-wrap">
+        {['hoje', 'semana', 'mes'].map((periodo) => (
+          <Button
+            key={periodo}
+            variant={periodoEstatisticas === periodo ? 'primary' : 'ghost'}
+            onClick={() => {
+              setPeriodoEstatisticas(periodo);
+              setTimeout(() => carregarEstatisticas(), 100);
+            }}
+            size="sm"
+          >
+            {periodo === 'hoje' ? 'Hoje' : periodo === 'semana' ? 'Última Semana' : 'Último Mês'}
+          </Button>
+        ))}
+      </div>
+
+      {/* Cards de Estatísticas */}
+      {estatisticas && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatsCard
+            title="Total de Músicas"
+            value={estatisticas.totalMusicas}
+            icon={Music}
+            color="purple"
+          />
+          <StatsCard
+            title="Tempo Total"
+            value={estatisticas.duracaoTotalFormatada}
+            icon={Clock}
+            color="blue"
+          />
+          <StatsCard
+            title="Valor Arrecadado"
+            value={`R$ ${estatisticas.valorTotal.toFixed(2)}`}
+            icon={DollarSign}
+            color="green"
+          />
+          <StatsCard
+            title="Músicas de Clientes"
+            value={estatisticas.musicasCliente}
+            icon={Users}
+            color="orange"
+          />
+        </div>
+      )}
+
+      {/* Top 10 Músicas e Clientes */}
+      {estatisticas && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top 10 Músicas */}
+          <Card variant="glass">
+            <h3 className="text-xl font-bold text-white mb-4">🎵 Top 10 Músicas</h3>
+            <div className="space-y-2">
+              {estatisticas.musicasMaisTocadas.length > 0 ? (
+                estatisticas.musicasMaisTocadas.map((musica, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 glass rounded-lg">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-neon-cyan to-neon-purple flex items-center justify-center text-white font-bold">
+                      {index + 1}
+                    </div>
+                    {musica.thumbnail && (
+                      <img
+                        src={musica.thumbnail}
+                        alt={musica.titulo}
+                        className="w-12 h-12 rounded object-cover"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-semibold truncate">{musica.titulo}</p>
+                      <p className="text-sm text-gray-400">{musica.quantidade}x tocada(s)</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-400 text-center py-4">Nenhuma música tocada ainda</p>
+              )}
+            </div>
+          </Card>
+
+          {/* Top 10 Clientes */}
+          <Card variant="glass">
+            <h3 className="text-xl font-bold text-white mb-4">👥 Top 10 Clientes</h3>
+            <div className="space-y-2">
+              {estatisticas.clientesMaisAtivos.length > 0 ? (
+                estatisticas.clientesMaisAtivos.map((cliente, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 glass rounded-lg">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-neon-purple to-neon-cyan flex items-center justify-center text-white font-bold">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-white font-semibold">{cliente.nome}</p>
+                      <p className="text-sm text-gray-400">
+                        {cliente.quantidade} música(s) • R$ {cliente.valorGasto.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-400 text-center py-4">Nenhum cliente ainda</p>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Filtros */}
+      <Card variant="glass">
+        <h3 className="text-lg font-bold text-white mb-4">Filtros</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Data Início</label>
+            <input
+              type="date"
+              value={filtroDataInicio}
+              onChange={(e) => setFiltroDataInicio(e.target.value)}
+              className="w-full px-3 py-2 bg-dark-card border border-white/10 rounded-lg text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Data Fim</label>
+            <input
+              type="date"
+              value={filtroDataFim}
+              onChange={(e) => setFiltroDataFim(e.target.value)}
+              className="w-full px-3 py-2 bg-dark-card border border-white/10 rounded-lg text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Cliente</label>
+            <input
+              type="text"
+              value={filtroCliente}
+              onChange={(e) => setFiltroCliente(e.target.value)}
+              placeholder="Nome do cliente..."
+              className="w-full px-3 py-2 bg-dark-card border border-white/10 rounded-lg text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Tipo</label>
+            <select
+              value={filtroTipo}
+              onChange={(e) => setFiltroTipo(e.target.value)}
+              className="w-full px-3 py-2 bg-dark-card border border-white/10 rounded-lg text-white"
+            >
+              <option value="">Todos</option>
+              <option value="cliente">Cliente</option>
+              <option value="ambiente">Ambiente</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div className="flex gap-3 mt-4">
+          <Button variant="primary" onClick={aplicarFiltrosHistorico}>
+            Aplicar Filtros
+          </Button>
+          <Button variant="ghost" onClick={() => {
+            limparFiltrosHistorico();
+            setTimeout(() => carregarHistorico(), 100);
+          }}>
+            Limpar
+          </Button>
+        </div>
+      </Card>
+
+      {/* Tabela de Histórico */}
+      <Card variant="glass">
+        <h3 className="text-lg font-bold text-white mb-4">Lista de Músicas Tocadas</h3>
+        {loadingHistorico ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-cyan mx-auto"></div>
+            <p className="text-gray-400 mt-2">Carregando...</p>
+          </div>
+        ) : historico.length > 0 ? (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/10">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-400">Música</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-400">Cliente</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-400">Tipo</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-400">Data/Hora</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-400">Duração</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-400">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historico.map((item) => (
+                    <tr key={item.id} className="border-b border-white/5 hover:bg-white/5 transition">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {item.musicaThumbnail && (
+                            <img
+                              src={item.musicaThumbnail}
+                              alt={item.musicaTitulo}
+                              className="w-12 h-12 rounded object-cover"
+                            />
+                          )}
+                          <div>
+                            <p className="text-white font-medium">{item.musicaTitulo}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-300">{item.nomeCliente || '-'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          item.tipo === 'cliente' ? 'bg-blue-500/20 text-blue-400' :
+                          item.tipo === 'ambiente' ? 'bg-purple-500/20 text-purple-400' :
+                          'bg-orange-500/20 text-orange-400'
+                        }`}>
+                          {item.tipo}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-300">
+                        {new Date(item.inicioReproducao).toLocaleString('pt-BR')}
+                      </td>
+                      <td className="px-4 py-3 text-gray-300">
+                        {item.duracaoTocada ? `${Math.floor(item.duracaoTocada / 60)}:${String(item.duracaoTocada % 60).padStart(2, '0')}` : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-300">
+                        R$ {item.valor.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Paginação */}
+            {totalPaginasHistorico > 1 && (
+              <div className="flex justify-center gap-2 mt-4">
+                <Button
+                  variant="ghost"
+                  disabled={paginaHistorico === 1}
+                  onClick={() => {
+                    setPaginaHistorico(paginaHistorico - 1);
+                    setTimeout(() => carregarHistorico(), 100);
+                  }}
+                >
+                  Anterior
+                </Button>
+                <span className="px-4 py-2 text-gray-400">
+                  Página {paginaHistorico} de {totalPaginasHistorico}
+                </span>
+                <Button
+                  variant="ghost"
+                  disabled={paginaHistorico === totalPaginasHistorico}
+                  onClick={() => {
+                    setPaginaHistorico(paginaHistorico + 1);
+                    setTimeout(() => carregarHistorico(), 100);
+                  }}
+                >
+                  Próxima
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-8">
+            <Music className="w-12 h-12 text-gray-600 mx-auto mb-2" />
+            <p className="text-gray-400">Nenhuma música no histórico ainda</p>
+          </div>
+        )}
+      </Card>
+    </motion.div>
+  );
 
   const renderGiftCards = () => (
     <motion.div
@@ -1791,6 +2134,7 @@ function AdminDashboard() {
             {abaAtiva === 'overview' && renderOverview()}
             {abaAtiva === 'configuracoes' && renderConfiguracoes()}
             {abaAtiva === 'player' && renderPlayer()}
+            {abaAtiva === 'historico' && renderHistorico()}
             {abaAtiva === 'moderacao' && renderModeracao()}
             {abaAtiva === 'sugestoes' && renderSugestoes()}
             {abaAtiva === 'giftcards' && renderGiftCards()}

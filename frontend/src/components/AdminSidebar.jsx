@@ -9,7 +9,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Gift
+  Gift,
+  Clock
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '../store/authStore';
@@ -18,6 +19,7 @@ const menuItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'configuracoes', label: 'Configurações', icon: Settings },
   { id: 'player', label: 'Player', icon: Music },
+  { id: 'historico', label: 'Histórico', icon: Clock },
   { id: 'moderacao', label: 'Moderação', icon: Shield },
   { id: 'sugestoes', label: 'Sugestões', icon: TrendingUp },
   { id: 'giftcards', label: 'Gift Cards', icon: Gift },
