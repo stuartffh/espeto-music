@@ -302,8 +302,12 @@ function Panel() {
 
     // Backend manda iniciar/trocar música
     const handlePlayerIniciar = (data) => {
-      console.log('▶️ Backend: Iniciar música', data.musica.musicaTitulo);
+      console.log('▶️ [TV] Backend: Iniciar música', data.musica.musicaTitulo);
+      console.log('📦 [TV] Dados recebidos:', data);
+      console.log('🎵 [TV] Música atual:', data.estado?.musicaAtual?.musicaTitulo);
+      console.log('📊 [TV] Estado:', data.estado?.status);
       setEstadoPlayer(data.estado);
+      console.log('✅ [TV] Estado do player atualizado. UseEffect deve disparar agora...');
       // NÃO resetar currentTime aqui - deixar o iframe fazer isso
       // O player-time-update vai atualizar com o tempo real
       if (data.estado.musicaAtual?.musicaDuracao) {
@@ -593,21 +597,25 @@ function Panel() {
   }, [handleVideoEnd, toggleFullscreen]);
 
   const sendVideoToIframe = useCallback((musica) => {
+    console.log('📤 [TV] sendVideoToIframe chamado para:', musica?.musicaTitulo);
+
     if (!musica) {
+      console.log('❌ [TV] Sem música para enviar');
       return;
     }
 
     const iframeWindow = videoRef.current?.contentWindow;
 
     if (!iframeWindow) {
-      console.warn('ℹ️ Player da TV ainda não está pronto para receber vídeos.');
+      console.warn('❌ [TV] Player da TV ainda não está pronto para receber vídeos.');
       return;
     }
 
     // Enviar YouTube ID diretamente para o player decidir como tocar
     // O player pode usar YouTube embed (sem download) ou stream local (com download)
-    console.log('🎵 Enviando música para o player:', musica.musicaTitulo);
-    console.log('🆔 YouTube ID:', musica.musicaYoutubeId);
+    console.log('🎵 [TV] Enviando música para o player:', musica.musicaTitulo);
+    console.log('🆔 [TV] YouTube ID:', musica.musicaYoutubeId);
+    console.log('🔊 [TV] Autoplay consent:', autoplayConsent);
 
     iframeWindow.postMessage({
       type: 'load-video',
@@ -619,17 +627,26 @@ function Panel() {
         cliente: musica.nomeCliente
       }
     }, '*');
+
+    console.log('✅ [TV] PostMessage enviado para iframe!');
   }, [autoplayConsent]);
 
   useEffect(() => {
+    console.log('🔄 [TV] UseEffect disparado! Verificando condições...');
+    console.log('🎵 [TV] estadoPlayer?.musicaAtual:', estadoPlayer?.musicaAtual?.musicaTitulo);
+    console.log('✅ [TV] iframeReady:', iframeReady);
+
     if (!estadoPlayer?.musicaAtual) {
+      console.log('⏭️ [TV] Sem música atual, ignorando...');
       return;
     }
 
     if (!iframeReady) {
+      console.log('⏭️ [TV] Iframe não está pronto, ignorando...');
       return;
     }
 
+    console.log('🚀 [TV] Condições OK! Enviando vídeo para iframe...');
     sendVideoToIframe(estadoPlayer.musicaAtual);
   }, [estadoPlayer?.musicaAtual, iframeReady, sendVideoToIframe]);
 
