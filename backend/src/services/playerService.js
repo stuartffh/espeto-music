@@ -64,6 +64,7 @@ async function recuperarEstado() {
           status: 'stopped',
           tempoAtual: 0,
           volume: 80,
+          atualizadoEm: new Date()
         }
       });
     }
@@ -134,6 +135,7 @@ async function salvarEstado() {
         status: estadoMemoria.status,
         tempoAtual: estadoMemoria.tempoAtual,
         volume: estadoMemoria.volume,
+        atualizadoEm: new Date()
       }
     });
   } catch (error) {

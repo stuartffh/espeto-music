@@ -17,7 +17,7 @@ model admins {
   ultimoAcesso DateTime?
   permissoes   String?
   criadoEm     DateTime  @default(now())
-  atualizadoEm DateTime
+  atualizadoEm DateTime @updatedAt
 }
 
 model pedidos_musica {
@@ -76,7 +76,7 @@ model configuracoes {
   descricao    String?
   tipo         String   @default("text")
   criadoEm     DateTime @default(now())
-  atualizadoEm DateTime
+  atualizadoEm DateTime @updatedAt
 }
 
 model estado_player {
@@ -137,7 +137,7 @@ model sugestoes {
   ordem        Int      @default(0)
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now())
-  atualizadoEm DateTime
+  atualizadoEm DateTime @updatedAt
 
   @@index([categoria, ativo])
 }
@@ -149,7 +149,7 @@ model historico_buscas {
   resultados   Int      @default(0)
   vezesBuscado Int      @default(1)
   criadoEm     DateTime @default(now())
-  atualizadoEm DateTime
+  atualizadoEm DateTime @updatedAt
 
   @@index([termo])
 }
@@ -161,7 +161,7 @@ model palavras_proibidas {
   severidade   String   @default("MEDIA")
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now())
-  atualizadoEm DateTime
+  atualizadoEm DateTime @updatedAt
 
   @@index([categoria])
 }
@@ -172,7 +172,7 @@ model rate_limits {
   contador     Int      @default(1)
   resetaEm     DateTime
   criadoEm     DateTime @default(now())
-  atualizadoEm DateTime
+  atualizadoEm DateTime @updatedAt
 
   @@index([resetaEm])
   @@index([ip])
