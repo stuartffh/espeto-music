@@ -211,6 +211,9 @@ model pedidos_musica {
   posicaoFila                                               Int?
   motivoRejeicao                                            String?
   moderadoPor                                               String?
+  prioridade                                                Boolean          @default(false)
+  dedicatoria                                               String?
+  dedicatoriaDe                                             String?
   criadoEm                                                  DateTime         @default(now())
   atualizadoEm                                              DateTime
   gift_cards                                                gift_cards?
@@ -221,6 +224,7 @@ model pedidos_musica {
   @@index([criadoEm])
   @@index([estabelecimentoId, status])
   @@index([estabelecimentoId])
+  @@index([prioridade])
 }
 
 model rate_limits {

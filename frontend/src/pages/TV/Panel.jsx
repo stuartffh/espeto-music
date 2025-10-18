@@ -95,12 +95,15 @@ function Panel() {
   const [showQueue, setShowQueue] = useState(false); // Controle de visibilidade da próxima música
   const [musicaAmbiente, setMusicaAmbiente] = useState(null); // Música ambiente quando fila vazia
   const [tocandoAmbiente, setTocandoAmbiente] = useState(false); // Flag se está tocando música ambiente
+  const [showDedicatoria, setShowDedicatoria] = useState(false); // Controle de visibilidade da dedicatória
+  const [tempoDedicatoria, setTempoDedicatoria] = useState(10); // Tempo de exibição da dedicatória
 
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const videoDescansoRef = useRef(null);
   const queueTimerRef = useRef(null); // Timer para auto-hide da fila
   const ambientePlayerRef = useRef(null); // Ref para o player de música ambiente
+  const dedicatoriaTimerRef = useRef(null); // Timer para auto-hide da dedicatória
 
   // 🧹 LIMPEZA AUTOMÁTICA: Sempre começar com conexão limpa na TV
   useEffect(() => {
@@ -305,6 +308,39 @@ function Panel() {
       // O player-time-update vai atualizar com o tempo real
       if (data.estado.musicaAtual?.musicaDuracao) {
         setDuration(data.estado.musicaAtual.musicaDuracao);
+      }
+
+      // Mostrar dedicatória se existir
+      if (data.estado.musicaAtual?.dedicatoria || data.estado.musicaAtual?.dedicatoriaDe) {
+        console.log('💝 Mostrando dedicatória para:', data.musica.musicaTitulo);
+        setShowDedicatoria(true);
+
+        // Buscar tempo de exibição configurado
+        api.get('/api/public/config/TEMPO_EXIBICAO_DEDICATORIA')
+          .then(res => {
+            const tempo = parseInt(res.data.valor) || 10;
+            setTempoDedicatoria(tempo);
+
+            // Esconder após o tempo configurado
+            if (dedicatoriaTimerRef.current) {
+              clearTimeout(dedicatoriaTimerRef.current);
+            }
+            dedicatoriaTimerRef.current = setTimeout(() => {
+              setShowDedicatoria(false);
+            }, tempo * 1000);
+          })
+          .catch(err => {
+            console.error('Erro ao buscar tempo de dedicatória:', err);
+            // Usar padrão de 10 segundos
+            if (dedicatoriaTimerRef.current) {
+              clearTimeout(dedicatoriaTimerRef.current);
+            }
+            dedicatoriaTimerRef.current = setTimeout(() => {
+              setShowDedicatoria(false);
+            }, 10000);
+          });
+      } else {
+        setShowDedicatoria(false);
       }
     };
 
@@ -949,6 +985,76 @@ function Panel() {
                 </p>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* Dedicatória - Exibida quando música com dedicatória começa */}
+        {showDedicatoria && estadoPlayer?.musicaAtual?.dedicatoria && (
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.div
+              className="glass-heavy border-2 border-neon-pink rounded-3xl shadow-2xl max-w-3xl p-12 text-center"
+              initial={{ scale: 0.8, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 50 }}
+              transition={{ duration: 0.5, type: 'spring', damping: 15 }}
+            >
+              {/* Ícone de coração */}
+              <motion.div
+                className="mb-6"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <div className="inline-block bg-gradient-to-br from-neon-pink to-neon-purple p-6 rounded-full">
+                  <span className="text-6xl">💝</span>
+                </div>
+              </motion.div>
+
+              {/* Título */}
+              <h2 className="text-3xl font-bold text-neon-pink mb-6">
+                Dedicatória Especial
+              </h2>
+
+              {/* De: */}
+              {estadoPlayer.musicaAtual.dedicatoriaDe && (
+                <p className="text-xl text-gray-300 mb-4">
+                  <span className="text-neon-cyan font-semibold">De:</span>{' '}
+                  {estadoPlayer.musicaAtual.dedicatoriaDe}
+                </p>
+              )}
+
+              {/* Mensagem */}
+              <div className="bg-black/30 rounded-2xl p-6 mb-6">
+                <p className="text-2xl text-white font-medium leading-relaxed">
+                  {estadoPlayer.musicaAtual.dedicatoria}
+                </p>
+              </div>
+
+              {/* Música */}
+              <div className="flex items-center justify-center gap-3 text-gray-400">
+                <Music className="w-5 h-5" />
+                <p className="text-lg">
+                  {estadoPlayer.musicaAtual.musicaTitulo}
+                </p>
+              </div>
+
+              {/* Barra de progresso */}
+              <div className="mt-6">
+                <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-neon-pink to-neon-purple"
+                    initial={{ width: '0%' }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: tempoDedicatoria, ease: 'linear' }}
+                  />
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
 

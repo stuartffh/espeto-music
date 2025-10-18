@@ -6,12 +6,18 @@ import AdminLogin from './pages/Admin/Login';
 import AdminDashboard from './pages/Admin/Dashboard';
 import TVPanel from './pages/TV/Panel';
 import ProtectedRoute from './components/ProtectedRoute';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+import PWAUpdateNotification from './components/PWAUpdateNotification';
+import OfflineIndicator from './components/OfflineIndicator';
 
 function App() {
   const location = useLocation();
 
   return (
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white transition-colors duration-300">
+      <OfflineIndicator />
+      <PWAInstallPrompt />
+      <PWAUpdateNotification />
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
           {/* Cliente Routes */}

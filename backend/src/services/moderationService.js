@@ -200,10 +200,10 @@ function levenshteinDistance(str1, str2) {
 
 /**
  * Valida um pedido de música
- * @param {Object} dados - { nomeCliente, musicaTitulo }
+ * @param {Object} dados - { nomeCliente, musicaTitulo, dedicatoria, dedicatoriaDe }
  * @returns {Object} { aprovado: boolean, motivo: string, palavrasEncontradas: [...] }
  */
-async function validarPedido({ nomeCliente, musicaTitulo }) {
+async function validarPedido({ nomeCliente, musicaTitulo, dedicatoria, dedicatoriaDe }) {
   // Verificar se moderação está ativa
   const configModeracao = await prisma.configuracao.findUnique({
     where: { chave: 'MODERACAO_ATIVA' },
@@ -249,6 +249,38 @@ async function validarPedido({ nomeCliente, musicaTitulo }) {
           motivo: obterMensagemBloqueio(resultadoTitulo.severidadeMaxima),
           palavrasEncontradas: resultadoTitulo.encontradas,
           campo: 'musicaTitulo',
+        };
+      }
+    }
+  }
+
+  // Verificar dedicatória (se presente)
+  if (dedicatoria) {
+    const resultadoDedicatoria = await verificarTexto(dedicatoria, 'AMBOS');
+
+    if (resultadoDedicatoria.encontradas.length > 0) {
+      if (aplicarBloqueio(resultadoDedicatoria.severidadeMaxima, nivelModeracao)) {
+        return {
+          aprovado: false,
+          motivo: 'Dedicatória contém conteúdo inapropriado',
+          palavrasEncontradas: resultadoDedicatoria.encontradas,
+          campo: 'dedicatoria',
+        };
+      }
+    }
+  }
+
+  // Verificar dedicatória "De:" (se presente)
+  if (dedicatoriaDe) {
+    const resultadoDedicatoriaDe = await verificarTexto(dedicatoriaDe, 'NOME_CLIENTE');
+
+    if (resultadoDedicatoriaDe.encontradas.length > 0) {
+      if (aplicarBloqueio(resultadoDedicatoriaDe.severidadeMaxima, nivelModeracao)) {
+        return {
+          aprovado: false,
+          motivo: 'Nome do remetente da dedicatória contém conteúdo inapropriado',
+          palavrasEncontradas: resultadoDedicatoriaDe.encontradas,
+          campo: 'dedicatoriaDe',
         };
       }
     }

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerador de Ícones PWA</title>
+</head>
+<body>
+    <h1>Gerador de Ícones PWA - Espeto Music</h1>
+    <div id="icons"></div>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        const container = document.getElementById('icons');
+
+        sizes.forEach(size => {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#ff6b6b');
+            gradient.addColorStop(1, '#ff5252');
+            ctx.fillStyle = gradient;
+
+            // Rounded rectangle background
+            const radius = size * 0.15;
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Microphone icon
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'white';
+
+            const scale = size / 512;
+            ctx.save();
+            ctx.scale(scale, scale);
+
+            // Mic body (centered at 256, 230 in 512x512 space)
+            const micX = 256;
+            const micY = 230;
+
+            // Draw mic capsule
+            ctx.beginPath();
+            ctx.arc(micX, micY - 80, 50, Math.PI, 0, false);
+            ctx.rect(micX - 50, micY - 80, 100, 140);
+            ctx.arc(micX, micY + 60, 50, 0, Math.PI, false);
+            ctx.fill();
+
+            // Draw mic stand arc
+            ctx.lineWidth = 20;
+            ctx.beginPath();
+            ctx.arc(micX, micY + 30, 90, 0.2 * Math.PI, 0.8 * Math.PI, false);
+            ctx.stroke();
+
+            // Draw mic base
+            ctx.beginPath();
+            ctx.moveTo(micX, micY + 120);
+            ctx.lineTo(micX, micY + 170);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(micX - 60, micY + 170);
+            ctx.lineTo(micX + 60, micY + 170);
+            ctx.stroke();
+
+            // Add grille lines
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 5;
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(micX - 30, micY - 100 + i * 20);
+                ctx.lineTo(micX + 30, micY - 100 + i * 20);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+
+            // Add to page
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'inline-block';
+            wrapper.style.margin = '10px';
+            wrapper.style.textAlign = 'center';
+
+            const label = document.createElement('p');
+            label.textContent = `${size}x${size}`;
+            wrapper.appendChild(label);
+            wrapper.appendChild(canvas);
+
+            const downloadBtn = document.createElement('button');
+            downloadBtn.textContent = 'Download';
+            downloadBtn.onclick = () => {
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `icon-${size}x${size}.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }, 'image/png');
+            };
+            wrapper.appendChild(downloadBtn);
+
+            container.appendChild(wrapper);
+        });
+    </script>
+</body>
+</html>

@@ -53,6 +53,14 @@ function Home() {
   const [validandoGift, setValidandoGift] = useState(false);
   const [usandoGift, setUsandoGift] = useState(false);
   const [pedidoPendente, setPedidoPendente] = useState(null);
+  const [showPriorityModal, setShowPriorityModal] = useState(false);
+  const [musicaSelecionada, setMusicaSelecionada] = useState(null);
+  const [prioridadeSelecionada, setPrioridadeSelecionada] = useState(false);
+  const [dedicatoria, setDedicatoria] = useState('');
+  const [dedicatoriaDe, setDedicatoriaDe] = useState('');
+  const [precoNormal, setPrecoNormal] = useState(5.0);
+  const [precoPrioridade, setPrecoPrioridade] = useState(10.0);
+  const [permitirDedicatoria, setPermitirDedicatoria] = useState(true);
 
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { toast, showToast, hideToast } = useToast();
@@ -62,18 +70,27 @@ function Home() {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     Promise.all([
       axios.get(`${API_URL}/api/public/config/modo_gratuito`),
-      axios.get(`${API_URL}/api/public/config/TEMPO_MAXIMO_MUSICA`)
+      axios.get(`${API_URL}/api/public/config/TEMPO_MAXIMO_MUSICA`),
+      axios.get(`${API_URL}/api/public/config/PRECO_MUSICA_NORMAL`),
+      axios.get(`${API_URL}/api/public/config/PRECO_MUSICA_PRIORITARIA`),
+      axios.get(`${API_URL}/api/public/config/PERMITIR_DEDICATORIA`)
     ])
-      .then(([resModo, resTempo]) => {
+      .then(([resModo, resTempo, resPrecoNormal, resPrecoPrioritario, resDedicatoria]) => {
         // modo_gratuito: "true" = gratuito, "false" = pago
         setModoGratuito(resModo.data.valor === 'true');
         const minutos = parseInt(resTempo.data.valor) || 10;
         setTempoMaximo(minutos);
+        setPrecoNormal(parseFloat(resPrecoNormal.data.valor) || 5.0);
+        setPrecoPrioridade(parseFloat(resPrecoPrioritario.data.valor) || 10.0);
+        setPermitirDedicatoria(resDedicatoria.data.valor === 'true');
       })
       .catch(error => {
         console.error('Erro ao buscar config:', error);
         setModoGratuito(true);
         setTempoMaximo(10);
+        setPrecoNormal(5.0);
+        setPrecoPrioridade(10.0);
+        setPermitirDedicatoria(true);
       })
       .finally(() => {
         setCarregandoConfig(false);
@@ -144,10 +161,20 @@ function Home() {
       return;
     }
 
+    // Modo pago: mostrar opções de prioridade e dedicatória
+    if (!modoGratuito) {
+      setMusicaSelecionada(musica);
+      setPrioridadeSelecionada(false);
+      setDedicatoria('');
+      setDedicatoriaDe('');
+      setShowPriorityModal(true);
+      return;
+    }
+
+    // Modo gratuito: criar pedido direto
     setAdicionando(true);
 
     try {
-      // Criar pedido com nome (modo gratuito com nome já preenchido ou modo pago)
       const pedido = await criarPedidoMusica({
         nomeCliente: nomeCliente.trim() || 'Anônimo',
         musicaTitulo: musica.titulo,
@@ -156,19 +183,42 @@ function Home() {
         musicaDuracao: musica.duracao || null,
       });
 
-      if (modoGratuito) {
-        // Modo gratuito: música já foi adicionada automaticamente
-        setShowConfetti(true);
-        showToast('Música adicionada à fila com sucesso! 🎵', 'success');
-        await buscarFila().then(res => setFila(res.data));
-        setBusca('');
-        setResultados([]);
-        setCategoriaAtiva(null);
-      } else {
-        // Modo pago: guardar pedido e ir para pagamento
-        setPedidoPendente(pedido.data);
-        setShowPaymentModal(true);
-      }
+      setShowConfetti(true);
+      showToast('Música adicionada à fila com sucesso! 🎵', 'success');
+      await buscarFila().then(res => setFila(res.data));
+      setBusca('');
+      setResultados([]);
+      setCategoriaAtiva(null);
+    } catch (error) {
+      console.error('Erro:', error);
+      showToast(error.response?.data?.error || 'Erro ao processar pedido', 'error');
+    } finally {
+      setAdicionando(false);
+    }
+  };
+
+  const handleConfirmarPrioridade = async () => {
+    if (!musicaSelecionada) return;
+
+    setAdicionando(true);
+    setShowPriorityModal(false);
+
+    try {
+      const pedido = await criarPedidoMusica({
+        nomeCliente: nomeCliente.trim() || 'Anônimo',
+        musicaTitulo: musicaSelecionada.titulo,
+        musicaYoutubeId: musicaSelecionada.id,
+        musicaThumbnail: musicaSelecionada.thumbnail,
+        musicaDuracao: musicaSelecionada.duracao || null,
+        prioridade: prioridadeSelecionada,
+        dedicatoria: dedicatoria.trim() || null,
+        dedicatoriaDe: dedicatoriaDe.trim() || null,
+      });
+
+      // Modo pago: guardar pedido e ir para pagamento
+      setPedidoPendente(pedido.data);
+      setShowPaymentModal(true);
+      setMusicaSelecionada(null);
     } catch (error) {
       console.error('Erro:', error);
       showToast(error.response?.data?.error || 'Erro ao processar pedido', 'error');
@@ -785,6 +835,175 @@ function Home() {
           >
             Confirmar
           </Button>
+        </Modal>
+
+        {/* Modal Prioridade e Dedicatória */}
+        <Modal
+          isOpen={showPriorityModal}
+          onClose={() => {
+            setShowPriorityModal(false);
+            setMusicaSelecionada(null);
+            setPrioridadeSelecionada(false);
+            setDedicatoria('');
+            setDedicatoriaDe('');
+          }}
+          title="Opções da Música"
+          size="lg"
+        >
+          {musicaSelecionada && (
+            <div className="space-y-6">
+              {/* Informações da Música */}
+              <div className="flex items-center gap-4 p-4 glass rounded-xl">
+                <img
+                  src={musicaSelecionada.thumbnail}
+                  alt={musicaSelecionada.titulo}
+                  className="w-20 h-20 rounded-lg object-cover"
+                />
+                <div className="flex-1">
+                  <h3 className="font-bold text-white line-clamp-2">
+                    {musicaSelecionada.titulo}
+                  </h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {Math.floor(musicaSelecionada.duracao / 60)}:{String(musicaSelecionada.duracao % 60).padStart(2, '0')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Seleção de Prioridade */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-white flex items-center gap-2">
+                  <span className="text-neon-cyan">💎</span> Escolha a prioridade
+                </h4>
+
+                {/* Opção Normal */}
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <button
+                    onClick={() => setPrioridadeSelecionada(false)}
+                    className={`w-full p-4 rounded-xl border-2 transition-all ${
+                      !prioridadeSelecionada
+                        ? 'border-neon-cyan bg-neon-cyan/10'
+                        : 'border-gray-700 glass'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          !prioridadeSelecionada ? 'border-neon-cyan bg-neon-cyan' : 'border-gray-600'
+                        }`}>
+                          {!prioridadeSelecionada && (
+                            <div className="w-2 h-2 bg-white rounded-full" />
+                          )}
+                        </div>
+                        <div className="text-left">
+                          <p className="font-bold text-white">Normal</p>
+                          <p className="text-sm text-gray-400">Entra na fila na ordem de chegada</p>
+                        </div>
+                      </div>
+                      <p className="text-xl font-bold text-neon-cyan">
+                        R$ {precoNormal.toFixed(2)}
+                      </p>
+                    </div>
+                  </button>
+                </motion.div>
+
+                {/* Opção Prioritária */}
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <button
+                    onClick={() => setPrioridadeSelecionada(true)}
+                    className={`w-full p-4 rounded-xl border-2 transition-all ${
+                      prioridadeSelecionada
+                        ? 'border-neon-purple bg-neon-purple/10'
+                        : 'border-gray-700 glass'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          prioridadeSelecionada ? 'border-neon-purple bg-neon-purple' : 'border-gray-600'
+                        }`}>
+                          {prioridadeSelecionada && (
+                            <div className="w-2 h-2 bg-white rounded-full" />
+                          )}
+                        </div>
+                        <div className="text-left">
+                          <p className="font-bold text-white flex items-center gap-2">
+                            Prioritária <Badge variant="neon" className="text-xs">VIP</Badge>
+                          </p>
+                          <p className="text-sm text-gray-400">Toca antes na fila!</p>
+                        </div>
+                      </div>
+                      <p className="text-xl font-bold text-neon-purple">
+                        R$ {precoPrioridade.toFixed(2)}
+                      </p>
+                    </div>
+                  </button>
+                </motion.div>
+              </div>
+
+              {/* Dedicatória (Opcional) */}
+              {permitirDedicatoria && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-white flex items-center gap-2">
+                    <span className="text-neon-pink">💝</span> Dedicatória (Opcional)
+                  </h4>
+                  <p className="text-sm text-gray-400">
+                    Envie uma mensagem especial que será exibida na TV quando sua música tocar!
+                  </p>
+
+                  <Input
+                    value={dedicatoriaDe}
+                    onChange={(e) => setDedicatoriaDe(e.target.value)}
+                    placeholder="De: Seu nome..."
+                    maxLength={50}
+                  />
+
+                  <textarea
+                    value={dedicatoria}
+                    onChange={(e) => setDedicatoria(e.target.value)}
+                    placeholder="Para: Escreva sua dedicatória aqui..."
+                    maxLength={200}
+                    rows={3}
+                    className="w-full px-4 py-3 glass rounded-xl border border-gray-700 focus:border-neon-cyan transition-all resize-none text-white placeholder-gray-500"
+                  />
+
+                  <p className="text-xs text-gray-500 text-right">
+                    {dedicatoria.length}/200 caracteres
+                  </p>
+                </div>
+              )}
+
+              {/* Botões */}
+              <div className="flex gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowPriorityModal(false);
+                    setMusicaSelecionada(null);
+                    setPrioridadeSelecionada(false);
+                    setDedicatoria('');
+                    setDedicatoriaDe('');
+                  }}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleConfirmarPrioridade}
+                  disabled={adicionando}
+                  loading={adicionando}
+                  className="flex-1"
+                >
+                  Continuar - R$ {prioridadeSelecionada ? precoPrioridade.toFixed(2) : precoNormal.toFixed(2)}
+                </Button>
+              </div>
+            </div>
+          )}
         </Modal>
 
         {/* Confetti */}

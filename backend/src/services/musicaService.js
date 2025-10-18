@@ -11,6 +11,9 @@ async function criarPedidoMusica({
   musicaThumbnail,
   musicaDuracao,
   valor,
+  prioridade = false,
+  dedicatoria = null,
+  dedicatoriaDe = null,
 }) {
 
   // Verificar limite de músicas na fila
@@ -19,7 +22,7 @@ async function criarPedidoMusica({
   });
 
   const maxFila = config ? parseInt(config.valor) : 50;
-  const totalNaFila = await prisma.pedidoMusica.count({
+  const totalNaFila = await prisma.pedidos_musica.count({
     where: {
       status: {
         in: ['pago', 'tocando'],
@@ -39,7 +42,7 @@ async function criarPedidoMusica({
   const permiteDuplicadas = configDuplicadas ? configDuplicadas.valor === 'true' : false;
 
   if (!permiteDuplicadas) {
-    const musicaDuplicada = await prisma.pedidoMusica.findFirst({
+    const musicaDuplicada = await prisma.pedidos_musica.findFirst({
       where: {
         musicaYoutubeId,
         status: {
@@ -54,7 +57,7 @@ async function criarPedidoMusica({
   }
 
   // Criar pedido
-  const pedido = await prisma.pedidoMusica.create({
+  const pedido = await prisma.pedidos_musica.create({
     data: {
       nomeCliente,
       musicaTitulo,
@@ -63,6 +66,9 @@ async function criarPedidoMusica({
       musicaDuracao,
       valor,
       status: 'pendente',
+      prioridade,
+      dedicatoria,
+      dedicatoriaDe,
     },
   });
 
@@ -71,17 +77,19 @@ async function criarPedidoMusica({
 
 /**
  * Busca fila de músicas (pagas e não tocadas)
+ * Ordenação: música tocando > prioritárias > normais (por ordem de chegada)
  */
 async function buscarFilaMusicas() {
-  return await prisma.pedidoMusica.findMany({
+  return await prisma.pedidos_musica.findMany({
     where: {
       status: {
         in: ['pago', 'tocando'],
       },
     },
     orderBy: [
-      { status: 'desc' }, // "tocando" vem primeiro
-      { criadoEm: 'asc' },
+      { status: 'desc' },      // "tocando" vem primeiro
+      { prioridade: 'desc' },  // músicas prioritárias antes
+      { criadoEm: 'asc' },     // depois por ordem de chegada
     ],
   });
 }
@@ -90,7 +98,7 @@ async function buscarFilaMusicas() {
  * Busca música atual (tocando)
  */
 async function buscarMusicaAtual() {
-  return await prisma.pedidoMusica.findFirst({
+  return await prisma.pedidos_musica.findFirst({
     where: { status: 'tocando' },
   });
 }
@@ -106,7 +114,7 @@ async function tocarMusica(pedidoId) {
     throw new Error('Já existe uma música tocando');
   }
 
-  const pedido = await prisma.pedidoMusica.update({
+  const pedido = await prisma.pedidos_musica.update({
     where: { id: pedidoId },
     data: { status: 'tocando' },
   });
@@ -118,13 +126,13 @@ async function tocarMusica(pedidoId) {
  * Marca música como concluída e toca próxima
  */
 async function concluirMusica(pedidoId) {
-  await prisma.pedidoMusica.update({
+  await prisma.pedidos_musica.update({
     where: { id: pedidoId },
     data: { status: 'concluida' },
   });
 
   // Buscar próxima música na fila
-  const proximaMusica = await prisma.pedidoMusica.findFirst({
+  const proximaMusica = await prisma.pedidos_musica.findFirst({
     where: {
       status: 'pago',
     },
@@ -151,7 +159,7 @@ async function iniciarProximaMusicaSeNecessario() {
   }
 
   // Buscar primeira música paga na fila
-  const proximaMusica = await prisma.pedidoMusica.findFirst({
+  const proximaMusica = await prisma.pedidos_musica.findFirst({
     where: {
       status: 'pago',
     },
@@ -177,7 +185,7 @@ async function pularMusica(pedidoId) {
  * Cancela um pedido de música
  */
 async function cancelarPedido(pedidoId) {
-  const pedido = await prisma.pedidoMusica.findUnique({
+  const pedido = await prisma.pedidos_musica.findUnique({
     where: { id: pedidoId },
   });
 
@@ -193,7 +201,7 @@ async function cancelarPedido(pedidoId) {
     throw new Error('Não é possível cancelar uma música já concluída');
   }
 
-  return await prisma.pedidoMusica.update({
+  return await prisma.pedidos_musica.update({
     where: { id: pedidoId },
     data: { status: 'cancelada' },
   });
@@ -203,7 +211,7 @@ async function cancelarPedido(pedidoId) {
  * Busca histórico de músicas
  */
 async function buscarHistorico(limite = 50) {
-  return await prisma.pedidoMusica.findMany({
+  return await prisma.pedidos_musica.findMany({
     where: {
       status: {
         in: ['concluida', 'cancelada'],
@@ -218,7 +226,7 @@ async function buscarHistorico(limite = 50) {
  * Busca pedido por ID
  */
 async function buscarPedidoPorId(pedidoId) {
-  const pedido = await prisma.pedidoMusica.findUnique({
+  const pedido = await prisma.pedidos_musica.findUnique({
     where: { id: pedidoId },
     include: {
       pagamento: true,

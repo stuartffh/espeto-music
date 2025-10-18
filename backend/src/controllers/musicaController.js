@@ -71,6 +71,9 @@ async function criar(req, res) {
       musicaYoutubeId,
       musicaThumbnail,
       musicaDuracao,
+      prioridade,
+      dedicatoria,
+      dedicatoriaDe,
     } = req.body;
 
     // Validações
@@ -84,6 +87,8 @@ async function criar(req, res) {
     const validacao = await moderationService.validarPedido({
       nomeCliente,
       musicaTitulo,
+      dedicatoria,
+      dedicatoriaDe,
     });
 
     if (!validacao.aprovado) {
@@ -92,6 +97,7 @@ async function criar(req, res) {
       console.log('   ═══════════════════════════════════════════════════════');
       console.log(`📋 Nome Cliente: "${nomeCliente}"`);
       console.log(`🎵 Título Música: "${musicaTitulo}"`);
+      console.log(`💝 Dedicatória: "${dedicatoria || 'N/A'}"`);
       console.log(`❌ Motivo: ${validacao.motivo}`);
       console.log(`📍 Campo bloqueado: ${validacao.campo}`);
       console.log(`🔍 Palavras detectadas: ${validacao.palavrasEncontradas.map(p => `${p.palavra} (${p.severidade})`).join(', ')}`);
@@ -104,10 +110,12 @@ async function criar(req, res) {
 
     // Buscar configurações
     const prisma = require('../config/database');
-    const [configPreco, configModoGratuito, configTempoMaximo] = await Promise.all([
+    const [configPreco, configModoGratuito, configTempoMaximo, configPrecoNormal, configPrecoPrioritaria] = await Promise.all([
       prisma.configuracao.findUnique({ where: { chave: 'PRECO_MUSICA' } }),
       prisma.configuracao.findUnique({ where: { chave: 'modo_gratuito' } }),
       prisma.configuracao.findUnique({ where: { chave: 'TEMPO_MAXIMO_MUSICA' } }),
+      prisma.configuracao.findUnique({ where: { chave: 'PRECO_MUSICA_NORMAL' } }),
+      prisma.configuracao.findUnique({ where: { chave: 'PRECO_MUSICA_PRIORITARIA' } }),
     ]);
 
     // Validar duração da música
@@ -120,8 +128,17 @@ async function criar(req, res) {
       });
     }
 
-    const valor = configPreco ? parseFloat(configPreco.valor) : 5.0;
     const modoGratuito = configModoGratuito ? configModoGratuito.valor === 'true' : true;
+
+    // Determinar o valor baseado na prioridade (apenas em modo pago)
+    let valor;
+    if (modoGratuito) {
+      valor = 0; // Modo gratuito não tem valor
+    } else if (prioridade) {
+      valor = configPrecoPrioritaria ? parseFloat(configPrecoPrioritaria.valor) : 10.0;
+    } else {
+      valor = configPrecoNormal ? parseFloat(configPrecoNormal.valor) : 5.0;
+    }
 
     const pedido = await musicaService.criarPedidoMusica({
       nomeCliente,
@@ -130,6 +147,9 @@ async function criar(req, res) {
       musicaThumbnail,
       musicaDuracao,
       valor,
+      prioridade: prioridade || false,
+      dedicatoria: dedicatoria || null,
+      dedicatoriaDe: dedicatoriaDe || null,
     });
 
     // Se modo gratuito, processar imediatamente (sem necessidade de download)
