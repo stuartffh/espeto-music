@@ -59,7 +59,7 @@ async function main() {
     // ========== CONFIGURAÇÕES DA FILA ==========
     {
       chave: 'modo_gratuito',
-      valor: 'false',
+      valor: 'true',
       descricao: 'Modo de operação: true = gratuito (sem pagamento), false = pago (requer pagamento PIX ou gift card)',
       tipo: 'boolean'
     },

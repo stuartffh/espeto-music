@@ -14,6 +14,7 @@
     "seed:config": "node seed-config.js",
     "seed:moderation": "node seed-moderation.js",
     "seed:all": "node seed-all.js",
+    "modo:gratuito": "node set-modo-gratuito.js",
     "postinstall": "prisma generate && node auto-seed.js"
   },
   "keywords": [
