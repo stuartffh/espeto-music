@@ -843,23 +843,10 @@ function Panel() {
           </div>
         </div>
 
-        {/* Barra de progresso */}
-        {musicaAtual && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between text-xs font-mono text-gray-400 mb-2">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
-            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-gradient-to-r from-neon-cyan to-neon-purple"
-                initial={{ width: '0%' }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-          </div>
-        )}
+        {/*
+          Barra de progresso removida daqui.
+          O iframe tv-player.html já tem barra de progresso (OSD) integrada.
+        */}
       </div>
 
       {/* Área Principal: Player + Sidebar */}
