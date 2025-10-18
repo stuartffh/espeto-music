@@ -400,37 +400,27 @@ function Home() {
             <ThemeToggle />
           </div>
 
-          {/* Stats Cards Mini */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 max-w-2xl mx-auto mt-4 md:mt-8">
-            <Card variant="glass" className="text-center p-2 sm:p-3 md:p-4">
-              <Music className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mx-auto text-neon-cyan mb-1 md:mb-2" />
-              <p className="text-lg sm:text-xl md:text-2xl font-bold text-white dark:text-white">{fila.length}</p>
-              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Na fila</p>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 max-w-xl mx-auto mt-6 md:mt-10">
+            <Card variant="glass" className="text-center p-4 sm:p-5 md:p-6 border-2 border-neon-cyan/30 hover:border-neon-cyan/60 transition-all duration-300">
+              <Music className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mx-auto text-neon-cyan mb-2 md:mb-3 drop-shadow-neon" />
+              <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1">{fila.length}</p>
+              <p className="text-xs sm:text-sm text-gray-300 dark:text-gray-300 font-medium">Músicas na Fila</p>
             </Card>
 
-            <Card variant="glass" className="text-center p-2 sm:p-3 md:p-4">
-              <Clock className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mx-auto text-neon-purple mb-1 md:mb-2" />
-              <p className="text-lg sm:text-xl md:text-2xl font-bold text-white dark:text-white">{tempoMaximo}min</p>
-              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Máximo</p>
-            </Card>
-
-            <Card variant="glass" className="text-center p-2 sm:p-3 md:p-4">
-              <Badge
-                variant={modoGratuito ? 'success' : 'warning'}
-                className="mx-auto mb-1 md:mb-2 text-[10px] sm:text-xs"
-              >
-                {modoGratuito ? 'Grátis' : 'Pago'}
-              </Badge>
-              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Modo</p>
+            <Card variant="glass" className="text-center p-4 sm:p-5 md:p-6 border-2 border-neon-purple/30 hover:border-neon-purple/60 transition-all duration-300">
+              <Clock className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mx-auto text-neon-purple mb-2 md:mb-3 drop-shadow-neon" />
+              <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1">{tempoMaximo}min</p>
+              <p className="text-xs sm:text-sm text-gray-300 dark:text-gray-300 font-medium">Tempo Máximo</p>
             </Card>
           </div>
 
           {/* Regras Toggle */}
           <button
             onClick={() => setMostrarRegras(!mostrarRegras)}
-            className="mt-4 md:mt-6 text-xs sm:text-sm text-neon-cyan hover:text-neon-purple transition-colors flex items-center gap-1.5 md:gap-2 mx-auto"
+            className="mt-6 md:mt-8 px-4 py-2 rounded-lg glass border border-neon-cyan/30 hover:border-neon-cyan/60 text-sm sm:text-base text-neon-cyan hover:text-neon-purple transition-all duration-300 flex items-center gap-2 mx-auto font-medium shadow-md hover:shadow-lg"
           >
-            <Info className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Info className="w-4 h-4 sm:w-5 sm:h-5" />
             {mostrarRegras ? 'Ocultar Regras' : 'Ver Regras'}
           </button>
         </motion.div>
@@ -501,32 +491,32 @@ function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <Card variant="glass" className="border-2 border-neon-cyan/30">
+              <Card variant="glass" className="border-2 border-neon-cyan/40 hover:border-neon-cyan/60 transition-all duration-300 bg-gradient-to-br from-gray-900/40 to-gray-800/40 dark:from-gray-900/60 dark:to-gray-800/60">
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 bg-gradient-to-br from-neon-cyan to-neon-purple p-3 rounded-xl">
-                    <Info className="w-6 h-6 text-white" />
+                  <div className="flex-shrink-0 bg-gradient-to-br from-neon-cyan to-neon-purple p-3 rounded-xl shadow-lg">
+                    <Info className="w-6 h-6 text-white drop-shadow-lg" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold gradient-text mb-2">
+                    <h3 className="text-xl font-bold gradient-text mb-3 drop-shadow-md">
                       Como funciona?
                     </h3>
-                    <ol className="space-y-2 text-sm text-gray-300">
-                      <li className="flex items-start gap-2">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-cyan/20 text-neon-cyan flex items-center justify-center text-xs font-bold">1</span>
-                        <span>Busque pela música que deseja ouvir</span>
+                    <ol className="space-y-3 text-sm sm:text-base">
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-neon-cyan/30 text-neon-cyan flex items-center justify-center text-sm font-bold border border-neon-cyan/50 shadow-md">1</span>
+                        <span className="text-gray-100 dark:text-gray-100 font-medium pt-0.5">Busque pela música que deseja ouvir</span>
                       </li>
-                      <li className="flex items-start gap-2">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-purple/20 text-neon-purple flex items-center justify-center text-xs font-bold">2</span>
-                        <span>{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-neon-purple/30 text-neon-purple flex items-center justify-center text-sm font-bold border border-neon-purple/50 shadow-md">2</span>
+                        <span className="text-gray-100 dark:text-gray-100 font-medium pt-0.5">{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
                       </li>
-                      <li className="flex items-start gap-2">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-pink/20 text-neon-pink flex items-center justify-center text-xs font-bold">3</span>
-                        <span>{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-neon-pink/30 text-neon-pink flex items-center justify-center text-sm font-bold border border-neon-pink/50 shadow-md">3</span>
+                        <span className="text-gray-100 dark:text-gray-100 font-medium pt-0.5">{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
                       </li>
                       {!modoGratuito && (
-                        <li className="flex items-start gap-2">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neon-green/20 text-neon-green flex items-center justify-center text-xs font-bold">4</span>
-                          <span>Após o pagamento, digite seu nome e aproveite!</span>
+                        <li className="flex items-start gap-3">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-green-400/30 text-green-400 flex items-center justify-center text-sm font-bold border border-green-400/50 shadow-md">4</span>
+                          <span className="text-gray-100 dark:text-gray-100 font-medium pt-0.5">Após o pagamento, digite seu nome e aproveite!</span>
                         </li>
                       )}
                     </ol>
@@ -619,13 +609,13 @@ function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                 >
-                  <Card variant="glass" className="text-center py-8 sm:py-12">
-                    <Music className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-400 dark:text-gray-600 mb-3 sm:mb-4" />
-                    <h3 className="text-base sm:text-lg font-semibold text-white mb-2">
-                      Nenhuma música exibida
+                  <Card variant="glass" className="text-center py-12 sm:py-16 border-2 border-dashed border-gray-600 dark:border-gray-700">
+                    <Music className="w-16 h-16 sm:w-20 sm:h-20 mx-auto text-neon-cyan/50 mb-4 sm:mb-6 drop-shadow-neon" />
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-3">
+                      Pronto para escolher sua música?
                     </h3>
-                    <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 max-w-md mx-auto px-4">
-                      Insira seu nome, digite o nome da música e clique em "Buscar Músicas" para ouvir sua música predileta!
+                    <p className="text-sm sm:text-base text-gray-200 dark:text-gray-200 max-w-md mx-auto px-4 leading-relaxed">
+                      Digite o nome da música ou artista no campo de busca acima e clique em <span className="font-semibold text-neon-cyan">"Buscar Músicas"</span> para começar!
                     </p>
                   </Card>
                 </motion.div>
@@ -652,8 +642,9 @@ function Home() {
                     ))
                   ) : (
                     <div className="text-center py-12">
-                      <Music className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-                      <p className="text-gray-500 dark:text-gray-400">Fila vazia</p>
+                      <Music className="w-16 h-16 mx-auto text-neon-purple/40 mb-4 drop-shadow-neon" />
+                      <p className="text-gray-200 dark:text-gray-200 font-medium">Fila vazia</p>
+                      <p className="text-sm text-gray-300 dark:text-gray-300 mt-2">Seja o primeiro a adicionar uma música!</p>
                     </div>
                   )}
                 </AnimatePresence>
