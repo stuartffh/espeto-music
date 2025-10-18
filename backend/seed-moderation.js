@@ -88,16 +88,13 @@ async function main() {
         update: {
           valor: config.valor,
           descricao: config.descricao,
-          tipo: config.tipo,
-          atualizadoEm: new Date()
+          tipo: config.tipo
         },
         create: {
-          id: `config-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           chave: config.chave,
           valor: config.valor,
           descricao: config.descricao,
-          tipo: config.tipo,
-          atualizadoEm: new Date()
+          tipo: config.tipo
         },
       });
       console.log(`   ✅ ${config.chave}: ${config.valor}`);
@@ -113,7 +110,6 @@ async function main() {
       try {
         await prisma.palavras_proibidas.create({
           data: {
-            id: `palavra-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             palavra: palavra.palavra,
             categoria: palavra.categoria,
             severidade: palavra.severidade,

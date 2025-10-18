@@ -98,7 +98,7 @@ async function estatisticas(req, res) {
     const prisma = require('../config/database');
 
     const [total, porSeveridade, porCategoria, ativos] = await Promise.all([
-      prisma.palavraProibida.count(),
+      prisma.palavras_proibidas.count(),
       prisma.$queryRaw`
         SELECT severidade, COUNT(*) as total
         FROM palavras_proibidas
@@ -109,7 +109,7 @@ async function estatisticas(req, res) {
         FROM palavras_proibidas
         GROUP BY categoria
       `,
-      prisma.palavraProibida.count({ where: { ativo: true } }),
+      prisma.palavras_proibidas.count({ where: { ativo: true } }),
     ]);
 
     res.json({

@@ -18,7 +18,7 @@ async function criarPagamento(pedidoId) {
   }
 
   // Criar registro de pagamento
-  const pagamento = await prisma.pagamento.create({
+  const pagamento = await prisma.pagamentos.create({
     data: {
       valor: pedido.valor,
       status: 'pending',
@@ -36,7 +36,7 @@ async function criarPagamento(pedidoId) {
     });
 
     // Atualizar pagamento com ID da preferência
-    await prisma.pagamento.update({
+    await prisma.pagamentos.update({
       where: { id: pagamento.id },
       data: {
         mercadoPagoPreferenceId: preferencia.id,
@@ -58,7 +58,7 @@ async function criarPagamento(pedidoId) {
     };
   } catch (error) {
     // Se falhar, remover pagamento criado
-    await prisma.pagamento.delete({
+    await prisma.pagamentos.delete({
       where: { id: pagamento.id },
     });
     throw error;
@@ -96,7 +96,7 @@ async function criarPagamentoPIX(pedidoId, dadosPagador = {}) {
 
   // Criar registro de pagamento
   console.log('🔵 [SERVICE] Criando registro de pagamento no banco...');
-  const pagamento = await prisma.pagamento.create({
+  const pagamento = await prisma.pagamentos.create({
     data: {
       valor: pedido.valor,
       status: 'pending',
@@ -134,7 +134,7 @@ async function criarPagamentoPIX(pedidoId, dadosPagador = {}) {
     console.log('✅ [SERVICE] Resposta do Mercado Pago:',  JSON.stringify(pixPayment, null, 2));
 
     // Atualizar pagamento com dados do PIX
-    const pagamentoAtualizado = await prisma.pagamento.update({
+    const pagamentoAtualizado = await prisma.pagamentos.update({
       where: { id: pagamento.id },
       data: {
         mercadoPagoPaymentId: pixPayment.id.toString(),
@@ -172,7 +172,7 @@ async function criarPagamentoPIX(pedidoId, dadosPagador = {}) {
 
     // Se falhar, remover pagamento criado
     console.log('🔵 [SERVICE] Removendo pagamento do banco (rollback)...');
-    await prisma.pagamento.delete({
+    await prisma.pagamentos.delete({
       where: { id: pagamento.id },
     });
     console.log('✅ [SERVICE] Pagamento removido do banco');
@@ -226,7 +226,7 @@ async function processarWebhook(data) {
     }
 
     // Atualizar pagamento
-    await prisma.pagamento.update({
+    await prisma.pagamentos.update({
       where: { id: pedido.pagamento.id },
       data: {
         mercadoPagoPaymentId: paymentId,
@@ -352,7 +352,7 @@ async function processarWebhook(data) {
  * Busca pagamento por ID
  */
 async function buscarPagamentoPorId(pagamentoId) {
-  const pagamento = await prisma.pagamento.findUnique({
+  const pagamento = await prisma.pagamentos.findUnique({
     where: { id: pagamentoId },
     include: {
       pedidoMusica: true,
@@ -381,7 +381,7 @@ async function verificarStatusPagamento(pagamentoId) {
 
     // Atualizar status se mudou
     if (paymentInfo.status !== pagamento.status) {
-      await prisma.pagamento.update({
+      await prisma.pagamentos.update({
         where: { id: pagamentoId },
         data: {
           status: paymentInfo.status,
@@ -426,7 +426,7 @@ async function criarPagamentoPIXCarrinho(sessionId, dadosPagador = {}) {
   console.log(`🛒 [SERVICE] Valor total: R$ ${carrinho.valorTotal.toFixed(2)}`);
 
   // Criar registro de pagamento
-  const pagamento = await prisma.pagamento.create({
+  const pagamento = await prisma.pagamentos.create({
     data: {
       valor: carrinho.valorTotal,
       status: 'pending',
@@ -481,7 +481,7 @@ async function criarPagamentoPIXCarrinho(sessionId, dadosPagador = {}) {
     console.log('✅ [SERVICE] Pagamento PIX criado no Mercado Pago');
 
     // Atualizar pagamento com dados do PIX
-    const pagamentoAtualizado = await prisma.pagamento.update({
+    const pagamentoAtualizado = await prisma.pagamentos.update({
       where: { id: pagamento.id },
       data: {
         mercadoPagoPaymentId: pixPayment.id.toString(),
@@ -509,7 +509,7 @@ async function criarPagamentoPIXCarrinho(sessionId, dadosPagador = {}) {
     console.error('❌ [SERVICE] Mensagem:', error.message);
 
     // Rollback: remover pagamento e pedidos criados
-    await prisma.pagamento.delete({ where: { id: pagamento.id } });
+    await prisma.pagamentos.delete({ where: { id: pagamento.id } });
 
     for (const pedido of pedidosCriados) {
       await prisma.pedidos_musica.delete({ where: { id: pedido.id } });

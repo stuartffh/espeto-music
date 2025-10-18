@@ -55,7 +55,7 @@ async function carregarPalavrasProibidas() {
   }
 
   // Buscar do banco
-  const palavras = await prisma.palavraProibida.findMany({
+  const palavras = await prisma.palavras_proibidas.findMany({
     where: { ativo: true },
     select: {
       id: true,
@@ -205,7 +205,7 @@ function levenshteinDistance(str1, str2) {
  */
 async function validarPedido({ nomeCliente, musicaTitulo, dedicatoria, dedicatoriaDe }) {
   // Verificar se moderação está ativa
-  const configModeracao = await prisma.configuracao.findUnique({
+  const configModeracao = await prisma.configuracoes.findUnique({
     where: { chave: 'MODERACAO_ATIVA' },
   });
 
@@ -214,7 +214,7 @@ async function validarPedido({ nomeCliente, musicaTitulo, dedicatoria, dedicator
   }
 
   // Buscar nível de moderação
-  const configNivel = await prisma.configuracao.findUnique({
+  const configNivel = await prisma.configuracoes.findUnique({
     where: { chave: 'NIVEL_MODERACAO' },
   });
 
@@ -336,7 +336,7 @@ async function adicionarPalavraProibida({ palavra, categoria, severidade }) {
   const palavraNormalizada = normalizarTexto(palavra);
 
   // Verificar se já existe
-  const existe = await prisma.palavraProibida.findFirst({
+  const existe = await prisma.palavras_proibidas.findFirst({
     where: {
       palavra: palavraNormalizada,
       categoria,
@@ -347,7 +347,7 @@ async function adicionarPalavraProibida({ palavra, categoria, severidade }) {
     throw new Error('Esta palavra já está cadastrada para esta categoria');
   }
 
-  const novaPalavra = await prisma.palavraProibida.create({
+  const novaPalavra = await prisma.palavras_proibidas.create({
     data: {
       palavra: palavraNormalizada,
       categoria: categoria || 'AMBOS',
@@ -371,7 +371,7 @@ async function listarPalavrasProibidas({ categoria, severidade, ativo } = {}) {
   if (severidade) where.severidade = severidade;
   if (ativo !== undefined) where.ativo = ativo;
 
-  return await prisma.palavraProibida.findMany({
+  return await prisma.palavras_proibidas.findMany({
     where,
     orderBy: [
       { categoria: 'asc' },
@@ -385,7 +385,7 @@ async function listarPalavrasProibidas({ categoria, severidade, ativo } = {}) {
  * Atualiza palavra proibida
  */
 async function atualizarPalavraProibida(id, dados) {
-  const palavra = await prisma.palavraProibida.update({
+  const palavra = await prisma.palavras_proibidas.update({
     where: { id },
     data: dados,
   });
@@ -399,7 +399,7 @@ async function atualizarPalavraProibida(id, dados) {
  * Deleta palavra proibida
  */
 async function deletarPalavraProibida(id) {
-  await prisma.palavraProibida.delete({
+  await prisma.palavras_proibidas.delete({
     where: { id },
   });
 
@@ -410,7 +410,7 @@ async function deletarPalavraProibida(id) {
  * Ativa/desativa palavra proibida
  */
 async function togglePalavraProibida(id) {
-  const palavra = await prisma.palavraProibida.findUnique({
+  const palavra = await prisma.palavras_proibidas.findUnique({
     where: { id },
   });
 
@@ -418,7 +418,7 @@ async function togglePalavraProibida(id) {
     throw new Error('Palavra proibida não encontrada');
   }
 
-  const atualizada = await prisma.palavraProibida.update({
+  const atualizada = await prisma.palavras_proibidas.update({
     where: { id },
     data: { ativo: !palavra.ativo },
   });

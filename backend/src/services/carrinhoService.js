@@ -17,7 +17,7 @@ async function buscarOuCriarCarrinho(sessionId) {
   const agora = new Date();
 
   // Buscar carrinho existente e não expirado
-  let carrinho = await prisma.carrinho.findFirst({
+  let carrinho = await prisma.carrinhos.findFirst({
     where: {
       sessionId,
       expiraEm: {
@@ -30,7 +30,7 @@ async function buscarOuCriarCarrinho(sessionId) {
   if (!carrinho) {
     const expiraEm = new Date(Date.now() + 30 * 60 * 1000); // 30 minutos
 
-    carrinho = await prisma.carrinho.create({
+    carrinho = await prisma.carrinhos.create({
       data: {
         sessionId,
         musicasTitulos: JSON.stringify([]),
@@ -83,7 +83,7 @@ async function adicionarMusica(sessionId, musica) {
   const novaQuantidade = titulos.length;
 
   // Atualizar carrinho
-  const carrinhoAtualizado = await prisma.carrinho.update({
+  const carrinhoAtualizado = await prisma.carrinhos.update({
     where: { id: carrinho.id },
     data: {
       musicasTitulos: JSON.stringify(titulos),
@@ -124,7 +124,7 @@ async function removerMusica(sessionId, youtubeId) {
   }
 
   // Buscar valor unitário da música
-  const configuracao = await prisma.configuracao.findUnique({
+  const configuracao = await prisma.configuracoes.findUnique({
     where: { chave: 'PRECO_MUSICA' },
   });
   const valorUnitario = parseFloat(configuracao?.valor || 5.0);
@@ -139,7 +139,7 @@ async function removerMusica(sessionId, youtubeId) {
   const novaQuantidade = titulos.length;
 
   // Atualizar carrinho
-  const carrinhoAtualizado = await prisma.carrinho.update({
+  const carrinhoAtualizado = await prisma.carrinhos.update({
     where: { id: carrinho.id },
     data: {
       musicasTitulos: JSON.stringify(titulos),
@@ -172,7 +172,7 @@ async function listarCarrinho(sessionId) {
 async function limparCarrinho(sessionId) {
   const carrinho = await buscarOuCriarCarrinho(sessionId);
 
-  const carrinhoLimpo = await prisma.carrinho.update({
+  const carrinhoLimpo = await prisma.carrinhos.update({
     where: { id: carrinho.id },
     data: {
       musicasTitulos: JSON.stringify([]),
@@ -195,7 +195,7 @@ async function limparCarrinho(sessionId) {
 async function definirNomeCliente(sessionId, nomeCliente) {
   const carrinho = await buscarOuCriarCarrinho(sessionId);
 
-  const carrinhoAtualizado = await prisma.carrinho.update({
+  const carrinhoAtualizado = await prisma.carrinhos.update({
     where: { id: carrinho.id },
     data: { nomeCliente },
   });
@@ -236,7 +236,7 @@ function formatarCarrinho(carrinho) {
 async function limparCarrinhosExpirados() {
   const agora = new Date();
 
-  const resultado = await prisma.carrinho.deleteMany({
+  const resultado = await prisma.carrinhos.deleteMany({
     where: {
       expiraEm: {
         lt: agora,

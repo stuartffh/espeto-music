@@ -6,21 +6,21 @@ async function updateVideoConfig() {
     console.log('\n🔄 Atualizando configurações do vídeo de descanso...\n');
 
     // Atualizar VIDEO_DESCANSO_URL
-    await prisma.configuracao.update({
+    await prisma.configuracoes.update({
       where: { chave: 'VIDEO_DESCANSO_URL' },
       data: { valor: 'https://cdn.pixabay.com/video/2023/11/18/189639-886016299_large.mp4' }
     });
     console.log('✅ VIDEO_DESCANSO_URL atualizado');
 
     // Atualizar VIDEO_DESCANSO_ATIVO
-    await prisma.configuracao.update({
+    await prisma.configuracoes.update({
       where: { chave: 'VIDEO_DESCANSO_ATIVO' },
       data: { valor: 'true' }
     });
     console.log('✅ VIDEO_DESCANSO_ATIVO atualizado para "true"');
 
     // Verificar as configurações atualizadas
-    const configs = await prisma.configuracao.findMany({
+    const configs = await prisma.configuracoes.findMany({
       where: {
         chave: {
           in: ['VIDEO_DESCANSO_URL', 'VIDEO_DESCANSO_ATIVO']

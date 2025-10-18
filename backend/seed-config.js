@@ -24,12 +24,10 @@ async function main() {
   } else {
     await prisma.admins.create({
       data: {
-        id: 'admin-1',
         username: 'admin',
         password: hashSenha,
         nome: 'Administrador',
-        ativo: true,
-        atualizadoEm: new Date()
+        ativo: true
       }
     });
     console.log('  ✅ Usuário admin criado!');
@@ -287,12 +285,10 @@ async function main() {
     } else {
       await prisma.configuracoes.create({
         data: {
-          id: `config-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           chave: config.chave,
           valor: config.valor,
           descricao: config.descricao,
-          tipo: config.tipo,
-          atualizadoEm: new Date()
+          tipo: config.tipo
         }
       });
       console.log(`  ✅ Criada: ${config.chave}`);

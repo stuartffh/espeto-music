@@ -8,7 +8,7 @@ const { invalidarCache } = require('../utils/configHelper');
  */
 async function listar(req, res) {
   try {
-    const configs = await prisma.configuracao.findMany({
+    const configs = await prisma.configuracoes.findMany({
       orderBy: { chave: 'asc' },
     });
 
@@ -29,7 +29,7 @@ async function buscar(req, res) {
   try {
     const { chave } = req.params;
 
-    const config = await prisma.configuracao.findUnique({
+    const config = await prisma.configuracoes.findUnique({
       where: { chave },
     });
 
@@ -63,7 +63,7 @@ async function atualizar(req, res) {
       });
     }
 
-    const config = await prisma.configuracao.update({
+    const config = await prisma.configuracoes.update({
       where: { chave },
       data: { valor: String(valor) },
     });
@@ -101,7 +101,7 @@ async function criar(req, res) {
       });
     }
 
-    const config = await prisma.configuracao.create({
+    const config = await prisma.configuracoes.create({
       data: {
         chave,
         valor: String(valor),
@@ -130,7 +130,7 @@ async function remover(req, res) {
   try {
     const { chave } = req.params;
 
-    await prisma.configuracao.delete({
+    await prisma.configuracoes.delete({
       where: { chave },
     });
 

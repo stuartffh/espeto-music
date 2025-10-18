@@ -16,7 +16,7 @@ const JWT_EXPIRES_IN = '24h';
 async function login(username, password) {
   try {
     // Buscar admin pelo username
-    const admin = await prisma.admin.findUnique({
+    const admin = await prisma.admins.findUnique({
       where: { username },
     });
 
@@ -36,7 +36,7 @@ async function login(username, password) {
     }
 
     // Atualizar último acesso
-    await prisma.admin.update({
+    await prisma.admins.update({
       where: { id: admin.id },
       data: { ultimoAcesso: new Date() },
     });
@@ -77,7 +77,7 @@ async function verificarToken(token) {
     const decoded = jwt.verify(token, JWT_SECRET);
 
     // Verificar se admin ainda existe e está ativo
-    const admin = await prisma.admin.findUnique({
+    const admin = await prisma.admins.findUnique({
       where: { id: decoded.id },
     });
 
@@ -104,7 +104,7 @@ async function verificarToken(token) {
 async function criarAdmin({ username, password, nome }) {
   try {
     // Verificar se username já existe
-    const existente = await prisma.admin.findUnique({
+    const existente = await prisma.admins.findUnique({
       where: { username },
     });
 
@@ -116,7 +116,7 @@ async function criarAdmin({ username, password, nome }) {
     const senhaHash = await bcrypt.hash(password, 10);
 
     // Criar admin
-    const admin = await prisma.admin.create({
+    const admin = await prisma.admins.create({
       data: {
         username,
         password: senhaHash,
@@ -146,7 +146,7 @@ async function criarAdmin({ username, password, nome }) {
  */
 async function alterarSenha(adminId, senhaAtual, senhaNova) {
   try {
-    const admin = await prisma.admin.findUnique({
+    const admin = await prisma.admins.findUnique({
       where: { id: adminId },
     });
 
@@ -165,7 +165,7 @@ async function alterarSenha(adminId, senhaAtual, senhaNova) {
     const senhaHash = await bcrypt.hash(senhaNova, 10);
 
     // Atualizar senha
-    await prisma.admin.update({
+    await prisma.admins.update({
       where: { id: adminId },
       data: { password: senhaHash },
     });

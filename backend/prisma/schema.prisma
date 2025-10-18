@@ -8,7 +8,7 @@ datasource db {
 }
 
 model admins {
-  id           String    @id
+  id           String    @id @default(uuid())
   username     String    @unique
   password     String
   nome         String
@@ -21,7 +21,7 @@ model admins {
 }
 
 model pedidos_musica {
-  id                  String      @id
+  id                  String      @id @default(uuid())
   nomeCliente         String?
   musicaTitulo        String
   musicaYoutubeId     String
@@ -48,7 +48,7 @@ model pedidos_musica {
 }
 
 model pagamentos {
-  id                      String          @id
+  id                      String          @id @default(uuid())
   mercadoPagoPaymentId    String?         @unique
   mercadoPagoPreferenceId String?         @unique
   status                  String          @default("pending")
@@ -70,7 +70,7 @@ model pagamentos {
 }
 
 model configuracoes {
-  id           String   @id
+  id           String   @id @default(uuid())
   chave        String   @unique
   valor        String
   descricao    String?
@@ -91,7 +91,7 @@ model estado_player {
 }
 
 model gift_cards {
-  id                String          @id
+  id                String          @id @default(uuid())
   codigo            String          @unique
   valor             Float
   quantidadeMusicas Int
@@ -110,7 +110,7 @@ model gift_cards {
 }
 
 model carrinhos {
-  id              String   @id
+  id              String   @id @default(uuid())
   sessionId       String
   nomeCliente     String?
   musicasTitulos  String
@@ -128,7 +128,7 @@ model carrinhos {
 }
 
 model sugestoes {
-  id           String   @id
+  id           String   @id @default(uuid())
   categoria    String
   titulo       String
   youtubeId    String?
@@ -143,7 +143,7 @@ model sugestoes {
 }
 
 model historico_buscas {
-  id           String   @id
+  id           String   @id @default(uuid())
   termo        String
   categoria    String?
   resultados   Int      @default(0)
@@ -155,7 +155,7 @@ model historico_buscas {
 }
 
 model palavras_proibidas {
-  id           String   @id
+  id           String   @id @default(uuid())
   palavra      String
   categoria    String   @default("AMBOS")
   severidade   String   @default("MEDIA")
@@ -167,7 +167,7 @@ model palavras_proibidas {
 }
 
 model rate_limits {
-  id           String   @id
+  id           String   @id @default(uuid())
   ip           String
   contador     Int      @default(1)
   resetaEm     DateTime

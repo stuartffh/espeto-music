@@ -28,7 +28,7 @@ async function buscarConfig(chave, valorPadrao = null) {
 
   try {
     // Buscar do banco
-    const config = await prisma.configuracao.findUnique({
+    const config = await prisma.configuracoes.findUnique({
       where: { chave },
     });
 
