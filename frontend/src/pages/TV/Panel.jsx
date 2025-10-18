@@ -533,9 +533,6 @@ function Panel() {
       const { type, autoplayConsent: consentValue } = event.data || {};
 
       switch (type) {
-        case 'video-ended':
-          handleVideoEnd();
-          break;
         case 'player-ready':
           console.log('✅ Player da TV sinalizou que está pronto');
           setIframeReady(true);
