@@ -541,27 +541,29 @@
               sendMessage('player-ready');
               console.log('📡 Evento player-ready enviado ao Panel.jsx');
 
-              // FORÇAR QUALIDADE HD para melhor FPS
-              try {
-                const availableQualityLevels = event.target.getAvailableQualityLevels();
-                console.log('📊 Qualidades disponíveis:', availableQualityLevels);
+              // FORÇAR QUALIDADE HD para melhor FPS (aguardar um pouco para carregar)
+              setTimeout(() => {
+                try {
+                  const availableQualityLevels = event.target.getAvailableQualityLevels();
+                  console.log('📊 Qualidades disponíveis:', availableQualityLevels);
 
-                // Tentar definir a melhor qualidade disponível (priorizar HD)
-                if (availableQualityLevels.includes('hd1080')) {
-                  event.target.setPlaybackQuality('hd1080');
-                  console.log('🎬 Qualidade definida: HD 1080p (60fps)');
-                } else if (availableQualityLevels.includes('hd720')) {
-                  event.target.setPlaybackQuality('hd720');
-                  console.log('🎬 Qualidade definida: HD 720p (60fps)');
-                } else if (availableQualityLevels.includes('large')) {
-                  event.target.setPlaybackQuality('large');
-                  console.log('🎬 Qualidade definida: 480p');
-                } else {
-                  console.warn('⚠️ Nenhuma qualidade HD disponível');
+                  // Tentar definir a melhor qualidade disponível (priorizar HD)
+                  if (availableQualityLevels.includes('hd1080')) {
+                    event.target.setPlaybackQuality('hd1080');
+                    console.log('🎬 Qualidade definida: HD 1080p (60fps)');
+                  } else if (availableQualityLevels.includes('hd720')) {
+                    event.target.setPlaybackQuality('hd720');
+                    console.log('🎬 Qualidade definida: HD 720p (60fps)');
+                  } else if (availableQualityLevels.includes('large')) {
+                    event.target.setPlaybackQuality('large');
+                    console.log('🎬 Qualidade definida: 480p');
+                  } else if (availableQualityLevels.length === 0) {
+                    console.log('ℹ️ Qualidades ainda não carregadas, usando padrão do YouTube');
+                  }
+                } catch (err) {
+                  console.warn('⚠️ Não foi possível definir qualidade:', err);
                 }
-              } catch (err) {
-                console.warn('⚠️ Não foi possível definir qualidade:', err);
-              }
+              }, 2000); // Aguardar 2s para as qualidades carregarem
 
               // GARANTIR ÁUDIO: Múltiplas tentativas de unmute + play
               let audioSuccess = false;
@@ -910,9 +912,17 @@
         console.log('🔗 Parent origin detected:', state.parentOrigin);
       }
 
-      // Validate origin (in production, check against whitelist)
-      if (state.parentOrigin && event.origin !== state.parentOrigin) {
+      // Validate origin (permitir YouTube e parent)
+      const isYouTubeOrigin = event.origin.includes('youtube.com') || event.origin.includes('google.com');
+      const isParentOrigin = state.parentOrigin && event.origin === state.parentOrigin;
+
+      if (!isYouTubeOrigin && !isParentOrigin && state.parentOrigin) {
         console.warn('⚠️ Message from untrusted origin:', event.origin);
+        return;
+      }
+
+      // Ignorar mensagens do YouTube (são internas do player)
+      if (isYouTubeOrigin) {
         return;
       }
 
