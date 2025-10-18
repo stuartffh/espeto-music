@@ -1,12 +1,20 @@
+import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import Home from './pages/Cliente/Home';
-import Pagamento from './pages/Cliente/Pagamento';
-import AdminLogin from './pages/Admin/Login';
-import AdminDashboard from './pages/Admin/Dashboard';
-import TVPanel from './pages/TV/Panel';
 import ProtectedRoute from './components/ProtectedRoute';
 import OfflineIndicator from './components/OfflineIndicator';
+
+const Home = lazy(() => import('./pages/Cliente/Home'));
+const Pagamento = lazy(() => import('./pages/Cliente/Pagamento'));
+const AdminLogin = lazy(() => import('./pages/Admin/Login'));
+const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
+const TVPanel = lazy(() => import('./pages/TV/Panel'));
+
+const RouteFallback = () => (
+  <div className="flex h-[60vh] w-full items-center justify-center text-lg font-medium text-gray-700 dark:text-gray-200">
+    Carregando interface...
+  </div>
+);
 
 function App() {
   const location = useLocation();
@@ -15,29 +23,31 @@ function App() {
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white transition-colors duration-300">
       <OfflineIndicator />
       <AnimatePresence mode="wait" initial={false}>
-        <Routes location={location} key={location.pathname}>
-          {/* Cliente Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/pagamento/:status" element={<Pagamento />} />
+        <Suspense fallback={<RouteFallback />}>
+          <Routes location={location} key={location.pathname}>
+            {/* Cliente Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/pagamento/:status" element={<Pagamento />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* TV Panel Route */}
-          <Route path="/tv" element={<TVPanel />} />
+            {/* TV Panel Route */}
+            <Route path="/tv" element={<TVPanel />} />
 
-          {/* Redirect old routes for compatibility */}
-          <Route path="/cliente" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* Redirect old routes for compatibility */}
+            <Route path="/cliente" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </AnimatePresence>
     </div>
   );
