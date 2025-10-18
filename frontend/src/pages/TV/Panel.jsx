@@ -163,7 +163,7 @@ function Panel() {
 
   // Buscar configurações do sistema
   useEffect(() => {
-    api.get('/api/config')
+    api.get('/api/public/config')
       .then(res => {
         const configMap = {};
         res.data.forEach(config => {

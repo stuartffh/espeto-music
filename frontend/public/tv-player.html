@@ -823,7 +823,13 @@
       els.osd.classList.add('visible');
       clearTimeout(state.osdTimer);
 
-      const playerState = state.player?.getPlayerState();
+      // Verificar se YouTube API e player estão disponíveis
+      if (!window.YT || !state.player || typeof state.player.getPlayerState !== 'function') {
+        // Player ainda não está pronto, apenas mostrar OSD sem auto-hide
+        return;
+      }
+
+      const playerState = state.player.getPlayerState();
       if (playerState === YT.PlayerState.PLAYING && !state.dragging) {
         state.osdTimer = setTimeout(() => {
           els.osd.classList.remove('visible');
