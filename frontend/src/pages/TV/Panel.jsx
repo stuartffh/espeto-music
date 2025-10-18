@@ -210,7 +210,7 @@ function Panel() {
         ]);
 
         // Atualizar fila
-        const filaFiltrada = filaRes.data.filter(m => m.status === 'pago');
+        const filaFiltrada = filaRes.data.filter(m => m.status === 'pendente');
         console.log('📋 Fila sincronizada:', filaFiltrada.length, 'músicas');
         setFila(filaFiltrada);
 
@@ -332,7 +332,7 @@ function Panel() {
 
     const handleFilaAtualizada = (novaFila) => {
       // Mostrar apenas músicas PAGAS (próximas a tocar) - não mostrar a que está tocando
-      const filaFiltrada = novaFila.filter(m => m.status === 'pago');
+      const filaFiltrada = novaFila.filter(m => m.status === 'pendente');
       console.log('📋 Fila atualizada:', filaFiltrada.length, 'músicas próximas');
       setFila(filaFiltrada);
     };
@@ -629,11 +629,16 @@ function Panel() {
         showNextMusic();
       }
     }
-    // Momento 3: 10 segundos antes do fim
-    else if (currentTime >= showBeforeEnd && currentTime <= showBeforeEnd + 1) {
+    // Momento 3: 10 segundos antes do fim - manter visível até o fim
+    else if (currentTime >= showBeforeEnd) {
       if (!showQueue) {
-        console.log(`🎵 Momento 3: Final da música (${currentTime}s)`);
-        showNextMusic();
+        console.log(`🎵 Momento 3: Final da música (${currentTime}s) - mantendo visível até o fim`);
+        setShowQueue(true); // Não usar timer, manter visível
+        // Limpar timer se existir para evitar ocultação
+        if (queueTimerRef.current) {
+          clearTimeout(queueTimerRef.current);
+          queueTimerRef.current = null;
+        }
       }
     }
 
