@@ -8,223 +8,162 @@ datasource db {
 }
 
 model admins {
-  id                String           @id
-  estabelecimentoId String
-  username          String
-  password          String
-  nome              String
-  email             String?
-  ativo             Boolean          @default(true)
-  ultimoAcesso      DateTime?
-  permissoes        String?
-  criadoEm          DateTime         @default(now())
-  atualizadoEm      DateTime
-  estabelecimentos  estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
-
-  @@unique([estabelecimentoId, username])
-  @@index([estabelecimentoId])
-}
-
-model carrinhos {
-  id                String           @id
-  estabelecimentoId String
-  sessionId         String
-  nomeCliente       String?
-  musicasTitulos    String
-  musicasIds        String
-  musicasThumbs     String
-  musicasDuracoes   String
-  valorTotal        Float
-  quantidadeItens   Int
-  expiraEm          DateTime
-  criadoEm          DateTime         @default(now())
-  atualizadoEm      DateTime
-  estabelecimentos  estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
-
-  @@index([expiraEm])
-  @@index([sessionId])
-  @@index([estabelecimentoId])
-}
-
-model configuracoes {
-  id                String           @id
-  estabelecimentoId String
-  chave             String
-  valor             String
-  descricao         String?
-  tipo              String           @default("text")
-  criadoEm          DateTime         @default(now())
-  atualizadoEm      DateTime
-  estabelecimentos  estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
-
-  @@unique([estabelecimentoId, chave])
-  @@index([estabelecimentoId])
-}
-
-model estabelecimentos {
-  id                 String               @id
-  nome               String
-  slug               String               @unique
-  codigo             String               @unique
-  email              String?
-  telefone           String?
-  endereco           String?
-  cidade             String?
-  estado             String?
-  ativo              Boolean              @default(true)
-  plano              String               @default("basico")
-  dataExpiracao      DateTime?
-  limiteTVs          Int                  @default(2)
-  limiteMusicasMes   Int                  @default(1000)
-  totalMusicasMes    Int                  @default(0)
-  ultimoResetMes     DateTime             @default(now())
-  adminNome          String
-  adminEmail         String
-  adminTelefone      String?
-  observacoes        String?
-  criadoEm           DateTime             @default(now())
-  atualizadoEm       DateTime
-  admins             admins[]
-  carrinhos          carrinhos[]
-  configuracoes      configuracoes[]
-  estado_player      estado_player?
-  gift_cards         gift_cards[]
-  historico_buscas   historico_buscas[]
-  historico_musicas  historico_musicas[]
-  pagamentos         pagamentos[]
-  palavras_proibidas palavras_proibidas[]
-  pedidos_musica     pedidos_musica[]
-  sugestoes          sugestoes[]
-  temas              temas?
-  tvs                tvs[]
-
-  @@index([ativo])
-  @@index([codigo])
-  @@index([slug])
-}
-
-model estado_player {
-  id                String           @id
-  estabelecimentoId String           @unique
-  musicaAtualId     String?
-  status            String           @default("stopped")
-  tempoAtual        Float            @default(0)
-  volume            Int              @default(80)
-  ultimaAtualizacao DateTime         @default(now())
-  criadoEm          DateTime         @default(now())
-  atualizadoEm      DateTime
-  estabelecimentos  estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
-
-  @@index([estabelecimentoId])
-}
-
-model gift_cards {
-  id                String           @id
-  estabelecimentoId String
-  codigo            String           @unique
-  valor             Float
-  quantidadeMusicas Int
-  usado             Boolean          @default(false)
-  ativo             Boolean          @default(true)
-  dataExpiracao     DateTime?
-  usadoEm           DateTime?
-  usadoPor          String?
-  pedidoMusicaId    String?          @unique
-  observacao        String?
-  criadoEm          DateTime         @default(now())
-  atualizadoEm      DateTime
-  pedidos_musica    pedidos_musica?  @relation(fields: [pedidoMusicaId], references: [id])
-  estabelecimentos  estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
-
-  @@index([codigo])
-  @@index([estabelecimentoId])
-}
-
-model historico_buscas {
-  id                String           @id
-  estabelecimentoId String
-  termo             String
-  categoria         String?
-  resultados        Int              @default(0)
-  vezesBuscado      Int              @default(1)
-  criadoEm          DateTime         @default(now())
-  atualizadoEm      DateTime
-  estabelecimentos  estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
-
-  @@index([termo])
-  @@index([estabelecimentoId])
-}
-
-model pagamentos {
-  id                                                            String           @id
-  estabelecimentoId                                             String
-  mercadoPagoPaymentId                                          String?          @unique
-  mercadoPagoPreferenceId                                       String?          @unique
-  status                                                        String           @default("pending")
-  valor                                                         Float
-  metodoPagamento                                               String?
-  emailPagador                                                  String?
-  cpfPagador                                                    String?
-  nomePagador                                                   String?
-  qrCode                                                        String?
-  qrCodeText                                                    String?
-  pixExpirationDate                                             DateTime?
-  webhookData                                                   String?
-  lastWebhookUpdate                                             DateTime?
-  criadoEm                                                      DateTime         @default(now())
-  atualizadoEm                                                  DateTime
-  estabelecimentos                                              estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
-  pedidos_musica_pedidos_musica_pagamentoCarrinhoIdTopagamentos pedidos_musica[] @relation("pedidos_musica_pagamentoCarrinhoIdTopagamentos")
-  pedidos_musica_pedidos_musica_pagamentoIdTopagamentos         pedidos_musica?  @relation("pedidos_musica_pagamentoIdTopagamentos")
-
-  @@index([status])
-  @@index([estabelecimentoId])
-}
-
-model palavras_proibidas {
-  id                String           @id
-  estabelecimentoId String
-  palavra           String
-  categoria         String           @default("AMBOS")
-  severidade        String           @default("MEDIA")
-  ativo             Boolean          @default(true)
-  criadoEm          DateTime         @default(now())
-  atualizadoEm      DateTime
-  estabelecimentos  estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
-
-  @@index([categoria])
-  @@index([estabelecimentoId])
+  id           String    @id
+  username     String    @unique
+  password     String
+  nome         String
+  email        String?
+  ativo        Boolean   @default(true)
+  ultimoAcesso DateTime?
+  permissoes   String?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime
 }
 
 model pedidos_musica {
-  id                                                        String           @id
-  estabelecimentoId                                         String
-  nomeCliente                                               String?
-  musicaTitulo                                              String
-  musicaYoutubeId                                           String
-  musicaThumbnail                                           String?
-  musicaDuracao                                             Int?
-  status                                                    String           @default("pendente")
-  valor                                                     Float
-  pagamentoId                                               String?          @unique
-  pagamentoCarrinhoId                                       String?
-  posicaoFila                                               Int?
-  motivoRejeicao                                            String?
-  moderadoPor                                               String?
-  prioridade                                                Boolean          @default(false)
-  dedicatoria                                               String?
-  dedicatoriaDe                                             String?
-  criadoEm                                                  DateTime         @default(now())
-  atualizadoEm                                              DateTime
-  gift_cards                                                gift_cards?
-  pagamentos_pedidos_musica_pagamentoCarrinhoIdTopagamentos pagamentos?      @relation("pedidos_musica_pagamentoCarrinhoIdTopagamentos", fields: [pagamentoCarrinhoId], references: [id])
-  pagamentos_pedidos_musica_pagamentoIdTopagamentos         pagamentos?      @relation("pedidos_musica_pagamentoIdTopagamentos", fields: [pagamentoId], references: [id])
-  estabelecimentos                                          estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+  id                  String      @id
+  nomeCliente         String?
+  musicaTitulo        String
+  musicaYoutubeId     String
+  musicaThumbnail     String?
+  musicaDuracao       Int?
+  status              String      @default("pendente")
+  valor               Float
+  pagamentoId         String?     @unique
+  pagamentoCarrinhoId String?
+  posicaoFila         Int?
+  motivoRejeicao      String?
+  moderadoPor         String?
+  prioridade          Boolean     @default(false)
+  dedicatoria         String?
+  dedicatoriaDe       String?
+  criadoEm            DateTime    @default(now())
+  atualizadoEm        DateTime
+  gift_cards          gift_cards?
+  pagamentos          pagamentos? @relation(fields: [pagamentoId], references: [id])
 
   @@index([criadoEm])
-  @@index([estabelecimentoId, status])
-  @@index([estabelecimentoId])
+  @@index([status])
   @@index([prioridade])
+}
+
+model pagamentos {
+  id                      String          @id
+  mercadoPagoPaymentId    String?         @unique
+  mercadoPagoPreferenceId String?         @unique
+  status                  String          @default("pending")
+  valor                   Float
+  metodoPagamento         String?
+  emailPagador            String?
+  cpfPagador              String?
+  nomePagador             String?
+  qrCode                  String?
+  qrCodeText              String?
+  pixExpirationDate       DateTime?
+  webhookData             String?
+  lastWebhookUpdate       DateTime?
+  criadoEm                DateTime        @default(now())
+  atualizadoEm            DateTime
+  pedidos_musica          pedidos_musica?
+
+  @@index([status])
+}
+
+model configuracoes {
+  id           String   @id
+  chave        String   @unique
+  valor        String
+  descricao    String?
+  tipo         String   @default("text")
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime
+}
+
+model estado_player {
+  id                String   @id
+  musicaAtualId     String?
+  status            String   @default("stopped")
+  tempoAtual        Float    @default(0)
+  volume            Int      @default(80)
+  ultimaAtualizacao DateTime @default(now())
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime
+}
+
+model gift_cards {
+  id                String          @id
+  codigo            String          @unique
+  valor             Float
+  quantidadeMusicas Int
+  usado             Boolean         @default(false)
+  ativo             Boolean         @default(true)
+  dataExpiracao     DateTime?
+  usadoEm           DateTime?
+  usadoPor          String?
+  pedidoMusicaId    String?         @unique
+  observacao        String?
+  criadoEm          DateTime        @default(now())
+  atualizadoEm      DateTime
+  pedidos_musica    pedidos_musica? @relation(fields: [pedidoMusicaId], references: [id])
+
+  @@index([codigo])
+}
+
+model carrinhos {
+  id              String   @id
+  sessionId       String
+  nomeCliente     String?
+  musicasTitulos  String
+  musicasIds      String
+  musicasThumbs   String
+  musicasDuracoes String
+  valorTotal      Float
+  quantidadeItens Int
+  expiraEm        DateTime
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime
+
+  @@index([expiraEm])
+  @@index([sessionId])
+}
+
+model sugestoes {
+  id           String   @id
+  categoria    String
+  titulo       String
+  youtubeId    String?
+  thumbnail    String?
+  tipo         String   @default("trending")
+  ordem        Int      @default(0)
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime
+
+  @@index([categoria, ativo])
+}
+
+model historico_buscas {
+  id           String   @id
+  termo        String
+  categoria    String?
+  resultados   Int      @default(0)
+  vezesBuscado Int      @default(1)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime
+
+  @@index([termo])
+}
+
+model palavras_proibidas {
+  id           String   @id
+  palavra      String
+  categoria    String   @default("AMBOS")
+  severidade   String   @default("MEDIA")
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime
+
+  @@index([categoria])
 }
 
 model rate_limits {
@@ -239,98 +178,22 @@ model rate_limits {
   @@index([ip])
 }
 
-model sugestoes {
-  id                String           @id
-  estabelecimentoId String
-  categoria         String
-  titulo            String
-  youtubeId         String?
-  thumbnail         String?
-  tipo              String           @default("trending")
-  ordem             Int              @default(0)
-  ativo             Boolean          @default(true)
-  criadoEm          DateTime         @default(now())
-  atualizadoEm      DateTime
-  estabelecimentos  estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
-
-  @@index([categoria, ativo])
-  @@index([estabelecimentoId])
-}
-
-model super_admins {
-  id           String    @id
-  username     String    @unique
-  password     String
-  nome         String
-  email        String    @unique
-  ativo        Boolean   @default(true)
-  ultimoAcesso DateTime?
-  criadoEm     DateTime  @default(now())
-  atualizadoEm DateTime
-}
-
-model temas {
-  id                 String           @id
-  estabelecimentoId  String           @unique
-  nome               String           @default("Espeto Music")
-  corPrimaria        String           @default("#DC2626")
-  corSecundaria      String           @default("#F97316")
-  corAcento          String           @default("#FBBF24")
-  corFundo           String           @default("#0F172A")
-  corFundoSecundario String           @default("#1E293B")
-  corTexto           String           @default("#F8FAFC")
-  corTextoSecundario String           @default("#CBD5E1")
-  logoUrl            String?
-  backgroundUrl      String?
-  iconUrl            String?
-  fontePrimaria      String           @default("Inter")
-  fonteSecundaria    String           @default("Poppins")
-  borderRadius       String           @default("8px")
-  shadowIntensity    String           @default("medium")
-  criadoEm           DateTime         @default(now())
-  atualizadoEm       DateTime
-  estabelecimentos   estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
-
-  @@index([estabelecimentoId])
-}
-
-model tvs {
-  id                String           @id
-  estabelecimentoId String
-  nome              String
-  codigo            String           @unique
-  ativo             Boolean          @default(true)
-  online            Boolean          @default(false)
-  ultimaConexao     DateTime?
-  ipUltimaConexao   String?
-  observacoes       String?
-  criadoEm          DateTime         @default(now())
-  atualizadoEm      DateTime
-  estabelecimentos  estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
-
-  @@index([codigo])
-  @@index([estabelecimentoId])
-}
-
 model historico_musicas {
-  id                String           @id @default(uuid())
-  estabelecimentoId String
-  pedidoMusicaId    String?          // Referência ao pedido original (se existir)
-  musicaTitulo      String
-  musicaYoutubeId   String
-  musicaThumbnail   String?
-  musicaDuracao     Int?             // Duração em segundos
-  nomeCliente       String?
-  valor             Float            @default(0)
-  inicioReproducao  DateTime         @default(now())
-  fimReproducao     DateTime?        // Quando a música terminou
-  duracaoTocada     Int?             // Tempo efetivamente tocado em segundos
-  tipo              String           @default("cliente") // cliente, ambiente, admin
-  observacao        String?
-  criadoEm          DateTime         @default(now())
-  estabelecimentos  estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+  id               String    @id @default(uuid())
+  pedidoMusicaId   String?   // Referência ao pedido original (se existir)
+  musicaTitulo     String
+  musicaYoutubeId  String
+  musicaThumbnail  String?
+  musicaDuracao    Int?      // Duração em segundos
+  nomeCliente      String?
+  valor            Float     @default(0)
+  inicioReproducao DateTime  @default(now())
+  fimReproducao    DateTime? // Quando a música terminou
+  duracaoTocada    Int?      // Tempo efetivamente tocado em segundos
+  tipo             String    @default("cliente") // cliente, ambiente, admin
+  observacao       String?
+  criadoEm         DateTime  @default(now())
 
-  @@index([estabelecimentoId])
   @@index([inicioReproducao])
   @@index([tipo])
   @@map("historico_musicas")

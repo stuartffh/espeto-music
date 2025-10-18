@@ -58,49 +58,14 @@ async function recuperarEstado() {
     // Se não existe, criar registro inicial
     if (!estadoSalvo) {
       console.log('📝 Criando registro inicial de estado...');
-      // Primeiro criar ou buscar estabelecimento padrão
-      let estabelecimento = await prisma.estabelecimentos.findFirst();
-      if (!estabelecimento) {
-        estabelecimento = await prisma.estabelecimento.create({
-          data: {
-            nome: 'Estabelecimento Padrão',
-            ativo: true
-          }
-        });
-      }
-
-      // Verificar se já existe um estado para este estabelecimento
-      estadoSalvo = await prisma.estadoPlayer.findFirst({
-        where: { estabelecimentoId: estabelecimento.id }
-      });
-
-      if (!estadoSalvo) {
-        estadoSalvo = await prisma.estadoPlayer.create({
-          data: {
-            id: 'singleton',
-            estabelecimentoId: estabelecimento.id,
-            status: 'stopped',
-            tempoAtual: 0,
-            volume: 80,
-          }
-        });
-      } else {
-        // Atualizar o ID para singleton se necessário
-        if (estadoSalvo.id !== 'singleton') {
-          await prisma.estadoPlayer.delete({
-            where: { id: estadoSalvo.id }
-          });
-          estadoSalvo = await prisma.estadoPlayer.create({
-            data: {
-              id: 'singleton',
-              estabelecimentoId: estabelecimento.id,
-              status: 'stopped',
-              tempoAtual: 0,
-              volume: 80,
-            }
-          });
+      estadoSalvo = await prisma.estado_player.create({
+        data: {
+          id: 'singleton',
+          status: 'stopped',
+          tempoAtual: 0,
+          volume: 80,
         }
-      }
+      });
     }
 
     // Se tinha música tocando, recuperar
