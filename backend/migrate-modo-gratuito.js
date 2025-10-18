@@ -6,14 +6,14 @@ async function migrateModoGratuito() {
     console.log('🔄 Migrando configuração MODO_FILA para modo_gratuito...\n');
 
     // 1. Buscar configuração antiga
-    const modoFila = await prisma.configuracao.findUnique({
+    const modoFila = await prisma.configuracoes.findUnique({
       where: { chave: 'MODO_FILA' }
     });
 
     console.log('1️⃣ Configuração MODO_FILA:', modoFila);
 
     // 2. Buscar ou criar modo_gratuito
-    let modoGratuito = await prisma.configuracao.findUnique({
+    let modoGratuito = await prisma.configuracoes.findUnique({
       where: { chave: 'modo_gratuito' }
     });
 
@@ -21,7 +21,7 @@ async function migrateModoGratuito() {
       // Criar baseado no MODO_FILA ou com valor padrão
       const valor = modoFila && modoFila.valor === 'gratuito' ? 'true' : 'false';
 
-      modoGratuito = await prisma.configuracao.create({
+      modoGratuito = await prisma.configuracoes.create({
         data: {
           chave: 'modo_gratuito',
           valor,
@@ -36,7 +36,7 @@ async function migrateModoGratuito() {
 
     // 3. Deletar MODO_FILA se existir
     if (modoFila) {
-      await prisma.configuracao.delete({
+      await prisma.configuracoes.delete({
         where: { chave: 'MODO_FILA' }
       });
       console.log('3️⃣ Configuração MODO_FILA removida ✅');

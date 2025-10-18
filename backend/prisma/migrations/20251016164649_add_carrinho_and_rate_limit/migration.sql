@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "carrinhos" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "sessionId" TEXT NOT NULL,
     "nomeCliente" TEXT,
     "musicasTitulos" TEXT NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE "carrinhos" (
 
 -- CreateTable
 CREATE TABLE "rate_limits" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "ip" TEXT NOT NULL,
     "contador" INTEGER NOT NULL DEFAULT 1,
     "resetaEm" DATETIME NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE "rate_limits" (
 PRAGMA defer_foreign_keys=ON;
 PRAGMA foreign_keys=OFF;
 CREATE TABLE "new_pedidos_musica" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "nomeCliente" TEXT,
     "musicaTitulo" TEXT NOT NULL,
     "musicaYoutubeId" TEXT NOT NULL,

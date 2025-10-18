@@ -83,7 +83,7 @@ async function main() {
     ];
 
     for (const config of configs) {
-      await prisma.configuracao.upsert({
+      await prisma.configuracoes.upsert({
         where: { chave: config.chave },
         update: config,
         create: config,
@@ -99,7 +99,7 @@ async function main() {
 
     for (const palavra of palavrasProibidas) {
       try {
-        await prisma.palavraProibida.create({
+        await prisma.palavras_proibidas.create({
           data: palavra,
         });
         adicionadas++;
@@ -117,7 +117,7 @@ async function main() {
     // 3. Estatísticas
     console.log('\n📊 Estatísticas do sistema de moderação:');
 
-    const totalPalavras = await prisma.palavraProibida.count();
+    const totalPalavras = await prisma.palavras_proibidas.count();
     const palavrasPorSeveridade = await prisma.$queryRaw`
       SELECT severidade, COUNT(*) as total
       FROM palavras_proibidas

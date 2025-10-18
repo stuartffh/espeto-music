@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "sugestoes" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "categoria" TEXT NOT NULL,
     "titulo" TEXT NOT NULL,
     "youtubeId" TEXT,
@@ -14,7 +14,7 @@ CREATE TABLE "sugestoes" (
 
 -- CreateTable
 CREATE TABLE "historico_buscas" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "termo" TEXT NOT NULL,
     "categoria" TEXT,
     "resultados" INTEGER NOT NULL DEFAULT 0,

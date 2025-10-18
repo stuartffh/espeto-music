@@ -17,7 +17,7 @@ async function buscar(req, res) {
 
     // Buscar configuração de filtro de busca
     const prisma = require('../config/database');
-    const configFiltro = await prisma.configuracao.findUnique({
+    const configFiltro = await prisma.configuracoes.findUnique({
       where: { chave: 'SEARCH_FILTER_KEYWORD' }
     });
 
@@ -111,11 +111,11 @@ async function criar(req, res) {
     // Buscar configurações
     const prisma = require('../config/database');
     const [configPreco, configModoGratuito, configTempoMaximo, configPrecoNormal, configPrecoPrioritaria] = await Promise.all([
-      prisma.configuracao.findUnique({ where: { chave: 'PRECO_MUSICA' } }),
-      prisma.configuracao.findUnique({ where: { chave: 'modo_gratuito' } }),
-      prisma.configuracao.findUnique({ where: { chave: 'TEMPO_MAXIMO_MUSICA' } }),
-      prisma.configuracao.findUnique({ where: { chave: 'PRECO_MUSICA_NORMAL' } }),
-      prisma.configuracao.findUnique({ where: { chave: 'PRECO_MUSICA_PRIORITARIA' } }),
+      prisma.configuracoes.findUnique({ where: { chave: 'PRECO_MUSICA' } }),
+      prisma.configuracoes.findUnique({ where: { chave: 'modo_gratuito' } }),
+      prisma.configuracoes.findUnique({ where: { chave: 'TEMPO_MAXIMO_MUSICA' } }),
+      prisma.configuracoes.findUnique({ where: { chave: 'PRECO_MUSICA_NORMAL' } }),
+      prisma.configuracoes.findUnique({ where: { chave: 'PRECO_MUSICA_PRIORITARIA' } }),
     ]);
 
     // Validar duração da música

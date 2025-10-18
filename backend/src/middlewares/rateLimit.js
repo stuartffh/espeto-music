@@ -29,7 +29,7 @@ async function verificarRateLimit(ip) {
   const agora = new Date();
 
   // Buscar rate limit do IP
-  let rateLimit = await prisma.rateLimit.findFirst({
+  let rateLimit = await prisma.rate_limits.findFirst({
     where: { ip },
   });
 
@@ -37,7 +37,7 @@ async function verificarRateLimit(ip) {
   if (!rateLimit) {
     const resetaEm = new Date(Date.now() + 30 * 60 * 1000); // 30 minutos
 
-    rateLimit = await prisma.rateLimit.create({
+    rateLimit = await prisma.rate_limits.create({
       data: {
         ip,
         contador: 0,
@@ -50,7 +50,7 @@ async function verificarRateLimit(ip) {
   if (rateLimit.resetaEm <= agora) {
     const novoResetaEm = new Date(Date.now() + 30 * 60 * 1000);
 
-    rateLimit = await prisma.rateLimit.update({
+    rateLimit = await prisma.rate_limits.update({
       where: { id: rateLimit.id },
       data: {
         contador: 0,
@@ -70,7 +70,7 @@ async function incrementarContador(ip, quantidade = 1) {
 
   const novoContador = rateLimit.contador + quantidade;
 
-  const rateLimitAtualizado = await prisma.rateLimit.update({
+  const rateLimitAtualizado = await prisma.rate_limits.update({
     where: { id: rateLimit.id },
     data: {
       contador: novoContador,
@@ -194,7 +194,7 @@ async function limparRateLimitsExpirados() {
   // Manter registros por 1 hora após resetar (para histórico)
   const umDiaAtras = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const resultado = await prisma.rateLimit.deleteMany({
+  const resultado = await prisma.rate_limits.deleteMany({
     where: {
       resetaEm: {
         lt: umDiaAtras,

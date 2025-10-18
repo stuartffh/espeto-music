@@ -11,7 +11,7 @@ function gerarCodigo() {
 // Listar todos os gift cards (admin)
 exports.listar = async (req, res) => {
   try {
-    const gifts = await prisma.giftCard.findMany({
+    const gifts = await prisma.gift_cards.findMany({
       orderBy: { criadoEm: 'desc' },
       include: {
         pedidoMusica: {
@@ -42,7 +42,7 @@ exports.criar = async (req, res) => {
 
     const codigo = gerarCodigo();
 
-    const gift = await prisma.giftCard.create({
+    const gift = await prisma.gift_cards.create({
       data: {
         codigo,
         valor: valor || 0,
@@ -64,7 +64,7 @@ exports.validar = async (req, res) => {
   try {
     const { codigo } = req.params;
 
-    const gift = await prisma.giftCard.findUnique({
+    const gift = await prisma.gift_cards.findUnique({
       where: { codigo: codigo.toUpperCase() }
     });
 
@@ -104,7 +104,7 @@ exports.usar = async (req, res) => {
   try {
     const { codigo, pedidoMusicaId, nomeCliente } = req.body;
 
-    const gift = await prisma.giftCard.findUnique({
+    const gift = await prisma.gift_cards.findUnique({
       where: { codigo: codigo.toUpperCase() }
     });
 
@@ -150,7 +150,7 @@ exports.usar = async (req, res) => {
     console.log('💰 [GIFT CARD] Processando pedido:', pedido.id);
 
     // Marcar gift como usado
-    const giftAtualizado = await prisma.giftCard.update({
+    const giftAtualizado = await prisma.gift_cards.update({
       where: { id: gift.id },
       data: {
         usado: true,
@@ -230,7 +230,7 @@ exports.desativar = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const gift = await prisma.giftCard.update({
+    const gift = await prisma.gift_cards.update({
       where: { id },
       data: { ativo: false }
     });
@@ -247,7 +247,7 @@ exports.deletar = async (req, res) => {
   try {
     const { id } = req.params;
 
-    await prisma.giftCard.delete({
+    await prisma.gift_cards.delete({
       where: { id }
     });
 
@@ -272,7 +272,7 @@ exports.usarCarrinho = async (req, res) => {
     }
 
     // Buscar gift card
-    const gift = await prisma.giftCard.findUnique({
+    const gift = await prisma.gift_cards.findUnique({
       where: { codigo: codigo.toUpperCase() }
     });
 
@@ -380,7 +380,7 @@ exports.usarCarrinho = async (req, res) => {
     console.log(`✅ [GIFT CARD CARRINHO] ${pedidosCriados.length} pedido(s) criado(s)`);
 
     // Marcar gift como usado (vincular ao primeiro pedido)
-    const giftAtualizado = await prisma.giftCard.update({
+    const giftAtualizado = await prisma.gift_cards.update({
       where: { id: gift.id },
       data: {
         usado: true,

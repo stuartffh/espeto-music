@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "gift_cards" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "codigo" TEXT NOT NULL,
     "valor" REAL NOT NULL,
     "quantidadeMusicas" INTEGER NOT NULL,

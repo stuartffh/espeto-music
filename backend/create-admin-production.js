@@ -20,13 +20,13 @@ async function createAdminUser() {
     const senhaHash = await bcrypt.hash('admin123', 10);
 
     // Verificar se já existe
-    const existing = await prisma.admin.findUnique({
+    const existing = await prisma.admins.findUnique({
       where: { username: 'admin' }
     });
 
     if (existing) {
       console.log('⚠️  Admin já existe, atualizando senha...');
-      await prisma.admin.update({
+      await prisma.admins.update({
         where: { username: 'admin' },
         data: {
           password: senhaHash,
@@ -35,7 +35,7 @@ async function createAdminUser() {
       });
       console.log('✅ Senha do admin atualizada!');
     } else {
-      await prisma.admin.create({
+      await prisma.admins.create({
         data: {
           username: 'admin',
           password: senhaHash,
