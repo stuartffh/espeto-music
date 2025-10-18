@@ -83,10 +83,22 @@ async function main() {
     ];
 
     for (const config of configs) {
-      await prisma.configuracao.upsert({
+      await prisma.configuracoes.upsert({
         where: { chave: config.chave },
-        update: config,
-        create: config,
+        update: {
+          valor: config.valor,
+          descricao: config.descricao,
+          tipo: config.tipo,
+          atualizadoEm: new Date()
+        },
+        create: {
+          id: `config-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          chave: config.chave,
+          valor: config.valor,
+          descricao: config.descricao,
+          tipo: config.tipo,
+          atualizadoEm: new Date()
+        },
       });
       console.log(`   ✅ ${config.chave}: ${config.valor}`);
     }
@@ -99,8 +111,14 @@ async function main() {
 
     for (const palavra of palavrasProibidas) {
       try {
-        await prisma.palavraProibida.create({
-          data: palavra,
+        await prisma.palavras_proibidas.create({
+          data: {
+            id: `palavra-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            palavra: palavra.palavra,
+            categoria: palavra.categoria,
+            severidade: palavra.severidade,
+            ativo: true
+          },
         });
         adicionadas++;
       } catch (error) {
@@ -117,7 +135,7 @@ async function main() {
     // 3. Estatísticas
     console.log('\n📊 Estatísticas do sistema de moderação:');
 
-    const totalPalavras = await prisma.palavraProibida.count();
+    const totalPalavras = await prisma.palavras_proibidas.count();
     const palavrasPorSeveridade = await prisma.$queryRaw`
       SELECT severidade, COUNT(*) as total
       FROM palavras_proibidas
