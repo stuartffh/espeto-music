@@ -93,11 +93,14 @@ function Panel() {
   const [duration, setDuration] = useState(0);
   const [qrCodeData, setQrCodeData] = useState(null);
   const [showQueue, setShowQueue] = useState(false); // Controle de visibilidade da próxima música
+  const [musicaAmbiente, setMusicaAmbiente] = useState(null); // Música ambiente quando fila vazia
+  const [tocandoAmbiente, setTocandoAmbiente] = useState(false); // Flag se está tocando música ambiente
 
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const videoDescansoRef = useRef(null);
   const queueTimerRef = useRef(null); // Timer para auto-hide da fila
+  const ambientePlayerRef = useRef(null); // Ref para o player de música ambiente
 
   // 🧹 LIMPEZA AUTOMÁTICA: Sempre começar com conexão limpa na TV
   useEffect(() => {
@@ -160,6 +163,18 @@ function Panel() {
         });
         setConfigs(configMap);
         console.log('⚙️ Configurações carregadas:', configMap);
+
+        // Configurar música ambiente se ativa
+        if (configMap.MUSICA_AMBIENTE_ATIVA === 'true' && configMap.MUSICA_AMBIENTE_YOUTUBE_ID) {
+          setMusicaAmbiente({
+            youtubeId: configMap.MUSICA_AMBIENTE_YOUTUBE_ID,
+            titulo: configMap.MUSICA_AMBIENTE_TITULO || 'Música Ambiente',
+            volume: parseInt(configMap.MUSICA_AMBIENTE_VOLUME) || 30
+          });
+          console.log('🎵 Música ambiente configurada:', configMap.MUSICA_AMBIENTE_TITULO);
+        } else {
+          setMusicaAmbiente(null);
+        }
 
         // Aplicar favicon customizado
         if (configMap.FAVICON_URL) {
@@ -672,6 +687,21 @@ function Panel() {
     };
   }, [currentTime, duration, fila.length, estadoPlayer?.status]); // Removido showQueue das dependências
 
+  // Controlar música ambiente - tocar quando não há fila e parar quando houver músicas
+  useEffect(() => {
+    const deveMostrarAmbiente = musicaAmbiente &&
+                                fila.length === 0 &&
+                                (!estadoPlayer || estadoPlayer.status === 'stopped');
+
+    if (deveMostrarAmbiente && !tocandoAmbiente) {
+      console.log('🎵 Iniciando música ambiente:', musicaAmbiente.titulo);
+      setTocandoAmbiente(true);
+    } else if (!deveMostrarAmbiente && tocandoAmbiente) {
+      console.log('⏹️ Parando música ambiente - música na fila ou tocando');
+      setTocandoAmbiente(false);
+    }
+  }, [musicaAmbiente, fila.length, estadoPlayer?.status, tocandoAmbiente]);
+
   const musicaAtual = estadoPlayer?.musicaAtual;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -919,6 +949,39 @@ function Panel() {
                 </p>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* Player de Música Ambiente - Minimizado no canto inferior */}
+        {tocandoAmbiente && musicaAmbiente && (
+          <motion.div
+            className="fixed bottom-4 right-4 glass-heavy border border-neon-cyan/30 rounded-xl shadow-2xl z-40 overflow-hidden"
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ width: '320px', height: '200px' }}
+          >
+            {/* Header do player minimizado */}
+            <div className="bg-gradient-to-r from-neon-cyan/20 to-neon-purple/20 p-3 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse"></div>
+                  <p className="text-xs text-gray-300 font-semibold">Música Ambiente</p>
+                </div>
+                <p className="text-xs text-gray-400">{musicaAmbiente.titulo}</p>
+              </div>
+            </div>
+
+            {/* Player do YouTube incorporado */}
+            <iframe
+              ref={ambientePlayerRef}
+              src={`https://www.youtube.com/embed/${musicaAmbiente.youtubeId}?autoplay=1&loop=1&playlist=${musicaAmbiente.youtubeId}&controls=0&showinfo=0&modestbranding=1&rel=0&volume=${musicaAmbiente.volume}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full"
+              style={{ border: 'none' }}
+            />
           </motion.div>
         )}
       </div>

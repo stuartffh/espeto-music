@@ -691,9 +691,51 @@ function AdminDashboard() {
           )}
         </div>
 
+        {/* Seção Música Ambiente */}
         <Card variant="glass">
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            🎵 Música Ambiente
+          </h3>
+          <p className="text-sm text-gray-400 mb-4">
+            Configure uma música para tocar automaticamente quando não houver músicas na fila.
+            O player aparecerá minimizado no canto inferior da tela.
+          </p>
           <div className="space-y-3">
-            {configs.map((config) => {
+            {configs.filter(c => c.chave.startsWith('MUSICA_AMBIENTE_')).map((config) => {
+              const isModified = configsModificadas.hasOwnProperty(config.chave);
+              return (
+                <motion.div
+                  key={config.chave}
+                  className={`flex flex-col lg:flex-row lg:items-start lg:justify-between p-4 glass rounded-lg hover:bg-neon-cyan/5 transition gap-3 ${
+                    isModified ? 'border-2 border-yellow-500/50 bg-yellow-500/5' : ''
+                  }`}
+                  whileHover={{ scale: 1.005 }}
+                >
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-white text-sm md:text-base break-words flex items-center gap-2">
+                      {config.chave.replace(/MUSICA_AMBIENTE_/g, '').replace(/_/g, ' ')}
+                      {isModified && (
+                        <span className="text-xs text-yellow-400">*</span>
+                      )}
+                    </h3>
+                    {config.descricao && (
+                      <p className="text-xs md:text-sm text-gray-400 mt-1 break-words">{config.descricao}</p>
+                    )}
+                  </div>
+                  <div className="lg:ml-4 lg:min-w-[200px] lg:max-w-[300px] w-full lg:w-auto flex-shrink-0">
+                    {renderCampoConfig(config)}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Outras Configurações */}
+        <Card variant="glass">
+          <h3 className="text-xl font-bold text-white mb-4">⚙️ Configurações Gerais</h3>
+          <div className="space-y-3">
+            {configs.filter(c => !c.chave.startsWith('MUSICA_AMBIENTE_')).map((config) => {
               const isModified = configsModificadas.hasOwnProperty(config.chave);
               return (
                 <motion.div

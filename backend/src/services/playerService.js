@@ -49,7 +49,7 @@ async function recuperarEstado() {
     console.log('🔄 Recuperando estado do player do banco de dados...');
 
     // Buscar estado salvo
-    let estadoSalvo = await prisma.estadoPlayer.findUnique({
+    let estadoSalvo = await prisma.estado_player.findUnique({
       where: { id: 'singleton' }
     });
 
@@ -57,7 +57,7 @@ async function recuperarEstado() {
     if (!estadoSalvo) {
       console.log('📝 Criando registro inicial de estado...');
       // Primeiro criar ou buscar estabelecimento padrão
-      let estabelecimento = await prisma.estabelecimento.findFirst();
+      let estabelecimento = await prisma.estabelecimentos.findFirst();
       if (!estabelecimento) {
         estabelecimento = await prisma.estabelecimento.create({
           data: {
