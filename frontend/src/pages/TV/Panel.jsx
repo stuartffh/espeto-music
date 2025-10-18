@@ -544,6 +544,10 @@ function Panel() {
           setIframeReady(true);
           setAutoplayConsent(Boolean(consentValue));
           break;
+        case 'player-destroyed':
+          console.log('🔄 Player foi destruído, aguardando recriação...');
+          setIframeReady(false);
+          break;
         case 'autoplay-consent-changed':
           setAutoplayConsent(Boolean(event.data?.value));
           break;
@@ -1021,25 +1025,27 @@ function Panel() {
             </>
           )}
 
-          {musicaAtual ? (
-            <div className="relative w-full h-full p-6">
-              <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl">
-                <iframe
-                  ref={videoRef}
-                  src="/tv-player.html"
-                  className="w-full h-full border-0"
-                  allow="autoplay; fullscreen"
-                  onLoad={() => {
-                    console.log('✅ Player da TV carregado');
-                    const iframeWindow = videoRef.current?.contentWindow;
-                    if (iframeWindow) {
-                      iframeWindow.postMessage({ type: 'host-ready' }, '*');
-                    }
-                  }}
-                />
-              </div>
+          {/* Iframe do player - SEMPRE renderizado para evitar recriação */}
+          <div className={`relative w-full h-full p-6 ${!musicaAtual ? 'hidden' : ''}`}>
+            <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl">
+              <iframe
+                ref={videoRef}
+                src="/tv-player.html"
+                className="w-full h-full border-0"
+                allow="autoplay; fullscreen"
+                onLoad={() => {
+                  console.log('✅ Player da TV carregado');
+                  const iframeWindow = videoRef.current?.contentWindow;
+                  if (iframeWindow) {
+                    iframeWindow.postMessage({ type: 'host-ready' }, '*');
+                  }
+                }}
+              />
             </div>
-          ) : (
+          </div>
+
+          {/* Tela de descanso - mostrar quando não há música */}
+          {!musicaAtual && (
             <>
               {/* Vídeo de descanso */}
               {configs.VIDEO_DESCANSO_ATIVO === 'true' && configs.VIDEO_DESCANSO_URL ? (

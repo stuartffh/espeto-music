@@ -537,6 +537,10 @@
               hideError();
               hideLoading();
 
+              // Notificar Panel.jsx que player está pronto (importante após recriar player)
+              sendMessage('player-ready');
+              console.log('📡 Evento player-ready enviado ao Panel.jsx');
+
               // FORÇAR QUALIDADE HD para melhor FPS
               try {
                 const availableQualityLevels = event.target.getAvailableQualityLevels();
@@ -930,6 +934,8 @@
                 stopUpdateLoop(); // Para o loop de atualização
                 state.player.destroy(); // Destroi o player do YouTube
                 state.player = null;
+                sendMessage('player-destroyed'); // Notificar Panel.jsx
+                console.log('📡 Evento player-destroyed enviado ao Panel.jsx');
               } catch (e) {
                 console.warn('⚠️ Erro ao destruir player antigo:', e);
               }
