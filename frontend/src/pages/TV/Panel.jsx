@@ -108,6 +108,10 @@ function Panel() {
   const dedicatoriaTimerRef = useRef(null); // Timer para auto-hide da dedicatória
   const lastLoadedVideoIdRef = useRef(null); // Rastrear último vídeo enviado para evitar duplicação
 
+  // Variáveis derivadas do estado (devem vir antes dos useEffects que as usam)
+  const musicaAtual = estadoPlayer?.musicaAtual;
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
   // 🧹 LIMPEZA AUTOMÁTICA: Sempre começar com conexão limpa na TV
   useEffect(() => {
     console.log('🧹 [TV] Limpando cookies e storage para conexão limpa...');
@@ -616,25 +620,6 @@ function Panel() {
           // Vídeo iniciado com sucesso
           console.log('✅ Vídeo iniciado:', event.data.musica?.titulo);
           break;
-        case 'player-time-update':
-          // Receber update de tempo do YouTube player
-          if (event.data.time !== undefined) {
-            // Atualizar estado local
-            setCurrentTime(event.data.time);
-
-            // Atualizar duração se disponível
-            if (event.data.duration !== undefined && event.data.duration > 0) {
-              setDuration(event.data.duration);
-            }
-
-            // Enviar para o backend via WebSocket (mais eficiente que HTTP)
-            // Throttle de 2s para não sobrecarregar
-            if (!window.lastTimeSyncSent || Date.now() - window.lastTimeSyncSent > 2000) {
-              socket.emit('player:tempo-sync', { tempo: event.data.time });
-              window.lastTimeSyncSent = Date.now();
-            }
-          }
-          break;
         default:
           break;
       }
@@ -896,9 +881,6 @@ function Panel() {
       }
     }
   }, [currentTime, duration, fila.length, estadoPlayer?.status, estadoPlayer?.musicaAtual, showProximaFullscreen]);
-
-  const musicaAtual = estadoPlayer?.musicaAtual;
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   // Log para debug de fullscreen
   useEffect(() => {
