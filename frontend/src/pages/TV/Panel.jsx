@@ -815,6 +815,19 @@ function Panel() {
     }
   }, [musicaAmbiente, fila.length, estadoPlayer?.musicaAtual, estadoPlayer?.status, tocandoAmbiente]);
 
+  // Garantir que vídeo de descanso toque quando visível
+  useEffect(() => {
+    if (!musicaAtual && videoDescansoRef.current) {
+      // Garantir que vídeo de descanso esteja tocando
+      const playPromise = videoDescansoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn('⚠️ Autoplay do vídeo de descanso bloqueado:', err);
+        });
+      }
+    }
+  }, [musicaAtual]);
+
   // Detectar mudanças de fullscreen DO IFRAME (botão do player, não F11)
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -1047,27 +1060,28 @@ function Panel() {
             </div>
           </div>
 
+          {/* Vídeo de descanso - SEMPRE renderizado para carregar antecipadamente */}
+          {configs.VIDEO_DESCANSO_ATIVO === 'true' && configs.VIDEO_DESCANSO_URL && (
+            <video
+              ref={videoDescansoRef}
+              src={configs.VIDEO_DESCANSO_URL}
+              className={`absolute inset-0 w-full h-full object-cover ${musicaAtual ? 'hidden' : ''}`}
+              autoPlay
+              loop
+              muted
+              playsInline
+              onError={(e) => {
+                console.error('❌ Erro ao carregar vídeo de descanso:', e);
+                if (videoDescansoRef.current) {
+                  videoDescansoRef.current.style.display = 'none';
+                }
+              }}
+            />
+          )}
+
           {/* Tela de descanso - mostrar quando não há música */}
           {!musicaAtual && (
             <>
-              {/* Vídeo de descanso */}
-              {configs.VIDEO_DESCANSO_ATIVO === 'true' && configs.VIDEO_DESCANSO_URL ? (
-                <video
-                  ref={videoDescansoRef}
-                  src={configs.VIDEO_DESCANSO_URL}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  onError={(e) => {
-                    console.error('❌ Erro ao carregar vídeo de descanso:', e);
-                    if (videoDescansoRef.current) {
-                      videoDescansoRef.current.style.display = 'none';
-                    }
-                  }}
-                />
-              ) : null}
 
               {/* Tela de aguardo */}
               <motion.div
