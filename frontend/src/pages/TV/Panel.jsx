@@ -4,6 +4,7 @@ import { Music, User, Clock, Wifi, WifiOff } from 'lucide-react';
 import axios from 'axios';
 import socket from '../../services/socket';
 import EqualizerAnimation from '../../components/EqualizerAnimation';
+import FullscreenOverlay from '../../components/FullscreenOverlay';
 
 const sanitizeUrl = (url) => {
   if (!url) {
@@ -97,6 +98,8 @@ function Panel() {
   const [tocandoAmbiente, setTocandoAmbiente] = useState(false); // Flag se está tocando música ambiente
   const [showDedicatoria, setShowDedicatoria] = useState(false); // Controle de visibilidade da dedicatória
   const [tempoDedicatoria, setTempoDedicatoria] = useState(10); // Tempo de exibição da dedicatória
+  const [isFullscreen, setIsFullscreen] = useState(false); // Detecta se está em fullscreen
+  const [showProximaFullscreen, setShowProximaFullscreen] = useState(false); // Controle para próxima música em fullscreen
 
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -755,6 +758,61 @@ function Panel() {
     }
   }, [musicaAmbiente, fila.length, estadoPlayer?.status, tocandoAmbiente]);
 
+  // Detectar mudanças de fullscreen
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+
+      console.log('🖥️ Fullscreen mudou:', isCurrentlyFullscreen);
+      setIsFullscreen(isCurrentlyFullscreen);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
+  // Controlar exibição da próxima música em fullscreen (10s antes do fim)
+  useEffect(() => {
+    if (!estadoPlayer?.musicaAtual || estadoPlayer.status !== 'playing' || !duration || duration <= 0) {
+      setShowProximaFullscreen(false);
+      return;
+    }
+
+    const timeRemaining = duration - currentTime;
+
+    // Em fullscreen: mostrar próxima música apenas 10s antes do fim
+    if (isFullscreen) {
+      if (timeRemaining <= 10 && timeRemaining > 0 && fila.length > 0) {
+        if (!showProximaFullscreen) {
+          console.log('🎵 [FULLSCREEN] Mostrando próxima música (10s antes do fim)');
+          setShowProximaFullscreen(true);
+        }
+      } else {
+        if (showProximaFullscreen) {
+          console.log('🎵 [FULLSCREEN] Escondendo próxima música');
+          setShowProximaFullscreen(false);
+        }
+      }
+    } else {
+      // Fora de fullscreen: não mostrar
+      setShowProximaFullscreen(false);
+    }
+  }, [currentTime, duration, fila.length, estadoPlayer?.status, estadoPlayer?.musicaAtual, isFullscreen, showProximaFullscreen]);
+
   const musicaAtual = estadoPlayer?.musicaAtual;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -763,8 +821,19 @@ function Panel() {
       ref={containerRef}
       className="h-screen w-screen flex flex-col bg-gradient-to-br from-dark-bg via-dark-surface to-dark-bg text-white overflow-hidden"
     >
-      {/* Header Superior - Informações */}
-      <div className="flex-shrink-0 glass-heavy backdrop-blur-xl border-b border-white/10 p-4">
+      {/* Fullscreen Overlay */}
+      {isFullscreen && (
+        <FullscreenOverlay
+          qrCodeData={qrCodeData}
+          proximaMusica={fila.length > 0 ? fila[0] : null}
+          showProxima={showProximaFullscreen}
+          configs={configs}
+        />
+      )}
+
+      {/* Header Superior - Informações (esconder em fullscreen) */}
+      {!isFullscreen && (
+        <div className="flex-shrink-0 glass-heavy backdrop-blur-xl border-b border-white/10 p-4">
         <div className="flex items-center justify-between gap-4">
           {/* Info da música atual ou logo */}
           <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -847,10 +916,11 @@ function Panel() {
           Barra de progresso removida daqui.
           O iframe tv-player.html já tem barra de progresso (OSD) integrada.
         */}
-      </div>
+        </div>
+      )}
 
-      {/* Área Principal: Player + Sidebar */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      {/* Área Principal: Player + Sidebar (sem sidebar em fullscreen) */}
+      <div className={`flex-1 flex overflow-hidden min-h-0 ${isFullscreen ? 'flex-col' : ''}`}>
         {/* Player - Ocupa todo espaço disponível */}
         <div className="flex-1 flex items-center justify-center bg-black relative overflow-hidden">
           {/* Background */}
@@ -964,8 +1034,8 @@ function Panel() {
           )}
         </div>
 
-        {/* Notificação - Próxima Música (Auto-hide) */}
-        {showQueue && fila.length > 0 && fila[0] && (
+        {/* Notificação - Próxima Música (Auto-hide) - Apenas fora de fullscreen */}
+        {!isFullscreen && showQueue && fila.length > 0 && fila[0] && (
           <motion.div
             className="absolute top-4 right-4 glass-heavy border border-white/10 rounded-2xl shadow-2xl z-50 p-6 max-w-md"
             initial={{ y: -100, opacity: 0 }}

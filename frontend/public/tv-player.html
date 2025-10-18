@@ -779,9 +779,11 @@
     function handleFullscreenChange() {
       const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
 
+      // NÃO mostrar music-info e queue em fullscreen
+      // Isso agora é controlado pelo FullscreenOverlay.jsx no Panel.jsx
       if (isFullscreen) {
-        els.musicInfo.classList.add('visible');
-        els.queue.classList.add('visible');
+        els.musicInfo.classList.remove('visible');
+        els.queue.classList.remove('visible');
       } else {
         els.musicInfo.classList.remove('visible');
         els.queue.classList.remove('visible');
