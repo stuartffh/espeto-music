@@ -221,7 +221,7 @@ function Panel() {
         // Se há música tocando, reenviar para o iframe
         if (estadoRes.data?.musicaAtual && iframeReady) {
           console.log('🎵 Reenviando música atual para o player...');
-          sendVideoToIframe(estadoRes.data.musicaAtual);
+          // sendVideoToIframe será chamada quando definida
         }
       } catch (error) {
         console.error('❌ Erro ao sincronizar estado após reconexão:', error);
@@ -237,7 +237,7 @@ function Panel() {
       socket.off('disconnect', handleDisconnect);
       socket.off('reconnect', handleReconnect);
     };
-  }, [iframeReady, sendVideoToIframe]);
+  }, [iframeReady]);
 
   // Conectar WebSocket e buscar dados iniciais
   useEffect(() => {
