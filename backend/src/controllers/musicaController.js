@@ -15,11 +15,12 @@ async function buscar(req, res) {
       return res.status(400).json({ error: 'Parâmetro de busca é obrigatório' });
     }
 
-    // Buscar configuração de filtro de busca
+    // Buscar configurações
     const prisma = require('../config/database');
-    const configFiltro = await prisma.configuracoes.findUnique({
-      where: { chave: 'SEARCH_FILTER_KEYWORD' }
-    });
+    const [configFiltro, configTempoMaximo] = await Promise.all([
+      prisma.configuracoes.findUnique({ where: { chave: 'SEARCH_FILTER_KEYWORD' } }),
+      prisma.configuracoes.findUnique({ where: { chave: 'TEMPO_MAXIMO_MUSICA' } })
+    ]);
 
     // Aplicar filtro automático se configurado
     let queryFinal = q;
@@ -32,7 +33,11 @@ async function buscar(req, res) {
       }
     }
 
-    const videos = await buscarVideos(queryFinal, parseInt(maxResults) || 10);
+    // Calcular duração máxima em segundos
+    const tempoMaximoMinutos = configTempoMaximo ? parseInt(configTempoMaximo.valor) : 10;
+    const maxDuration = tempoMaximoMinutos * 60; // Converter para segundos
+
+    const videos = await buscarVideos(queryFinal, parseInt(maxResults) || 10, maxDuration);
 
     // Registrar busca no histórico (async, não bloquear resposta)
     registrarBusca(q, null, videos.length).catch(err =>

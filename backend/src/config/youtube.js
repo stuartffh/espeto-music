@@ -4,14 +4,19 @@ const yts = require('yt-search');
  * Busca vídeos no YouTube (GRATUITO - sem API key)
  * @param {string} query - Termo de busca
  * @param {number} maxResults - Número máximo de resultados (padrão: 10)
+ * @param {number} maxDuration - Duração máxima em segundos (padrão: 600 = 10 minutos)
  * @returns {Promise<Array>} Lista de vídeos encontrados
  */
-async function buscarVideos(query, maxResults = 10) {
+async function buscarVideos(query, maxResults = 10, maxDuration = 600) {
   try {
     const result = await yts(query);
-    const videos = result.videos.slice(0, maxResults);
 
-    return videos.map((video) => ({
+    // Filtrar vídeos por duração máxima e pegar mais resultados para compensar os filtrados
+    const videosFiltrados = result.videos
+      .filter(video => video.seconds && video.seconds <= maxDuration)
+      .slice(0, maxResults);
+
+    return videosFiltrados.map((video) => ({
       id: video.videoId,
       titulo: video.title,
       canal: video.author.name,

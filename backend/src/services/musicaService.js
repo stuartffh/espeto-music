@@ -80,14 +80,13 @@ async function criarPedidoMusica({
  * Ordenação: música tocando > prioritárias > normais (por ordem de chegada)
  */
 async function buscarFilaMusicas() {
+  // Retorna apenas músicas PAGAS (próximas a tocar)
+  // Não inclui a música que está tocando (status: 'tocando')
   return await prisma.pedidos_musica.findMany({
     where: {
-      status: {
-        in: ['pago', 'tocando'],
-      },
+      status: 'pago',
     },
     orderBy: [
-      { status: 'desc' },      // "tocando" vem primeiro
       { prioridade: 'desc' },  // músicas prioritárias antes
       { criadoEm: 'asc' },     // depois por ordem de chegada
     ],
