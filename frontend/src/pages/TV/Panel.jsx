@@ -263,6 +263,31 @@ function Panel() {
   useEffect(() => {
     console.log('🔌 Usando socket global compartilhado...');
 
+    // Solicitar estado inicial do servidor (com serverStartTime)
+    const storedServerStartTime = localStorage.getItem('serverStartTime');
+    socket.emit('request:estado-inicial', {
+      clientServerStartTime: storedServerStartTime ? parseInt(storedServerStartTime) : null
+    });
+
+    // Listener para estado inicial (salvar serverStartTime)
+    socket.on('estado:inicial', (data) => {
+      console.log('📥 Estado inicial recebido:', data);
+
+      // Salvar serverStartTime no localStorage
+      if (data.serverStartTime) {
+        localStorage.setItem('serverStartTime', data.serverStartTime.toString());
+        console.log('💾 ServerStartTime salvo:', data.serverStartTime);
+      }
+
+      // Atualizar fila e música atual
+      if (data.fila) {
+        setFila(data.fila.filter(m => m.status === 'pago'));
+      }
+      if (data.musicaAtual) {
+        setEstadoPlayer(prev => ({ ...prev, musicaAtual: data.musicaAtual }));
+      }
+    });
+
     // Autenticar TV no controle remoto
     socket.emit('remote-control-auth', {
       token: 'tv-token', // Em produção, usar token real
@@ -418,15 +443,29 @@ function Panel() {
     socket.on('fila:vazia', handleFilaVazia);
     socket.on('config:atualizada', handleConfigAtualizada);
 
+    // 🔄 Evento de servidor reiniciado (auto-reload)
+    const handleServerReload = (data) => {
+      console.log('🔄 [RELOAD] Servidor reiniciou! Recarregando página...');
+      console.log('   Old start time:', data.oldStartTime);
+      console.log('   New start time:', data.newStartTime);
+
+      // Forçar reload da página
+      window.location.reload();
+    };
+
+    socket.on('server:reload-required', handleServerReload);
+
     // Cleanup: remover event listeners quando componente desmontar
     return () => {
       socket.off('player:iniciar', handlePlayerIniciar);
       socket.off('player:pausar', handlePlayerPausar);
       socket.off('player:retomar', handlePlayerRetomar);
       socket.off('player:parar', handlePlayerParar);
+      socket.off('estado:inicial');
       socket.off('fila:atualizada', handleFilaAtualizada);
       socket.off('fila:vazia', handleFilaVazia);
       socket.off('config:atualizada', handleConfigAtualizada);
+      socket.off('server:reload-required', handleServerReload);
     };
   }, []);
 
@@ -840,6 +879,26 @@ function Panel() {
     console.log('🎬 [PANEL] Estado de fullscreen:', isFullscreen);
   }, [isFullscreen]);
 
+  // Monitorar reinicialização do backend via WebSocket
+  useEffect(() => {
+    if (!socket) return;
+
+    // Listener para comando de reload do servidor
+    const handleServerReload = (data) => {
+      console.log('🔄 [WEBSOCKET] Servidor reiniciou! Recarregando página...');
+      console.log('  - Dados:', data);
+
+      // Recarregar página imediatamente sem modal
+      window.location.reload();
+    };
+
+    socket.on('server:reload-required', handleServerReload);
+
+    return () => {
+      socket.off('server:reload-required', handleServerReload);
+    };
+  }, [socket]);
+
   return (
     <div
       ref={containerRef}
@@ -1029,8 +1088,8 @@ function Panel() {
                   </p>
                 </motion.div>
 
-                {/* QR Code */}
-                {qrCodeData && (
+                {/* QR Code - Ocultar em fullscreen para evitar duplicação com overlay */}
+                {qrCodeData && !isFullscreen && (
                   <motion.div
                     className="glass-heavy rounded-2xl p-6 max-w-sm mx-auto neon-border"
                     initial={{ opacity: 0 }}

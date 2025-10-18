@@ -17,12 +17,16 @@ const webhookRoutes = require('./webhookRoutes');
 const carrinhoRoutes = require('./carrinhoRoutes');
 const historicoRoutes = require('./historico');
 
+// Timestamp de inicialização do servidor (usado para detectar reinicializações)
+const SERVER_START_TIME = Date.now();
+
 // Health check
 router.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    serverStartTime: SERVER_START_TIME, // Timestamp único de quando o servidor iniciou
   });
 });
 

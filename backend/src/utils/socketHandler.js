@@ -30,7 +30,12 @@ const remoteControlService = require('../services/remoteControlService');
  * - pedido:pago - Confirmação de pagamento
  * - remote-control - Comando para o player
  * - remote-control-response - ACK/NACK de comandos
+ * - server:reload-required - Servidor reiniciou, cliente deve recarregar
  */
+
+// Timestamp de quando o servidor iniciou (para detectar reinicializações)
+const SERVER_START_TIME = Date.now();
+
 function setupSocketHandlers(io) {
   // Inicializar serviços com io
   playerService.inicializar(io);
@@ -43,17 +48,56 @@ function setupSocketHandlers(io) {
     console.log(`📊 [WEBSOCKET] Total de clientes: ${io.engine.clientsCount}`);
     console.log(`🔧 [WEBSOCKET] Transport: ${socket.conn.transport.name}`);
 
+    // 🔄 DETECTAR RECONEXÃO APÓS REINICIALIZAÇÃO
+    // Verificar se o cliente está se reconectando (handshake com serverStartTime antigo)
+    const clientServerStartTime = socket.handshake.query.serverStartTime;
+
+    if (clientServerStartTime && parseInt(clientServerStartTime) !== SERVER_START_TIME) {
+      console.log('🔄 [WEBSOCKET] Cliente reconectou após reinicialização do servidor!');
+      console.log(`   Cliente conhecia: ${clientServerStartTime}`);
+      console.log(`   Servidor atual: ${SERVER_START_TIME}`);
+      console.log(`   🔃 Enviando comando de reload...`);
+
+      // Emitir evento para forçar reload da página
+      socket.emit('server:reload-required', {
+        oldStartTime: parseInt(clientServerStartTime),
+        newStartTime: SERVER_START_TIME,
+        message: 'Servidor foi reiniciado, recarregando página...'
+      });
+
+      return; // Não processar eventos deste cliente, ele vai recarregar
+    }
+
     // ========== REQUESTS DO CLIENTE ==========
 
     // Envia estado completo ao conectar
-    socket.on('request:estado-inicial', async () => {
+    socket.on('request:estado-inicial', async (data) => {
       try {
+        // 🔄 DETECTAR REINICIALIZAÇÃO DO SERVIDOR
+        // Se o cliente enviar o serverStartTime anterior e for diferente do atual,
+        // significa que o servidor reiniciou
+        if (data && data.clientServerStartTime && data.clientServerStartTime !== SERVER_START_TIME) {
+          console.log('🔄 [WEBSOCKET] Servidor reiniciou! Cliente precisa recarregar.');
+          console.log(`   Cliente conhecia: ${data.clientServerStartTime}`);
+          console.log(`   Servidor atual: ${SERVER_START_TIME}`);
+
+          // Emitir evento para forçar reload da página
+          socket.emit('server:reload-required', {
+            oldStartTime: data.clientServerStartTime,
+            newStartTime: SERVER_START_TIME,
+            message: 'Servidor foi reiniciado, recarregando página...'
+          });
+
+          return; // Não enviar estado inicial, cliente vai recarregar
+        }
+
         const musicaAtual = await musicaService.buscarMusicaAtual();
         const fila = await musicaService.buscarFilaMusicas();
 
         socket.emit('estado:inicial', {
           musicaAtual,
           fila,
+          serverStartTime: SERVER_START_TIME, // Enviar timestamp do servidor
         });
       } catch (error) {
         console.error('Erro ao enviar estado inicial:', error);
