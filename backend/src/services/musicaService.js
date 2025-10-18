@@ -17,7 +17,7 @@ async function criarPedidoMusica({
 }) {
 
   // Verificar limite de músicas na fila
-  const config = await prisma.configuracao.findUnique({
+  const config = await prisma.configuracoes.findUnique({
     where: { chave: 'MAX_MUSICAS_FILA' },
   });
 
@@ -35,7 +35,7 @@ async function criarPedidoMusica({
   }
 
   // Verificar se permite músicas duplicadas
-  const configDuplicadas = await prisma.configuracao.findUnique({
+  const configDuplicadas = await prisma.configuracoes.findUnique({
     where: { chave: 'PERMITIR_MUSICAS_DUPLICADAS' },
   });
 

@@ -4,7 +4,7 @@ ALTER TABLE "pedidos_musica" ADD COLUMN "motivoRejeicao" TEXT;
 
 -- CreateTable
 CREATE TABLE "palavras_proibidas" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "palavra" TEXT NOT NULL,
     "categoria" TEXT NOT NULL DEFAULT 'AMBOS',
     "severidade" TEXT NOT NULL DEFAULT 'MEDIA',

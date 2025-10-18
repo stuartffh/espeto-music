@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "pedidos_musica" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "nomeCliente" TEXT,
     "musicaTitulo" TEXT NOT NULL,
     "musicaYoutubeId" TEXT NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE "pedidos_musica" (
 
 -- CreateTable
 CREATE TABLE "pagamentos" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "mercadoPagoPaymentId" TEXT,
     "mercadoPagoPreferenceId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'pending',
@@ -30,7 +30,7 @@ CREATE TABLE "pagamentos" (
 
 -- CreateTable
 CREATE TABLE "configuracoes" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "chave" TEXT NOT NULL,
     "valor" TEXT NOT NULL,
     "descricao" TEXT,

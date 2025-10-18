@@ -18,7 +18,7 @@ async function testarAutoplay() {
 
   // 2. Verificar estado no banco
   console.log('2️⃣ Verificando estado do player no banco:');
-  const estadoBanco = await prisma.estadoPlayer.findUnique({
+  const estadoBanco = await prisma.estado_player.findUnique({
     where: { id: 'singleton' }
   });
   console.log('   - Status:', estadoBanco?.status || 'Não encontrado');
@@ -71,12 +71,12 @@ async function testarAutoplay() {
 
   // 5. Verificar configurações
   console.log('5️⃣ Verificando configurações do sistema:');
-  const maxFila = await prisma.configuracao.findUnique({
+  const maxFila = await prisma.configuracoes.findUnique({
     where: { chave: 'MAX_MUSICAS_FILA' }
   });
   console.log('   - MAX_MUSICAS_FILA:', maxFila?.valor || 'não configurado');
 
-  const permiteDuplicadas = await prisma.configuracao.findUnique({
+  const permiteDuplicadas = await prisma.configuracoes.findUnique({
     where: { chave: 'PERMITIR_MUSICAS_DUPLICADAS' }
   });
   console.log('   - PERMITIR_MUSICAS_DUPLICADAS:', permiteDuplicadas?.valor || 'não configurado');

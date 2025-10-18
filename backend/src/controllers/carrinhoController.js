@@ -67,7 +67,7 @@ async function adicionar(req, res) {
 
     // Buscar preço da música
     const prisma = require('../config/database');
-    const configuracao = await prisma.configuracao.findUnique({
+    const configuracao = await prisma.configuracoes.findUnique({
       where: { chave: 'PRECO_MUSICA' },
     });
     const valor = parseFloat(configuracao?.valor || 5.0);

@@ -56,7 +56,7 @@ async function atualizarTodasSugestoes() {
   for (const categoria of categorias) {
     try {
       // Desativar sugestões antigas de trending desta categoria
-      await prisma.sugestao.updateMany({
+      await prisma.sugestoes.updateMany({
         where: {
           categoria,
           tipo: 'trending',
@@ -71,7 +71,7 @@ async function atualizarTodasSugestoes() {
 
       // Salvar novas sugestões
       for (const [index, sugestao] of sugestoes.entries()) {
-        await prisma.sugestao.create({
+        await prisma.sugestoes.create({
           data: {
             ...sugestao,
             ordem: index,
@@ -108,7 +108,7 @@ async function atualizarTodasSugestoes() {
  */
 async function buscarSugestoesPorCategoria(categoria, limite = 8) {
   try {
-    const sugestoes = await prisma.sugestao.findMany({
+    const sugestoes = await prisma.sugestoes.findMany({
       where: {
         categoria,
         ativo: true,
@@ -136,13 +136,13 @@ async function buscarSugestoesPorCategoria(categoria, limite = 8) {
 async function registrarBusca(termo, categoria = null, resultados = 0) {
   try {
     // Buscar se já existe
-    const existente = await prisma.historicoBusca.findFirst({
+    const existente = await prisma.historico_buscas.findFirst({
       where: { termo: termo.toLowerCase() },
     });
 
     if (existente) {
       // Incrementar contador
-      await prisma.historicoBusca.update({
+      await prisma.historico_buscas.update({
         where: { id: existente.id },
         data: {
           vezesBuscado: existente.vezesBuscado + 1,
@@ -152,7 +152,7 @@ async function registrarBusca(termo, categoria = null, resultados = 0) {
       });
     } else {
       // Criar novo
-      await prisma.historicoBusca.create({
+      await prisma.historico_buscas.create({
         data: {
           termo: termo.toLowerCase(),
           categoria,
@@ -172,7 +172,7 @@ async function registrarBusca(termo, categoria = null, resultados = 0) {
  */
 async function buscarTermosPopulares(limite = 10) {
   try {
-    const termos = await prisma.historicoBusca.findMany({
+    const termos = await prisma.historico_buscas.findMany({
       orderBy: {
         vezesBuscado: 'desc',
       },

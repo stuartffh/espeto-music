@@ -61,9 +61,9 @@ async function seedAll() {
 
     // Buscar estatísticas
     const [configCount, adminCount, moderacaoCount] = await Promise.all([
-      prisma.configuracao.count(),
-      prisma.admin.count(),
-      prisma.palavraProibida.count(),
+      prisma.configuracoes.count(),
+      prisma.admins.count(),
+      prisma.palavras_proibidas.count(),
     ]);
 
     console.log('\n📊 Resumo do banco de dados:');
