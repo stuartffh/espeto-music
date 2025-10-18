@@ -444,10 +444,13 @@ function Panel() {
     }
   }, [fila, iframeReady]);
 
-  // Função para alternar fullscreen
+  // Função para alternar fullscreen do containerRef (página inteira)
   const toggleFullscreen = useCallback(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) {
+      console.warn('⚠️ [PANEL] containerRef não encontrado');
+      return;
+    }
 
     try {
       if (!document.fullscreenElement &&
@@ -455,6 +458,7 @@ function Panel() {
           !document.mozFullScreenElement &&
           !document.msFullscreenElement) {
         // Entrar em fullscreen
+        console.log('🖥️ [PANEL] Entrando em fullscreen do containerRef');
         if (container.requestFullscreen) {
           container.requestFullscreen();
         } else if (container.webkitRequestFullscreen) {
@@ -464,9 +468,9 @@ function Panel() {
         } else if (container.msRequestFullscreen) {
           container.msRequestFullscreen();
         }
-        console.log('🖥️ Entrando em fullscreen');
       } else {
         // Sair de fullscreen
+        console.log('🖥️ [PANEL] Saindo de fullscreen');
         if (document.exitFullscreen) {
           document.exitFullscreen();
         } else if (document.webkitExitFullscreen) {
@@ -476,10 +480,9 @@ function Panel() {
         } else if (document.msExitFullscreen) {
           document.msExitFullscreen();
         }
-        console.log('🖥️ Saindo de fullscreen');
       }
     } catch (err) {
-      console.error('Erro ao alternar fullscreen:', err);
+      console.error('❌ [PANEL] Erro ao alternar fullscreen:', err);
     }
   }, []);
 
@@ -514,6 +517,7 @@ function Panel() {
           }
           break;
         case 'toggle-fullscreen':
+          console.log('📺 [PANEL] Recebido comando toggle-fullscreen do iframe');
           toggleFullscreen();
           break;
         case 'set-volume':
