@@ -799,7 +799,7 @@ function Panel() {
     };
   }, []);
 
-  // Controlar exibição da próxima música em fullscreen (10s antes do fim)
+  // Controlar exibição da próxima música (10s antes do fim) - funciona em todos os modos
   useEffect(() => {
     if (!estadoPlayer?.musicaAtual || estadoPlayer.status !== 'playing' || !duration || duration <= 0) {
       setShowProximaFullscreen(false);
@@ -808,24 +808,19 @@ function Panel() {
 
     const timeRemaining = duration - currentTime;
 
-    // Em fullscreen: mostrar próxima música apenas 10s antes do fim
-    if (isFullscreen) {
-      if (timeRemaining <= 10 && timeRemaining > 0 && fila.length > 0) {
-        if (!showProximaFullscreen) {
-          console.log('🎵 [FULLSCREEN] Mostrando próxima música (10s antes do fim)');
-          setShowProximaFullscreen(true);
-        }
-      } else {
-        if (showProximaFullscreen) {
-          console.log('🎵 [FULLSCREEN] Escondendo próxima música');
-          setShowProximaFullscreen(false);
-        }
+    // Mostrar próxima música apenas 10s antes do fim (quando há próxima música na fila)
+    if (timeRemaining <= 10 && timeRemaining > 0 && fila.length > 0) {
+      if (!showProximaFullscreen) {
+        console.log('🎵 Mostrando próxima música (10s antes do fim)');
+        setShowProximaFullscreen(true);
       }
     } else {
-      // Fora de fullscreen: não mostrar
-      setShowProximaFullscreen(false);
+      if (showProximaFullscreen) {
+        console.log('🎵 Escondendo próxima música');
+        setShowProximaFullscreen(false);
+      }
     }
-  }, [currentTime, duration, fila.length, estadoPlayer?.status, estadoPlayer?.musicaAtual, isFullscreen, showProximaFullscreen]);
+  }, [currentTime, duration, fila.length, estadoPlayer?.status, estadoPlayer?.musicaAtual, showProximaFullscreen]);
 
   const musicaAtual = estadoPlayer?.musicaAtual;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -1047,6 +1042,132 @@ function Panel() {
                 )}
               </motion.div>
             </>
+          )}
+
+          {/* ========== OVERLAYS PERMANENTES ========== */}
+
+          {/* 1. OVERLAY: Música Atual (Top-Left) - Sempre visível quando há música */}
+          {musicaAtual && (
+            <motion.div
+              className="absolute top-4 left-4 z-50 glass-heavy border-2 border-neon-cyan/40 rounded-xl shadow-2xl overflow-hidden max-w-sm"
+              initial={{ x: -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ duration: 0.5, type: 'spring', damping: 20 }}
+            >
+              <div className="flex items-center gap-3 p-4">
+                {/* Thumbnail com animação de pulse */}
+                {musicaAtual.musicaThumbnail && (
+                  <motion.div
+                    className="relative w-16 h-16 rounded-lg overflow-hidden shadow-lg flex-shrink-0"
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <img
+                      src={musicaAtual.musicaThumbnail}
+                      alt={musicaAtual.musicaTitulo}
+                      className="w-full h-full object-cover"
+                    />
+                  </motion.div>
+                )}
+
+                {/* Informações da música */}
+                <div className="flex-1 min-w-0">
+                  {/* Label "Tocando Agora" */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <Music className="w-3 h-3 text-neon-cyan flex-shrink-0" />
+                    <span className="text-[10px] font-bold text-neon-cyan uppercase tracking-wider">Tocando Agora</span>
+                    <EqualizerAnimation />
+                  </div>
+
+                  {/* Título da música */}
+                  <h3 className="text-sm font-bold text-white leading-tight mb-1 line-clamp-2">
+                    {musicaAtual.musicaTitulo}
+                  </h3>
+
+                  {/* Nome do cliente */}
+                  <div className="flex items-center gap-1 text-xs text-gray-300">
+                    <User className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{musicaAtual.nomeCliente || 'Anônimo'}</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 2. OVERLAY: QR Code (Bottom-Left) - Sempre visível quando disponível */}
+          {qrCodeData && (
+            <motion.div
+              className="absolute bottom-4 left-4 z-50 glass-heavy border-2 border-neon-purple/40 rounded-xl shadow-2xl overflow-hidden"
+              initial={{ x: -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ duration: 0.5, type: 'spring', damping: 20, delay: 0.1 }}
+            >
+              <div className="p-4 text-center">
+                {/* Ícone e Label */}
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <div className="bg-gradient-to-br from-neon-purple to-neon-pink p-1.5 rounded-lg">
+                    <Music className="w-4 h-4 text-white" />
+                  </div>
+                  <p className="text-xs font-bold text-gray-200 uppercase tracking-wide">
+                    Escaneie para adicionar
+                  </p>
+                </div>
+
+                {/* QR Code */}
+                <motion.div
+                  className="bg-white rounded-lg p-2 shadow-lg"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <img
+                    src={qrCodeData.qrCode}
+                    alt="QR Code"
+                    className="w-32 h-32 mx-auto"
+                  />
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 3. OVERLAY: Próxima Música (Bottom-Right) - Aparece 10s antes do fim */}
+          {showProximaFullscreen && fila.length > 0 && fila[0] && (
+            <motion.div
+              className="absolute bottom-4 right-4 z-50 glass-heavy border-2 border-neon-pink/40 rounded-xl shadow-2xl overflow-hidden max-w-xs"
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              transition={{ duration: 0.5, type: 'spring', damping: 20 }}
+            >
+              <div className="p-4">
+                {/* Header com ícone de relógio */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="bg-gradient-to-br from-neon-pink to-neon-purple p-2 rounded-lg">
+                    <Clock className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-neon-pink uppercase tracking-wide">
+                      Próxima Música:
+                    </p>
+                    <p className="text-[10px] text-gray-400">Em breve...</p>
+                  </div>
+                </div>
+
+                {/* Título da próxima música */}
+                <div className="bg-black/30 rounded-lg p-3">
+                  <p className="text-sm font-bold text-white leading-tight line-clamp-2">
+                    {fila[0].musicaTitulo}
+                  </p>
+                  {fila[0].nomeCliente && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-gray-300">
+                      <User className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{fila[0].nomeCliente}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
           )}
         </div>
 
