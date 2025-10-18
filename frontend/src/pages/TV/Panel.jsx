@@ -509,8 +509,10 @@ function Panel() {
           console.warn('ℹ️ Player da TV iniciou reprodução sem áudio. Aguarde interação para ativar o som.');
           break;
         case 'time-update':
-          if (event.data.currentTime !== undefined) {
-            setCurrentTime(event.data.currentTime);
+        case 'player-time-update':
+          if (event.data.currentTime !== undefined || event.data.time !== undefined) {
+            const time = event.data.currentTime || event.data.time;
+            setCurrentTime(time);
           }
           if (event.data.duration !== undefined && event.data.duration > 0) {
             setDuration(event.data.duration);
@@ -811,15 +813,20 @@ function Panel() {
 
     const timeRemaining = duration - currentTime;
 
+    // Debug: Log a cada 5 segundos
+    if (Math.floor(currentTime) % 5 === 0 && currentTime > 0) {
+      console.log(`⏱️ [TIMER] Tempo restante: ${Math.floor(timeRemaining)}s | Próxima na fila: ${fila.length > 0 ? 'Sim' : 'Não'}`);
+    }
+
     // Mostrar próxima música apenas 10s antes do fim (quando há próxima música na fila)
     if (timeRemaining <= 10 && timeRemaining > 0 && fila.length > 0) {
       if (!showProximaFullscreen) {
-        console.log('🎵 Mostrando próxima música (10s antes do fim)');
+        console.log('🎵 [PRÓXIMA] Mostrando overlay (10s antes do fim)');
         setShowProximaFullscreen(true);
       }
     } else {
       if (showProximaFullscreen) {
-        console.log('🎵 Escondendo próxima música');
+        console.log('🎵 [PRÓXIMA] Escondendo overlay');
         setShowProximaFullscreen(false);
       }
     }
@@ -1045,35 +1052,14 @@ function Panel() {
           {/* ========== OVERLAYS PERMANENTES ========== */}
           {/* Nota: Estes overlays só aparecem em FULLSCREEN para evitar duplicação com o header */}
 
-          {/* 0. OVERLAY: Contagem da Fila (Top-Left, acima da música) - Visível em fullscreen */}
-          {isFullscreen && fila.length > 0 && (
-            <motion.div
-              className="absolute top-4 left-4 z-50 glass-heavy border-2 border-neon-cyan/40 rounded-xl shadow-2xl overflow-hidden"
-              initial={{ y: -100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -100, opacity: 0 }}
-              transition={{ duration: 0.5, type: 'spring', damping: 20 }}
-            >
-              <div className="flex items-center gap-3 p-4">
-                <div className="bg-gradient-to-br from-neon-cyan to-blue-500 p-2 rounded-lg">
-                  <Clock className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-white">{fila.length}</p>
-                  <p className="text-xs text-gray-300 uppercase tracking-wide">Na Fila</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* 1. OVERLAY: Música Atual (Top-Left, abaixo da fila) - Visível em fullscreen quando há música */}
+          {/* 1. OVERLAY: Música Atual (Top-Left) - Visível em fullscreen quando há música */}
           {isFullscreen && musicaAtual && (
             <motion.div
-              className="absolute top-24 left-4 z-50 glass-heavy border-2 border-neon-purple/40 rounded-xl shadow-2xl overflow-hidden max-w-sm"
+              className="absolute top-4 left-4 z-50 glass-heavy border-2 border-neon-cyan/40 rounded-xl shadow-2xl overflow-hidden max-w-sm"
               initial={{ x: -100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -100, opacity: 0 }}
-              transition={{ duration: 0.5, type: 'spring', damping: 20, delay: 0.1 }}
+              transition={{ duration: 0.5, type: 'spring', damping: 20 }}
             >
               <div className="flex items-center gap-3 p-4">
                 {/* Thumbnail com animação de pulse */}
@@ -1095,8 +1081,8 @@ function Panel() {
                 <div className="flex-1 min-w-0">
                   {/* Label "Tocando Agora" */}
                   <div className="flex items-center gap-2 mb-1">
-                    <Music className="w-3 h-3 text-neon-purple flex-shrink-0" />
-                    <span className="text-[10px] font-bold text-neon-purple uppercase tracking-wider">Tocando Agora</span>
+                    <Music className="w-3 h-3 text-neon-cyan flex-shrink-0" />
+                    <span className="text-[10px] font-bold text-neon-cyan uppercase tracking-wider">Tocando Agora</span>
                     <EqualizerAnimation />
                   </div>
 
