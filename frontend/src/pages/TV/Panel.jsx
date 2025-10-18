@@ -210,8 +210,8 @@ function Panel() {
         ]);
 
         // Atualizar fila
-        const filaFiltrada = filaRes.data.filter(m => m.status === 'pendente');
-        console.log('📋 Fila sincronizada:', filaFiltrada.length, 'músicas');
+        const filaFiltrada = filaRes.data.filter(m => m.status === 'pago');
+        console.log('📋 Fila sincronizada:', filaFiltrada.length, 'músicas pagas aguardando');
         setFila(filaFiltrada);
 
         // Atualizar estado do player
@@ -265,9 +265,9 @@ function Panel() {
     // Buscar fila inicial
     api.get('/api/musicas/fila')
       .then(res => {
-        // Filtrar músicas que não estão tocando E não são a música atual
-        const filaFiltrada = res.data.filter(m => m.status === 'pendente');
-        console.log('📋 Fila:', filaFiltrada.length, 'músicas');
+        // Filtrar músicas que não estão tocando (apenas as pagas aguardando)
+        const filaFiltrada = res.data.filter(m => m.status === 'pago');
+        console.log('📋 Fila inicial:', filaFiltrada.length, 'músicas pagas aguardando');
         setFila(filaFiltrada);
       })
       .catch(console.error);
@@ -332,7 +332,7 @@ function Panel() {
 
     const handleFilaAtualizada = (novaFila) => {
       // Mostrar apenas músicas PAGAS (próximas a tocar) - não mostrar a que está tocando
-      const filaFiltrada = novaFila.filter(m => m.status === 'pendente');
+      const filaFiltrada = novaFila.filter(m => m.status === 'pago');
       console.log('📋 Fila atualizada:', filaFiltrada.length, 'músicas próximas');
       setFila(filaFiltrada);
     };
@@ -895,14 +895,12 @@ function Panel() {
         </div>
 
         {/* Notificação - Próxima Música (Auto-hide) */}
-        {fila.length > 0 && fila[0] && (
+        {showQueue && fila.length > 0 && fila[0] && (
           <motion.div
             className="absolute top-4 right-4 glass-heavy border border-white/10 rounded-2xl shadow-2xl z-50 p-6 max-w-md"
             initial={{ y: -100, opacity: 0 }}
-            animate={{
-              y: showQueue ? 0 : -100,
-              opacity: showQueue ? 1 : 0
-            }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
             transition={{ duration: 0.4, type: 'spring', damping: 20 }}
           >
             <div className="flex items-center gap-4">
