@@ -44,8 +44,8 @@ async function autoSeed() {
 
     // Verificar se existem dados no banco
     const [configCount, adminCount] = await Promise.all([
-      prisma.configuracao.count().catch(() => 0),
-      prisma.admin.count().catch(() => 0),
+      prisma.configuracoes.count().catch(() => 0),
+      prisma.admins.count().catch(() => 0),
     ]);
 
     const isEmpty = configCount === 0 && adminCount === 0;
