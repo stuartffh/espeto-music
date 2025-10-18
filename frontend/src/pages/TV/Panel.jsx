@@ -806,6 +806,7 @@ function Panel() {
   useEffect(() => {
     const deveMostrarAmbiente = musicaAmbiente &&
                                 fila.length === 0 &&
+                                !estadoPlayer?.musicaAtual && // Sem música atual
                                 (!estadoPlayer || estadoPlayer.status === 'stopped');
 
     if (deveMostrarAmbiente && !tocandoAmbiente) {
@@ -815,7 +816,7 @@ function Panel() {
       console.log('⏹️ Parando música ambiente - música na fila ou tocando');
       setTocandoAmbiente(false);
     }
-  }, [musicaAmbiente, fila.length, estadoPlayer?.status, tocandoAmbiente]);
+  }, [musicaAmbiente, fila.length, estadoPlayer?.musicaAtual, estadoPlayer?.status, tocandoAmbiente]);
 
   // Detectar mudanças de fullscreen DO IFRAME (botão do player, não F11)
   useEffect(() => {
