@@ -92,7 +92,7 @@ function Panel() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [qrCodeData, setQrCodeData] = useState(null);
-  const [showQueue, setShowQueue] = useState(true); // Controle de visibilidade da fila
+  const [showQueue, setShowQueue] = useState(false); // Controle de visibilidade da próxima música
 
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -185,7 +185,7 @@ function Panel() {
       .catch(console.error);
   }, []);
 
-  // Monitorar conexão do socket
+  // Monitorar conexão do socket e recuperar estado ao reconectar
   useEffect(() => {
     const handleConnect = () => {
       console.log('✅ Socket conectado');
@@ -197,14 +197,47 @@ function Panel() {
       setIsConnected(false);
     };
 
+    // Recuperar estado completo ao reconectar após desconexão
+    const handleReconnect = async () => {
+      console.log('🔄 Socket reconectado! Sincronizando estado do player...');
+      setIsConnected(true);
+
+      try {
+        // Buscar estado atualizado do backend
+        const [filaRes, estadoRes] = await Promise.all([
+          api.get('/api/musicas/fila'),
+          api.get('/api/player/estado')
+        ]);
+
+        // Atualizar fila
+        const filaFiltrada = filaRes.data.filter(m => m.status === 'pago');
+        console.log('📋 Fila sincronizada:', filaFiltrada.length, 'músicas');
+        setFila(filaFiltrada);
+
+        // Atualizar estado do player
+        console.log('🎮 Estado do player sincronizado:', estadoRes.data);
+        setEstadoPlayer(estadoRes.data);
+
+        // Se há música tocando, reenviar para o iframe
+        if (estadoRes.data?.musicaAtual && iframeReady) {
+          console.log('🎵 Reenviando música atual para o player...');
+          sendVideoToIframe(estadoRes.data.musicaAtual);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao sincronizar estado após reconexão:', error);
+      }
+    };
+
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
+    socket.on('reconnect', handleReconnect);
 
     return () => {
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
+      socket.off('reconnect', handleReconnect);
     };
-  }, []);
+  }, [iframeReady, sendVideoToIframe]);
 
   // Conectar WebSocket e buscar dados iniciais
   useEffect(() => {
@@ -553,31 +586,56 @@ function Panel() {
   // A barra de progresso é atualizada APENAS pelo player-time-update do iframe (linha 477-494)
   // Isso garante sincronização perfeita com o YouTube Player sem "tic-tac"
 
-  // Auto-hide da fila: Mostra por 5 segundos, esconde por 10 segundos
+  // Mostrar próxima música em 3 momentos: início, meio e 10 segundos antes do fim
   useEffect(() => {
-    if (fila.length === 0) {
+    // Limpar timers anteriores
+    if (queueTimerRef.current) {
+      clearTimeout(queueTimerRef.current);
+    }
+
+    // Se não há próxima música ou não está tocando, esconder
+    if (fila.length === 0 || !duration || estadoPlayer?.status !== 'playing') {
       setShowQueue(false);
       return;
     }
 
-    // Função para ciclo de mostrar/esconder
-    const startQueueCycle = () => {
-      // Mostrar fila
+    // Função para mostrar próxima música por 5 segundos
+    const showNextMusic = () => {
+      console.log('🎵 Mostrando próxima música na fila');
       setShowQueue(true);
-
-      // Esconder após 5 segundos
       queueTimerRef.current = setTimeout(() => {
         setShowQueue(false);
-
-        // Mostrar novamente após 10 segundos escondida
-        queueTimerRef.current = setTimeout(() => {
-          startQueueCycle(); // Reiniciar o ciclo
-        }, 10000);
+        console.log('🎵 Ocultando próxima música');
       }, 5000);
     };
 
-    // Iniciar ciclo
-    startQueueCycle();
+    // Calcular momentos para mostrar (em segundos)
+    const showAtStart = 2; // Mostrar 2 segundos após início
+    const showAtMiddle = Math.floor(duration / 2); // Meio da música
+    const showBeforeEnd = Math.max(duration - 10, duration * 0.8); // 10 segundos antes do fim ou 80% da música
+
+    // Verificar qual momento mostrar baseado no tempo atual
+    // Momento 1: Início (2 segundos)
+    if (currentTime >= showAtStart && currentTime <= showAtStart + 1) {
+      if (!showQueue) { // Evitar múltiplas chamadas
+        console.log(`🎵 Momento 1: Início da música (${currentTime}s)`);
+        showNextMusic();
+      }
+    }
+    // Momento 2: Meio da música
+    else if (currentTime >= showAtMiddle && currentTime <= showAtMiddle + 1) {
+      if (!showQueue) {
+        console.log(`🎵 Momento 2: Meio da música (${currentTime}s)`);
+        showNextMusic();
+      }
+    }
+    // Momento 3: 10 segundos antes do fim
+    else if (currentTime >= showBeforeEnd && currentTime <= showBeforeEnd + 1) {
+      if (!showQueue) {
+        console.log(`🎵 Momento 3: Final da música (${currentTime}s)`);
+        showNextMusic();
+      }
+    }
 
     // Cleanup
     return () => {
@@ -585,7 +643,7 @@ function Panel() {
         clearTimeout(queueTimerRef.current);
       }
     };
-  }, [fila.length]); // Reiniciar quando fila mudar
+  }, [currentTime, duration, fila.length, estadoPlayer?.status, showQueue]); // Monitorar mudanças no tempo
 
   const musicaAtual = estadoPlayer?.musicaAtual;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -809,10 +867,10 @@ function Panel() {
           )}
         </div>
 
-        {/* Sidebar - Próximas Músicas (Auto-hide) */}
-        {fila.length > 0 && (
+        {/* Notificação - Próxima Música (Auto-hide) */}
+        {fila.length > 0 && fila[0] && (
           <motion.div
-            className="absolute top-4 right-4 w-96 glass-heavy border border-white/10 flex-col overflow-hidden flex rounded-2xl shadow-2xl z-50"
+            className="absolute top-4 right-4 glass-heavy border border-white/10 rounded-2xl shadow-2xl z-50 p-6 max-w-md"
             initial={{ y: -100, opacity: 0 }}
             animate={{
               y: showQueue ? 0 : -100,
@@ -820,82 +878,21 @@ function Panel() {
             }}
             transition={{ duration: 0.4, type: 'spring', damping: 20 }}
           >
-            {/* Header da sidebar */}
-            <div className="p-6 border-b border-white/10 flex-shrink-0">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-gradient-to-br from-neon-cyan to-neon-purple p-3 rounded-xl">
-                  <Clock className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-black gradient-text">Próximas</h3>
-                  <p className="text-sm text-gray-400">
-                    {fila.length} música{fila.length > 1 ? 's' : ''} aguardando
-                  </p>
-                </div>
+            <div className="flex items-center gap-4">
+              {/* Ícone */}
+              <div className="bg-gradient-to-br from-neon-cyan to-neon-purple p-3 rounded-xl flex-shrink-0">
+                <Clock className="w-6 h-6 text-white" />
               </div>
-            </div>
 
-            {/* Lista da fila (máximo 3 músicas visíveis) */}
-            <div className="max-h-96 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-              <AnimatePresence>
-                {fila.slice(0, 5).map((musica, index) => (
-                  <motion.div
-                    key={musica.id}
-                    className="glass rounded-xl p-4 hover:bg-white/5 transition-all group"
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -50, height: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Posição */}
-                      <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-neon-cyan to-neon-purple flex items-center justify-center font-black text-lg shadow-lg">
-                        {index + 1}
-                      </div>
-
-                      {/* Thumbnail */}
-                      {musica.musicaThumbnail && (
-                        <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden shadow-lg">
-                          <img
-                            src={musica.musicaThumbnail}
-                            alt={musica.musicaTitulo}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-white truncate leading-tight mb-2 group-hover:text-neon-cyan transition-colors">
-                          {musica.musicaTitulo}
-                        </p>
-                        <div className="flex items-center gap-2 mb-1">
-                          <User className="w-3 h-3 text-gray-400" />
-                          <p className="text-xs text-gray-400 truncate">
-                            {musica.nomeCliente || 'Anônimo'}
-                          </p>
-                        </div>
-                        {musica.musicaDuracao && (
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-3 h-3 text-gray-500" />
-                            <p className="text-xs text-gray-500 font-mono">
-                              {formatTime(musica.musicaDuracao)}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-
-              {/* Indicador de mais músicas */}
-              {fila.length > 5 && (
-                <div className="text-center py-2 text-sm text-gray-400">
-                  + {fila.length - 5} música{fila.length - 5 > 1 ? 's' : ''} na fila
-                </div>
-              )}
+              {/* Texto e título da música */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-neon-cyan uppercase tracking-wide mb-1">
+                  Próxima Música:
+                </p>
+                <p className="text-lg font-bold text-white truncate">
+                  {fila[0].musicaTitulo}
+                </p>
+              </div>
             </div>
           </motion.div>
         )}

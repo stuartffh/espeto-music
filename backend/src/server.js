@@ -26,8 +26,8 @@ const io = new Server(server, {
   cookie: false, // NÃO usar cookies
   transports: ['websocket', 'polling'], // WebSocket primeiro, depois polling
   allowEIO3: true, // Compatibilidade com engine.io v3
-  pingTimeout: 60000, // 60 segundos antes de considerar desconectado
-  pingInterval: 25000, // Ping a cada 25 segundos
+  pingTimeout: 90000, // 90 segundos antes de considerar desconectado (aumentado para evitar desconexões)
+  pingInterval: 20000, // Ping a cada 20 segundos (mais frequente para manter conexão viva)
   upgradeTimeout: 10000, // Timeout para upgrade de polling para websocket
   maxHttpBufferSize: 1e6, // 1MB buffer máximo
   allowUpgrades: true, // Permitir upgrade de polling para websocket
