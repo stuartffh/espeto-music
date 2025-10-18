@@ -9,6 +9,7 @@
  */
 
 const prisma = require('../config/database');
+const historicoService = require('./historicoService');
 
 // Estado em memória (rápido para leitura)
 let estadoMemoria = {
@@ -23,6 +24,7 @@ let intervalSync = null;
 let intervalBackup = null;
 let intervalAutoplay = null;
 let io = null;
+let historicoAtualId = null; // ID do registro de histórico da música atual
 
 /**
  * Inicializa o player service e recupera estado do banco
@@ -228,6 +230,27 @@ async function iniciarMusica(musica) {
   // Salvar no banco imediatamente
   await salvarEstado();
 
+  // Registrar no histórico
+  try {
+    // Buscar estabelecimento
+    const estabelecimento = await prisma.estabelecimentos.findFirst();
+    if (estabelecimento) {
+      const historico = await historicoService.registrarInicioMusica(estabelecimento.id, {
+        pedidoId: musica.id,
+        titulo: musica.musicaTitulo,
+        youtubeId: musica.musicaYoutubeId,
+        thumbnail: musica.musicaThumbnail,
+        duracao: musica.musicaDuracao,
+        nomeCliente: musica.nomeCliente,
+        valor: musica.valor || 0,
+        tipo: 'cliente'
+      });
+      historicoAtualId = historico.id;
+    }
+  } catch (error) {
+    console.error('❌ Erro ao registrar música no histórico:', error);
+  }
+
   // Iniciar sincronização e backup
   iniciarSincronizacao();
   iniciarBackup();
@@ -287,6 +310,16 @@ async function retomar() {
  */
 async function parar() {
   console.log('⏹️ Player: Parando');
+
+  // Registrar fim da música no histórico
+  if (historicoAtualId) {
+    try {
+      await historicoService.registrarFimMusica(historicoAtualId, Math.floor(estadoMemoria.tempoAtual));
+      historicoAtualId = null;
+    } catch (error) {
+      console.error('❌ Erro ao registrar fim da música no histórico:', error);
+    }
+  }
 
   pararSincronizacao();
   pararBackup();

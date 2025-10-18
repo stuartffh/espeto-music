@@ -90,6 +90,7 @@ model estabelecimentos {
   estado_player      estado_player?
   gift_cards         gift_cards[]
   historico_buscas   historico_buscas[]
+  historico_musicas  historico_musicas[]
   pagamentos         pagamentos[]
   palavras_proibidas palavras_proibidas[]
   pedidos_musica     pedidos_musica[]
@@ -305,4 +306,28 @@ model tvs {
 
   @@index([codigo])
   @@index([estabelecimentoId])
+}
+
+model historico_musicas {
+  id                String           @id @default(uuid())
+  estabelecimentoId String
+  pedidoMusicaId    String?          // Referência ao pedido original (se existir)
+  musicaTitulo      String
+  musicaYoutubeId   String
+  musicaThumbnail   String?
+  musicaDuracao     Int?             // Duração em segundos
+  nomeCliente       String?
+  valor             Float            @default(0)
+  inicioReproducao  DateTime         @default(now())
+  fimReproducao     DateTime?        // Quando a música terminou
+  duracaoTocada     Int?             // Tempo efetivamente tocado em segundos
+  tipo              String           @default("cliente") // cliente, ambiente, admin
+  observacao        String?
+  criadoEm          DateTime         @default(now())
+  estabelecimentos  estabelecimentos @relation(fields: [estabelecimentoId], references: [id], onDelete: Cascade)
+
+  @@index([estabelecimentoId])
+  @@index([inicioReproducao])
+  @@index([tipo])
+  @@map("historico_musicas")
 }

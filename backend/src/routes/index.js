@@ -15,6 +15,7 @@ const themeRoutes = require('./themeRoutes');
 const giftCardRoutes = require('./giftCardRoutes');
 const webhookRoutes = require('./webhookRoutes');
 const carrinhoRoutes = require('./carrinhoRoutes');
+const historicoRoutes = require('./historico');
 
 // Health check
 router.get('/health', (req, res) => {
@@ -47,5 +48,6 @@ router.use('/admin/moderacao', moderacaoRoutes);
 router.use('/theme', themeRoutes);
 router.use('/admin/theme', themeRoutes);
 router.use('/gifts', giftCardRoutes);
+router.use('/historico', historicoRoutes);
 
 module.exports = router;
