@@ -8,7 +8,7 @@ datasource db {
 }
 
 model admins {
-  id           String    @id
+  id           String    @id @default(uuid())
   username     String    @unique
   password     String
   nome         String
@@ -17,11 +17,11 @@ model admins {
   ultimoAcesso DateTime?
   permissoes   String?
   criadoEm     DateTime  @default(now())
-  atualizadoEm DateTime @updatedAt
+  atualizadoEm DateTime  @default(now()) @updatedAt
 }
 
 model pedidos_musica {
-  id                  String      @id
+  id                  String      @id @default(uuid())
   nomeCliente         String?
   musicaTitulo        String
   musicaYoutubeId     String
@@ -38,7 +38,7 @@ model pedidos_musica {
   dedicatoria         String?
   dedicatoriaDe       String?
   criadoEm            DateTime    @default(now())
-  atualizadoEm        DateTime
+  atualizadoEm        DateTime    @default(now()) @updatedAt
   gift_cards          gift_cards?
   pagamentos          pagamentos? @relation(fields: [pagamentoId], references: [id])
 
@@ -48,7 +48,7 @@ model pedidos_musica {
 }
 
 model pagamentos {
-  id                      String          @id
+  id                      String          @id @default(uuid())
   mercadoPagoPaymentId    String?         @unique
   mercadoPagoPreferenceId String?         @unique
   status                  String          @default("pending")
@@ -63,20 +63,20 @@ model pagamentos {
   webhookData             String?
   lastWebhookUpdate       DateTime?
   criadoEm                DateTime        @default(now())
-  atualizadoEm            DateTime
+  atualizadoEm            DateTime        @default(now()) @updatedAt
   pedidos_musica          pedidos_musica?
 
   @@index([status])
 }
 
 model configuracoes {
-  id           String   @id
+  id           String   @id @default(uuid())
   chave        String   @unique
   valor        String
   descricao    String?
   tipo         String   @default("text")
   criadoEm     DateTime @default(now())
-  atualizadoEm DateTime @updatedAt
+  atualizadoEm DateTime @default(now()) @updatedAt
 }
 
 model estado_player {
@@ -87,11 +87,11 @@ model estado_player {
   volume            Int      @default(80)
   ultimaAtualizacao DateTime @default(now())
   criadoEm          DateTime @default(now())
-  atualizadoEm      DateTime
+  atualizadoEm      DateTime @default(now()) @updatedAt
 }
 
 model gift_cards {
-  id                String          @id
+  id                String          @id @default(uuid())
   codigo            String          @unique
   valor             Float
   quantidadeMusicas Int
@@ -103,14 +103,14 @@ model gift_cards {
   pedidoMusicaId    String?         @unique
   observacao        String?
   criadoEm          DateTime        @default(now())
-  atualizadoEm      DateTime
+  atualizadoEm      DateTime        @default(now()) @updatedAt
   pedidos_musica    pedidos_musica? @relation(fields: [pedidoMusicaId], references: [id])
 
   @@index([codigo])
 }
 
 model carrinhos {
-  id              String   @id
+  id              String   @id @default(uuid())
   sessionId       String
   nomeCliente     String?
   musicasTitulos  String
@@ -121,14 +121,14 @@ model carrinhos {
   quantidadeItens Int
   expiraEm        DateTime
   criadoEm        DateTime @default(now())
-  atualizadoEm    DateTime
+  atualizadoEm    DateTime @default(now()) @updatedAt
 
   @@index([expiraEm])
   @@index([sessionId])
 }
 
 model sugestoes {
-  id           String   @id
+  id           String   @id @default(uuid())
   categoria    String
   titulo       String
   youtubeId    String?
@@ -143,7 +143,7 @@ model sugestoes {
 }
 
 model historico_buscas {
-  id           String   @id
+  id           String   @id @default(uuid())
   termo        String
   categoria    String?
   resultados   Int      @default(0)
@@ -155,7 +155,7 @@ model historico_buscas {
 }
 
 model palavras_proibidas {
-  id           String   @id
+  id           String   @id @default(uuid())
   palavra      String
   categoria    String   @default("AMBOS")
   severidade   String   @default("MEDIA")
@@ -167,12 +167,12 @@ model palavras_proibidas {
 }
 
 model rate_limits {
-  id           String   @id
+  id           String   @id @default(uuid())
   ip           String
   contador     Int      @default(1)
   resetaEm     DateTime
   criadoEm     DateTime @default(now())
-  atualizadoEm DateTime @updatedAt
+  atualizadoEm DateTime @default(now()) @updatedAt
 
   @@index([resetaEm])
   @@index([ip])

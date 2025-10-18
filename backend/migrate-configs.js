@@ -20,7 +20,7 @@ async function main() {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   console.log('📋 PASSO 1: Convertendo MODO_GRATUITO para MODO_FILA');
 
-  const modoGratuito = await prisma.configuracao.findUnique({
+  const modoGratuito = await prisma.configuracoes.findUnique({
     where: { chave: 'MODO_GRATUITO' }
   });
 
@@ -32,12 +32,12 @@ async function main() {
     console.log(`   → Convertendo para: MODO_FILA = ${valorNovo}`);
 
     // Deletar antiga
-    await prisma.configuracao.delete({
+    await prisma.configuracoes.delete({
       where: { chave: 'MODO_GRATUITO' }
     });
 
     // Criar nova
-    await prisma.configuracao.create({
+    await prisma.configuracoes.create({
       data: {
         chave: 'MODO_FILA',
         valor: valorNovo,
@@ -56,7 +56,7 @@ async function main() {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   console.log('📋 PASSO 2: Renomeando PERMITIR_MUSICAS_DUPLICADAS para PERMITIR_DUPLICADAS');
 
-  const permitirDuplicadas = await prisma.configuracao.findUnique({
+  const permitirDuplicadas = await prisma.configuracoes.findUnique({
     where: { chave: 'PERMITIR_MUSICAS_DUPLICADAS' }
   });
 
@@ -67,12 +67,12 @@ async function main() {
     console.log(`   → Renomeando para: PERMITIR_DUPLICADAS`);
 
     // Deletar antiga
-    await prisma.configuracao.delete({
+    await prisma.configuracoes.delete({
       where: { chave: 'PERMITIR_MUSICAS_DUPLICADAS' }
     });
 
     // Criar nova
-    await prisma.configuracao.create({
+    await prisma.configuracoes.create({
       data: {
         chave: 'PERMITIR_DUPLICADAS',
         valor: valorAtual,
@@ -193,12 +193,12 @@ async function main() {
   let jaExistentes = 0;
 
   for (const config of novasConfigs) {
-    const existe = await prisma.configuracao.findUnique({
+    const existe = await prisma.configuracoes.findUnique({
       where: { chave: config.chave }
     });
 
     if (!existe) {
-      await prisma.configuracao.create({ data: config });
+      await prisma.configuracoes.create({ data: config });
       console.log(`   ✅ Criada: ${config.chave} = ${config.valor}`);
       adicionadas++;
     } else {
@@ -214,7 +214,7 @@ async function main() {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   console.log('📋 PASSO 4: Validando configurações finais');
 
-  const todasConfigs = await prisma.configuracao.findMany({
+  const todasConfigs = await prisma.configuracoes.findMany({
     orderBy: { chave: 'asc' }
   });
 

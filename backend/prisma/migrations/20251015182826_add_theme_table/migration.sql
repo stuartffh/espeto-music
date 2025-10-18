@@ -17,5 +17,5 @@ CREATE TABLE "temas" (
     "borderRadius" TEXT NOT NULL DEFAULT '8px',
     "shadowIntensity" TEXT NOT NULL DEFAULT 'medium',
     "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "atualizadoEm" DATETIME NOT NULL
+    "atualizadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

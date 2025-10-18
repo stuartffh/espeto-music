@@ -15,14 +15,14 @@ async function main() {
   const senhaAdmin = 'admin123';
   const hashSenha = await bcrypt.hash(senhaAdmin, 10);
 
-  const adminExistente = await prisma.admin.findUnique({
+  const adminExistente = await prisma.admins.findUnique({
     where: { username: 'admin' }
   });
 
   if (adminExistente) {
     console.log('  ⚠️  Usuário admin já existe, pulando...');
   } else {
-    await prisma.admin.create({
+    await prisma.admins.create({
       data: {
         username: 'admin',
         password: hashSenha,
@@ -275,7 +275,7 @@ async function main() {
   let atualizadas = 0;
 
   for (const config of configuracoes) {
-    const existente = await prisma.configuracao.findUnique({
+    const existente = await prisma.configuracoes.findUnique({
       where: { chave: config.chave }
     });
 
@@ -283,7 +283,7 @@ async function main() {
       console.log(`  ⚠️  Configuração "${config.chave}" já existe, pulando...`);
       atualizadas++;
     } else {
-      await prisma.configuracao.create({
+      await prisma.configuracoes.create({
         data: config
       });
       console.log(`  ✅ Criada: ${config.chave}`);

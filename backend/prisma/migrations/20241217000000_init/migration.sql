@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "pedidos_musica" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "nomeCliente" TEXT,
     "musicaTitulo" TEXT NOT NULL,
     "musicaYoutubeId" TEXT NOT NULL,
@@ -11,13 +11,13 @@ CREATE TABLE "pedidos_musica" (
     "pagamentoId" TEXT,
     "posicaoFila" INTEGER,
     "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "atualizadoEm" DATETIME NOT NULL,
+    "atualizadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "pedidos_musica_pagamentoId_fkey" FOREIGN KEY ("pagamentoId") REFERENCES "pagamentos" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "pagamentos" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "mercadoPagoPaymentId" TEXT,
     "mercadoPagoPreferenceId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'pending',
@@ -25,17 +25,17 @@ CREATE TABLE "pagamentos" (
     "metodoPagamento" TEXT,
     "emailPagador" TEXT,
     "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "atualizadoEm" DATETIME NOT NULL
+    "atualizadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable
 CREATE TABLE "configuracoes" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "chave" TEXT NOT NULL,
     "valor" TEXT NOT NULL,
     "descricao" TEXT,
     "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "atualizadoEm" DATETIME NOT NULL
+    "atualizadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateIndex

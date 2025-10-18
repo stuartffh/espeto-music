@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "gift_cards" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "codigo" TEXT NOT NULL,
     "valor" REAL NOT NULL,
     "quantidadeMusicas" INTEGER NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE "gift_cards" (
     "pedidoMusicaId" TEXT,
     "observacao" TEXT,
     "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "atualizadoEm" DATETIME NOT NULL,
+    "atualizadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "gift_cards_pedidoMusicaId_fkey" FOREIGN KEY ("pedidoMusicaId") REFERENCES "pedidos_musica" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 

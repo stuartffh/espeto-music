@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "sugestoes" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "categoria" TEXT NOT NULL,
     "titulo" TEXT NOT NULL,
     "youtubeId" TEXT,
@@ -9,18 +9,18 @@ CREATE TABLE "sugestoes" (
     "ordem" INTEGER NOT NULL DEFAULT 0,
     "ativo" BOOLEAN NOT NULL DEFAULT true,
     "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "atualizadoEm" DATETIME NOT NULL
+    "atualizadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable
 CREATE TABLE "historico_buscas" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     "termo" TEXT NOT NULL,
     "categoria" TEXT,
     "resultados" INTEGER NOT NULL DEFAULT 0,
     "vezesBuscado" INTEGER NOT NULL DEFAULT 1,
     "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "atualizadoEm" DATETIME NOT NULL
+    "atualizadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateIndex

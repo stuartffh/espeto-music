@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
  */
 router.get('/config', async (req, res) => {
   try {
-    const configs = await prisma.configuracao.findMany({
+    const configs = await prisma.configuracoes.findMany({
       orderBy: { chave: 'asc' },
     });
 
@@ -31,7 +31,7 @@ router.get('/config/:chave', async (req, res) => {
   try {
     const { chave } = req.params;
 
-    const config = await prisma.configuracao.findUnique({
+    const config = await prisma.configuracoes.findUnique({
       where: { chave },
     });
 
