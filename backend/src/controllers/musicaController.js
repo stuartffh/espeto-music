@@ -53,15 +53,92 @@ async function buscar(req, res) {
 
 /**
  * Busca detalhes de um vídeo específico
+ * Suporta videoId via query param (?videoId=xxx) ou path param (/:videoId)
  */
 async function detalhes(req, res) {
   try {
-    const { videoId } = req.params;
+    const videoId = req.query.videoId || req.params.videoId;
+    if (!videoId) {
+      return res.status(400).json({ error: 'videoId é obrigatório' });
+    }
     const video = await buscarDetalhesVideo(videoId);
     res.json(video);
   } catch (error) {
     console.error('Erro ao buscar detalhes do vídeo:', error);
     res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * Admin adiciona música diretamente (modo rest)
+ * Música de admin só toca quando não há músicas de clientes na fila
+ */
+async function adminPlay(req, res) {
+  try {
+    const { youtubeId, titulo, thumbnail, duracao } = req.body;
+
+    if (!youtubeId || !titulo) {
+      return res.status(400).json({ erro: 'youtubeId e titulo são obrigatórios' });
+    }
+
+    const prisma = require('../config/database');
+
+    // Verificar se modo gratuito está ativo
+    const configModoGratuito = await prisma.configuracoes.findUnique({
+      where: { chave: 'modo_gratuito' }
+    });
+
+    const modoGratuito = configModoGratuito ? configModoGratuito.valor === 'true' : true;
+
+    if (!modoGratuito) {
+      return res.status(400).json({ erro: 'Modo gratuito deve estar ativo para admin play' });
+    }
+
+    // Criar pedido marcado como "admin" (nomeCliente = 'Admin')
+    const pedido = await musicaService.criarPedidoMusica({
+      nomeCliente: 'Admin',
+      musicaTitulo: titulo,
+      musicaYoutubeId: youtubeId,
+      musicaThumbnail: thumbnail,
+      musicaDuracao: duracao,
+      valor: 0,
+      prioridade: false,
+    });
+
+    // Marcar como pago imediatamente
+    const pedidoPago = await prisma.pedidos_musica.update({
+      where: { id: pedido.id },
+      data: { status: 'pago' },
+    });
+
+    console.log('🎵 [ADMIN PLAY] Música adicionada pelo admin:', titulo);
+
+    // Emitir evento WebSocket
+    const io = req.app.get('io');
+    if (io) {
+      const fila = await musicaService.buscarFilaMusicas();
+      io.emit('fila:atualizada', fila);
+    }
+
+    // Garantir autoplay
+    const playerService = require('../services/playerService');
+    try {
+      const musicaIniciada = await playerService.garantirAutoplay();
+      if (musicaIniciada) {
+        console.log('✅ [ADMIN PLAY] Autoplay garantido!');
+      }
+    } catch (error) {
+      console.error('❌ [ADMIN PLAY] Erro ao garantir autoplay:', error.message);
+    }
+
+    if (io) {
+      io.emit('pedido:pago', { pedidoId: pedidoPago.id });
+    }
+
+    res.status(201).json(pedidoPago);
+  } catch (error) {
+    console.error('Erro ao adicionar música de admin:', error);
+    res.status(500).json({ erro: error.message });
   }
 }
 
@@ -412,6 +489,7 @@ async function atualizarPedido(req, res) {
 module.exports = {
   buscar,
   detalhes,
+  adminPlay,
   criar,
   fila,
   atual,

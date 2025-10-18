@@ -5,8 +5,12 @@ const musicaController = require('../controllers/musicaController');
 // Busca músicas no YouTube
 router.get('/buscar', musicaController.buscar);
 
-// Busca detalhes de um vídeo
+// Busca detalhes de um vídeo (query param ou path param)
+router.get('/detalhes', musicaController.detalhes);
 router.get('/video/:videoId', musicaController.detalhes);
+
+// Admin adiciona música diretamente (requer autenticação)
+router.post('/admin-play', musicaController.adminPlay);
 
 // Cria pedido de música
 router.post('/', musicaController.criar);

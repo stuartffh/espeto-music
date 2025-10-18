@@ -36,6 +36,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import QueueItem from '../../components/QueueItem';
+import AdminMusicControl from '../../components/AdminMusicControl';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { listarGiftCards, criarGiftCard, deletarGiftCard, desativarGiftCard } from '../../services/api';
 
@@ -938,6 +939,9 @@ function AdminDashboard() {
           </div>
         )}
       </Card>
+
+      {/* Controle de Música Ambiente */}
+      <AdminMusicControl token={token} />
     </motion.div>
   );
 
