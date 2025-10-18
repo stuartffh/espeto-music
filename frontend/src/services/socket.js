@@ -35,9 +35,6 @@ function createSocket() {
   console.log('🔌 Criando nova instância de socket...');
   console.log('📡 Socket URL:', SOCKET_URL);
 
-  // Recuperar serverStartTime do localStorage (se existir)
-  const storedServerStartTime = localStorage.getItem('serverStartTime');
-
   socketInstance = io(SOCKET_URL, {
     autoConnect: true,
     reconnection: true,
@@ -50,10 +47,6 @@ function createSocket() {
     rememberUpgrade: true,
     // Não armazenar sessão (sempre conexão limpa)
     withCredentials: false,
-    // Enviar serverStartTime no handshake para detectar reinicialização
-    query: {
-      serverStartTime: storedServerStartTime || 0
-    }
   });
 
   // ========== EVENTOS GLOBAIS DO SOCKET ==========

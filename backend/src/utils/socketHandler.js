@@ -48,26 +48,6 @@ function setupSocketHandlers(io) {
     console.log(`📊 [WEBSOCKET] Total de clientes: ${io.engine.clientsCount}`);
     console.log(`🔧 [WEBSOCKET] Transport: ${socket.conn.transport.name}`);
 
-    // 🔄 DETECTAR RECONEXÃO APÓS REINICIALIZAÇÃO
-    // Verificar se o cliente está se reconectando (handshake com serverStartTime antigo)
-    const clientServerStartTime = socket.handshake.query.serverStartTime;
-
-    if (clientServerStartTime && parseInt(clientServerStartTime) !== SERVER_START_TIME) {
-      console.log('🔄 [WEBSOCKET] Cliente reconectou após reinicialização do servidor!');
-      console.log(`   Cliente conhecia: ${clientServerStartTime}`);
-      console.log(`   Servidor atual: ${SERVER_START_TIME}`);
-      console.log(`   🔃 Enviando comando de reload...`);
-
-      // Emitir evento para forçar reload da página
-      socket.emit('server:reload-required', {
-        oldStartTime: parseInt(clientServerStartTime),
-        newStartTime: SERVER_START_TIME,
-        message: 'Servidor foi reiniciado, recarregando página...'
-      });
-
-      return; // Não processar eventos deste cliente, ele vai recarregar
-    }
-
     // ========== REQUESTS DO CLIENTE ==========
 
     // Envia estado completo ao conectar

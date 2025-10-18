@@ -118,10 +118,16 @@ function Panel() {
         .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
 
-    // Limpar localStorage
+    // Limpar localStorage (PRESERVAR serverStartTime para auto-reload funcionar)
     try {
+      const savedServerStartTime = localStorage.getItem('serverStartTime');
       localStorage.clear();
-      console.log('✅ [TV] localStorage limpo');
+      if (savedServerStartTime) {
+        localStorage.setItem('serverStartTime', savedServerStartTime);
+        console.log('✅ [TV] localStorage limpo (serverStartTime preservado)');
+      } else {
+        console.log('✅ [TV] localStorage limpo');
+      }
     } catch (e) {
       console.warn('⚠️  [TV] Não foi possível limpar localStorage:', e);
     }
