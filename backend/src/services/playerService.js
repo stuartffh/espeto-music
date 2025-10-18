@@ -63,8 +63,7 @@ async function recuperarEstado() {
           id: 'singleton',
           status: 'stopped',
           tempoAtual: 0,
-          volume: 80,
-          atualizadoEm: new Date()
+          volume: 80
         }
       });
     }

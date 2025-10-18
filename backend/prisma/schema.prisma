@@ -38,7 +38,7 @@ model pedidos_musica {
   dedicatoria         String?
   dedicatoriaDe       String?
   criadoEm            DateTime    @default(now())
-  atualizadoEm        DateTime
+  atualizadoEm        DateTime    @updatedAt
   gift_cards          gift_cards?
   pagamentos          pagamentos? @relation(fields: [pagamentoId], references: [id])
 
@@ -63,7 +63,7 @@ model pagamentos {
   webhookData             String?
   lastWebhookUpdate       DateTime?
   criadoEm                DateTime        @default(now())
-  atualizadoEm            DateTime
+  atualizadoEm            DateTime        @updatedAt
   pedidos_musica          pedidos_musica?
 
   @@index([status])
@@ -80,14 +80,14 @@ model configuracoes {
 }
 
 model estado_player {
-  id                String   @id
+  id                String   @id @default(uuid())
   musicaAtualId     String?
   status            String   @default("stopped")
   tempoAtual        Float    @default(0)
   volume            Int      @default(80)
   ultimaAtualizacao DateTime @default(now())
   criadoEm          DateTime @default(now())
-  atualizadoEm      DateTime
+  atualizadoEm      DateTime @updatedAt
 }
 
 model gift_cards {
@@ -103,7 +103,7 @@ model gift_cards {
   pedidoMusicaId    String?         @unique
   observacao        String?
   criadoEm          DateTime        @default(now())
-  atualizadoEm      DateTime
+  atualizadoEm      DateTime        @updatedAt
   pedidos_musica    pedidos_musica? @relation(fields: [pedidoMusicaId], references: [id])
 
   @@index([codigo])
@@ -121,7 +121,7 @@ model carrinhos {
   quantidadeItens Int
   expiraEm        DateTime
   criadoEm        DateTime @default(now())
-  atualizadoEm    DateTime
+  atualizadoEm    DateTime @updatedAt
 
   @@index([expiraEm])
   @@index([sessionId])
