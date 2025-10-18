@@ -132,25 +132,21 @@ function Home() {
   };
 
   const handleEscolherMusica = async (musica) => {
+    // Verificar se modo gratuito exige nome ANTES de criar o pedido
+    if (modoGratuito && !nomeCliente.trim()) {
+      // Guardar música selecionada temporariamente e pedir nome
+      setPedidoPendente({
+        musica: musica,
+        temporario: true
+      });
+      setShowNomeModal(true);
+      setAdicionando(false);
+      return;
+    }
+
     setAdicionando(true);
 
     try {
-      // Verificar se modo gratuito exige nome
-      if (modoGratuito && !nomeCliente.trim()) {
-        // Criar pedido temporário e pedir nome
-        const pedido = await criarPedidoMusica({
-          nomeCliente: 'Anônimo', // Temporário, será atualizado após modal
-          musicaTitulo: musica.titulo,
-          musicaYoutubeId: musica.id,
-          musicaThumbnail: musica.thumbnail,
-          musicaDuracao: musica.duracao || null,
-        });
-
-        setPedidoPendente(pedido.data);
-        setShowNomeModal(true);
-        return;
-      }
-
       // Criar pedido com nome (modo gratuito com nome já preenchido ou modo pago)
       const pedido = await criarPedidoMusica({
         nomeCliente: nomeCliente.trim() || 'Anônimo',
@@ -237,21 +233,42 @@ function Home() {
 
     setAdicionando(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      // Verificar se é um pedido temporário (nova lógica)
+      if (pedidoPendente.temporario) {
+        // Criar o pedido agora que temos o nome
+        const pedido = await criarPedidoMusica({
+          nomeCliente: nomeCliente.trim(),
+          musicaTitulo: pedidoPendente.musica.titulo,
+          musicaYoutubeId: pedidoPendente.musica.id,
+          musicaThumbnail: pedidoPendente.musica.thumbnail,
+          musicaDuracao: pedidoPendente.musica.duracao || null,
+        });
 
-      // Atualizar pedido com o nome do cliente
-      await axios.patch(`${API_URL}/api/musicas/pedido/${pedidoPendente.id}`, {
-        nomeCliente: nomeCliente.trim()
-      });
+        setShowNomeModal(false);
+        setShowConfetti(true);
+        showToast('Música adicionada à fila com sucesso! 🎵', 'success');
+        await buscarFila().then(res => setFila(res.data));
+        setBusca('');
+        setResultados([]);
+        setCategoriaAtiva(null);
+        setPedidoPendente(null);
+      } else {
+        // Lógica antiga (caso ainda existam pedidos criados sem nome)
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-      setShowNomeModal(false);
-      setShowConfetti(true);
-      showToast('Música adicionada à fila com sucesso! 🎵', 'success');
-      await buscarFila().then(res => setFila(res.data));
-      setBusca('');
-      setResultados([]);
-      setCategoriaAtiva(null);
-      setPedidoPendente(null);
+        await axios.patch(`${API_URL}/api/musicas/pedido/${pedidoPendente.id}`, {
+          nomeCliente: nomeCliente.trim()
+        });
+
+        setShowNomeModal(false);
+        setShowConfetti(true);
+        showToast('Música adicionada à fila com sucesso! 🎵', 'success');
+        await buscarFila().then(res => setFila(res.data));
+        setBusca('');
+        setResultados([]);
+        setCategoriaAtiva(null);
+        setPedidoPendente(null);
+      }
     } catch (error) {
       console.error('Erro:', error);
       showToast(error.response?.data?.error || 'Erro ao processar pedido', 'error');
@@ -741,15 +758,24 @@ function Home() {
         {/* Modal Nome */}
         <Modal
           isOpen={showNomeModal}
-          onClose={() => setShowNomeModal(false)}
-          title="Qual seu nome?"
+          onClose={() => {
+            // Só permitir fechar se cancelar o pedido
+            setPedidoPendente(null);
+            setShowNomeModal(false);
+          }}
+          title="Nome obrigatório"
           size="sm"
         >
+          <p className="text-sm text-gray-400 mb-4">
+            Para adicionar músicas no modo gratuito, é necessário informar seu nome.
+          </p>
           <Input
             icon={User}
             value={nomeCliente}
             onChange={(e) => setNomeCliente(e.target.value)}
             placeholder="Digite seu nome..."
+            required
+            autoFocus
           />
           <Button
             className="w-full mt-4"

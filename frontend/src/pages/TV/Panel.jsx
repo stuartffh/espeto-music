@@ -588,57 +588,78 @@ function Panel() {
 
   // Mostrar próxima música em 3 momentos: início, meio e 10 segundos antes do fim
   useEffect(() => {
-    // Limpar timers anteriores
-    if (queueTimerRef.current) {
-      clearTimeout(queueTimerRef.current);
-    }
-
     // Se não há próxima música ou não está tocando, esconder
     if (fila.length === 0 || !duration || estadoPlayer?.status !== 'playing') {
-      setShowQueue(false);
+      if (showQueue) {
+        console.log('🎵 Escondendo fila - sem próxima música ou não está tocando');
+        setShowQueue(false);
+      }
+      // Limpar timer se existir
+      if (queueTimerRef.current) {
+        clearTimeout(queueTimerRef.current);
+        queueTimerRef.current = null;
+      }
       return;
     }
-
-    // Função para mostrar próxima música por 5 segundos
-    const showNextMusic = () => {
-      console.log('🎵 Mostrando próxima música na fila');
-      setShowQueue(true);
-      queueTimerRef.current = setTimeout(() => {
-        setShowQueue(false);
-        console.log('🎵 Ocultando próxima música');
-      }, 5000);
-    };
 
     // Calcular momentos para mostrar (em segundos)
     const showAtStart = 2; // Mostrar 2 segundos após início
     const showAtMiddle = Math.floor(duration / 2); // Meio da música
     const showBeforeEnd = Math.max(duration - 10, duration * 0.8); // 10 segundos antes do fim ou 80% da música
 
+    console.log(`⏱️ Tempo atual: ${currentTime}s de ${duration}s - Fila visível: ${showQueue}`);
+
     // Verificar qual momento mostrar baseado no tempo atual
-    // Momento 1: Início (2 segundos)
-    if (currentTime >= showAtStart && currentTime <= showAtStart + 1) {
-      if (!showQueue) { // Evitar múltiplas chamadas
-        console.log(`🎵 Momento 1: Início da música (${currentTime}s)`);
-        showNextMusic();
+    // Momento 1: Início (2-7 segundos)
+    if (currentTime >= showAtStart && currentTime < showAtStart + 5) {
+      if (!showQueue) {
+        console.log(`🎵 Momento 1: Início da música - mostrando fila`);
+        setShowQueue(true);
+        // Agendar para esconder após este período
+        if (queueTimerRef.current) {
+          clearTimeout(queueTimerRef.current);
+        }
+        queueTimerRef.current = setTimeout(() => {
+          console.log('🎵 Fim do período inicial - escondendo fila');
+          setShowQueue(false);
+          queueTimerRef.current = null;
+        }, (showAtStart + 5 - currentTime) * 1000);
       }
     }
-    // Momento 2: Meio da música
-    else if (currentTime >= showAtMiddle && currentTime <= showAtMiddle + 1) {
+    // Momento 2: Meio da música (meio até meio+5)
+    else if (currentTime >= showAtMiddle && currentTime < showAtMiddle + 5) {
       if (!showQueue) {
-        console.log(`🎵 Momento 2: Meio da música (${currentTime}s)`);
-        showNextMusic();
+        console.log(`🎵 Momento 2: Meio da música - mostrando fila`);
+        setShowQueue(true);
+        // Agendar para esconder após este período
+        if (queueTimerRef.current) {
+          clearTimeout(queueTimerRef.current);
+        }
+        queueTimerRef.current = setTimeout(() => {
+          console.log('🎵 Fim do período do meio - escondendo fila');
+          setShowQueue(false);
+          queueTimerRef.current = null;
+        }, (showAtMiddle + 5 - currentTime) * 1000);
       }
     }
     // Momento 3: 10 segundos antes do fim - manter visível até o fim
     else if (currentTime >= showBeforeEnd) {
       if (!showQueue) {
-        console.log(`🎵 Momento 3: Final da música (${currentTime}s) - mantendo visível até o fim`);
-        setShowQueue(true); // Não usar timer, manter visível
-        // Limpar timer se existir para evitar ocultação
+        console.log(`🎵 Momento 3: Final da música - mantendo fila visível até o fim`);
+        setShowQueue(true);
+        // Limpar qualquer timer pendente - não queremos esconder no final
         if (queueTimerRef.current) {
           clearTimeout(queueTimerRef.current);
           queueTimerRef.current = null;
         }
+      }
+    }
+    // Fora dos momentos de exibição - garantir que está escondido
+    else if (showQueue && currentTime < showBeforeEnd) {
+      // Se estamos mostrando mas não deveríamos, verificar se há timer ativo
+      if (!queueTimerRef.current) {
+        console.log('🎵 Fora dos momentos de exibição - escondendo fila');
+        setShowQueue(false);
       }
     }
 
@@ -646,9 +667,10 @@ function Panel() {
     return () => {
       if (queueTimerRef.current) {
         clearTimeout(queueTimerRef.current);
+        queueTimerRef.current = null;
       }
     };
-  }, [currentTime, duration, fila.length, estadoPlayer?.status, showQueue]); // Monitorar mudanças no tempo
+  }, [currentTime, duration, fila.length, estadoPlayer?.status]); // Removido showQueue das dependências
 
   const musicaAtual = estadoPlayer?.musicaAtual;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
