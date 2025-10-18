@@ -6,14 +6,6 @@ const historicoService = require('../services/historicoService');
  */
 exports.buscarHistorico = async (req, res) => {
   try {
-    // Buscar primeiro estabelecimento (multi-tenant seria por auth)
-    const prisma = require('../config/database');
-    const estabelecimento = await prisma.estabelecimentos.findFirst();
-
-    if (!estabelecimento) {
-      return res.status(404).json({ error: 'Estabelecimento não encontrado' });
-    }
-
     const filtros = {
       page: parseInt(req.query.page) || 1,
       limit: parseInt(req.query.limit) || 50,
@@ -24,7 +16,7 @@ exports.buscarHistorico = async (req, res) => {
       musicaTitulo: req.query.musicaTitulo
     };
 
-    const resultado = await historicoService.buscarHistorico(estabelecimento.id, filtros);
+    const resultado = await historicoService.buscarHistorico(filtros);
 
     res.json(resultado);
   } catch (error) {
@@ -39,16 +31,9 @@ exports.buscarHistorico = async (req, res) => {
  */
 exports.buscarEstatisticas = async (req, res) => {
   try {
-    const prisma = require('../config/database');
-    const estabelecimento = await prisma.estabelecimentos.findFirst();
-
-    if (!estabelecimento) {
-      return res.status(404).json({ error: 'Estabelecimento não encontrado' });
-    }
-
     const periodo = req.query.periodo || 'hoje'; // hoje, semana, mes
 
-    const estatisticas = await historicoService.buscarEstatisticas(estabelecimento.id, periodo);
+    const estatisticas = await historicoService.buscarEstatisticas(periodo);
 
     res.json(estatisticas);
   } catch (error) {

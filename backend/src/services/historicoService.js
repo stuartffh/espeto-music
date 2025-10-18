@@ -3,11 +3,10 @@ const prisma = require('../config/database');
 /**
  * Registra uma música no histórico quando ela começa a tocar
  */
-async function registrarInicioMusica(estabelecimentoId, dadosMusica) {
+async function registrarInicioMusica(dadosMusica) {
   try {
     const historico = await prisma.historico_musicas.create({
       data: {
-        estabelecimentoId,
         pedidoMusicaId: dadosMusica.pedidoId || null,
         musicaTitulo: dadosMusica.titulo,
         musicaYoutubeId: dadosMusica.youtubeId,
@@ -53,7 +52,7 @@ async function registrarFimMusica(historicoId, duracaoTocada) {
 /**
  * Busca histórico de músicas com filtros e paginação
  */
-async function buscarHistorico(estabelecimentoId, filtros = {}) {
+async function buscarHistorico(filtros = {}) {
   try {
     const {
       page = 1,
@@ -68,9 +67,7 @@ async function buscarHistorico(estabelecimentoId, filtros = {}) {
     const skip = (page - 1) * limit;
 
     // Construir filtros WHERE
-    const where = {
-      estabelecimentoId,
-    };
+    const where = {};
 
     if (dataInicio || dataFim) {
       where.inicioReproducao = {};
@@ -125,7 +122,7 @@ async function buscarHistorico(estabelecimentoId, filtros = {}) {
 /**
  * Busca estatísticas do histórico
  */
-async function buscarEstatisticas(estabelecimentoId, periodo = 'hoje') {
+async function buscarEstatisticas(periodo = 'hoje') {
   try {
     let dataInicio;
     const dataFim = new Date();
@@ -151,7 +148,6 @@ async function buscarEstatisticas(estabelecimentoId, periodo = 'hoje') {
 
     const historico = await prisma.historico_musicas.findMany({
       where: {
-        estabelecimentoId,
         inicioReproducao: {
           gte: dataInicio,
           lte: dataFim

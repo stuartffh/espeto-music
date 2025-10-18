@@ -197,21 +197,17 @@ async function iniciarMusica(musica) {
 
   // Registrar no histórico
   try {
-    // Buscar estabelecimento
-    const estabelecimento = await prisma.estabelecimentos.findFirst();
-    if (estabelecimento) {
-      const historico = await historicoService.registrarInicioMusica(estabelecimento.id, {
-        pedidoId: musica.id,
-        titulo: musica.musicaTitulo,
-        youtubeId: musica.musicaYoutubeId,
-        thumbnail: musica.musicaThumbnail,
-        duracao: musica.musicaDuracao,
-        nomeCliente: musica.nomeCliente,
-        valor: musica.valor || 0,
-        tipo: 'cliente'
-      });
-      historicoAtualId = historico.id;
-    }
+    const historico = await historicoService.registrarInicioMusica({
+      pedidoId: musica.id,
+      titulo: musica.musicaTitulo,
+      youtubeId: musica.musicaYoutubeId,
+      thumbnail: musica.musicaThumbnail,
+      duracao: musica.musicaDuracao,
+      nomeCliente: musica.nomeCliente,
+      valor: musica.valor || 0,
+      tipo: 'cliente'
+    });
+    historicoAtualId = historico.id;
   } catch (error) {
     console.error('❌ Erro ao registrar música no histórico:', error);
   }
