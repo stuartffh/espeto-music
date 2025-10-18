@@ -5,7 +5,7 @@ const { criarPreferenciaPagamento, criarPagamentoPix, buscarPagamento } = requir
  * Cria um pagamento e preferência no Mercado Pago
  */
 async function criarPagamento(pedidoId) {
-  const pedido = await prisma.pedidoMusica.findUnique({
+  const pedido = await prisma.pedidos_musica.findUnique({
     where: { id: pedidoId },
   });
 
@@ -44,7 +44,7 @@ async function criarPagamento(pedidoId) {
     });
 
     // Atualizar pedido com ID do pagamento
-    await prisma.pedidoMusica.update({
+    await prisma.pedidos_musica.update({
       where: { id: pedidoId },
       data: {
         pagamentoId: pagamento.id,
@@ -73,7 +73,7 @@ async function criarPagamentoPIX(pedidoId, dadosPagador = {}) {
   console.log(`🔵 [SERVICE] PedidoId: ${pedidoId}`);
   console.log(`🔵 [SERVICE] DadosPagador:`, JSON.stringify(dadosPagador, null, 2));
 
-  const pedido = await prisma.pedidoMusica.findUnique({
+  const pedido = await prisma.pedidos_musica.findUnique({
     where: { id: pedidoId },
   });
 
@@ -146,7 +146,7 @@ async function criarPagamentoPIX(pedidoId, dadosPagador = {}) {
     });
 
     // Vincular pagamento ao pedido
-    await prisma.pedidoMusica.update({
+    await prisma.pedidos_musica.update({
       where: { id: pedidoId },
       data: {
         pagamentoId: pagamento.id,
@@ -215,7 +215,7 @@ async function processarWebhook(data) {
     const pedidoId = paymentInfo.external_reference;
 
     // Buscar pagamento no banco
-    const pedido = await prisma.pedidoMusica.findUnique({
+    const pedido = await prisma.pedidos_musica.findUnique({
       where: { id: pedidoId },
       include: { pagamento: true },
     });
@@ -257,7 +257,7 @@ async function processarWebhook(data) {
         console.log('💳 Pagamento ID:', pedido.pagamentoCarrinhoId);
 
         // Buscar todos os pedidos deste carrinho
-        const todosPedidos = await prisma.pedidoMusica.findMany({
+        const todosPedidos = await prisma.pedidos_musica.findMany({
           where: { pagamentoCarrinhoId: pedido.pagamentoCarrinhoId },
           include: { pagamentoCarrinho: true },
         });
@@ -266,7 +266,7 @@ async function processarWebhook(data) {
 
         // Atualizar todos os pedidos para "pago"
         for (const pedidoCarrinho of todosPedidos) {
-          await prisma.pedidoMusica.update({
+          await prisma.pedidos_musica.update({
             where: { id: pedidoCarrinho.id },
             data: { status: 'pago' },
           });
@@ -279,14 +279,14 @@ async function processarWebhook(data) {
         console.log('═════════════════════════════════════════════════════\n');
 
         // Verificar se deve iniciar primeira música
-        const outraMusicaTocando = await prisma.pedidoMusica.findFirst({
+        const outraMusicaTocando = await prisma.pedidos_musica.findFirst({
           where: {
             status: 'tocando',
           },
         });
 
         if (!outraMusicaTocando) {
-          pedidoAtualizado = await prisma.pedidoMusica.update({
+          pedidoAtualizado = await prisma.pedidos_musica.update({
             where: { id: todosPedidos[0].id },
             data: { status: 'tocando' },
             include: {
@@ -300,7 +300,7 @@ async function processarWebhook(data) {
         // Pagamento unitário
         console.log('🎵 Atualizando status para "pago"...');
 
-        pedidoAtualizado = await prisma.pedidoMusica.update({
+        pedidoAtualizado = await prisma.pedidos_musica.update({
           where: { id: pedidoId },
           data: { status: 'pago' },
           include: {
@@ -311,7 +311,7 @@ async function processarWebhook(data) {
         console.log('✅ [WEBHOOK SERVICE] Pedido atualizado com sucesso!');
         console.log('═════════════════════════════════════════════════════\n');
 
-        const outraMusicaTocando = await prisma.pedidoMusica.findFirst({
+        const outraMusicaTocando = await prisma.pedidos_musica.findFirst({
           where: {
             status: 'tocando',
             id: { not: pedidoId },
@@ -319,7 +319,7 @@ async function processarWebhook(data) {
         });
 
         if (!outraMusicaTocando) {
-          pedidoAtualizado = await prisma.pedidoMusica.update({
+          pedidoAtualizado = await prisma.pedidos_musica.update({
             where: { id: pedidoId },
             data: { status: 'tocando' },
             include: {
@@ -331,7 +331,7 @@ async function processarWebhook(data) {
         }
       }
     } else if (paymentInfo.status === 'rejected' || paymentInfo.status === 'cancelled') {
-      pedidoAtualizado = await prisma.pedidoMusica.update({
+      pedidoAtualizado = await prisma.pedidos_musica.update({
         where: { id: pedidoId },
         data: { status: 'cancelada' },
         include: {
@@ -393,7 +393,7 @@ async function verificarStatusPagamento(pagamentoId) {
       // Atualizar pedido se necessário
       if (pagamento.pedidoMusica) {
         if (paymentInfo.status === 'approved' && pagamento.pedidoMusica.status === 'pendente') {
-          await prisma.pedidoMusica.update({
+          await prisma.pedidos_musica.update({
             where: { id: pagamento.pedidoMusica.id },
             data: { status: 'pago' },
           });
@@ -443,7 +443,7 @@ async function criarPagamentoPIXCarrinho(sessionId, dadosPagador = {}) {
   const pedidosCriados = [];
 
   for (const musica of carrinho.musicas) {
-    const pedido = await prisma.pedidoMusica.create({
+    const pedido = await prisma.pedidos_musica.create({
       data: {
         nomeCliente: carrinho.nomeCliente || dadosPagador.nome || 'Cliente',
         musicaTitulo: musica.titulo,
@@ -512,7 +512,7 @@ async function criarPagamentoPIXCarrinho(sessionId, dadosPagador = {}) {
     await prisma.pagamento.delete({ where: { id: pagamento.id } });
 
     for (const pedido of pedidosCriados) {
-      await prisma.pedidoMusica.delete({ where: { id: pedido.id } });
+      await prisma.pedidos_musica.delete({ where: { id: pedido.id } });
     }
 
     console.log('🔄 [SERVICE] Rollback executado: pagamento e pedidos removidos');

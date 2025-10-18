@@ -117,7 +117,7 @@ exports.usar = async (req, res) => {
     }
 
     // Buscar o pedido de música
-    const pedido = await prisma.pedidoMusica.findUnique({
+    const pedido = await prisma.pedidos_musica.findUnique({
       where: { id: pedidoMusicaId }
     });
 
@@ -161,7 +161,7 @@ exports.usar = async (req, res) => {
     });
 
     // Marcar pedido como pago
-    const pedidoPago = await prisma.pedidoMusica.update({
+    const pedidoPago = await prisma.pedidos_musica.update({
       where: { id: pedido.id },
       data: { status: 'pago' }
     });
@@ -192,14 +192,14 @@ exports.usar = async (req, res) => {
         const musicaStale = await musicaService.buscarMusicaAtual();
         if (musicaStale) {
           console.log('🧹 [GIFT CARD] Limpando música stale do banco:', musicaStale.id);
-          await prisma.pedidoMusica.update({
+          await prisma.pedidos_musica.update({
             where: { id: musicaStale.id },
             data: { status: 'pago' }
           });
         }
 
         // Agora marcar a nova música como tocando
-        const musicaTocando = await prisma.pedidoMusica.update({
+        const musicaTocando = await prisma.pedidos_musica.update({
           where: { id: pedidoPago.id },
           data: { status: 'tocando' }
         });
@@ -356,7 +356,7 @@ exports.usarCarrinho = async (req, res) => {
       console.log(`🎵 Criando pedido: ${musicaTitulo} (${musicaYoutubeId})`);
 
       // Criar pedido (NOTA: musicaArtista NÃO existe no schema)
-      const pedido = await prisma.pedidoMusica.create({
+      const pedido = await prisma.pedidos_musica.create({
         data: {
           nomeCliente: nomeCliente.trim(),
           musicaTitulo,
@@ -408,7 +408,7 @@ exports.usarCarrinho = async (req, res) => {
         console.log('▶️ [GIFT CARD CARRINHO] Nenhuma música tocando, iniciando primeira do carrinho...');
 
         // Marcar primeira música como tocando
-        const primeiraMusicaTocando = await prisma.pedidoMusica.update({
+        const primeiraMusicaTocando = await prisma.pedidos_musica.update({
           where: { id: pedidosCriados[0].id },
           data: { status: 'tocando' }
         });

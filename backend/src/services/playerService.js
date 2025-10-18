@@ -70,7 +70,7 @@ async function recuperarEstado() {
 
     // Se tinha música tocando, recuperar
     if (estadoSalvo.musicaAtualId) {
-      const musicaAtual = await prisma.pedidoMusica.findUnique({
+      const musicaAtual = await prisma.pedidos_musica.findUnique({
         where: { id: estadoSalvo.musicaAtualId }
       });
 
@@ -119,7 +119,7 @@ async function recuperarEstado() {
  */
 async function salvarEstado() {
   try {
-    await prisma.estadoPlayer.upsert({
+    await prisma.estado_player.upsert({
       where: { id: 'singleton' },
       update: {
         musicaAtualId: estadoMemoria.musicaAtual?.id || null,
@@ -145,7 +145,7 @@ async function salvarEstado() {
  * Limpa o estado do banco
  */
 async function limparEstado() {
-  await prisma.estadoPlayer.update({
+  await prisma.estado_player.update({
     where: { id: 'singleton' },
     data: {
       musicaAtualId: null,

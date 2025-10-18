@@ -158,7 +158,7 @@ async function criar(req, res) {
       console.log('💚 [MODO GRATUITO] Processando pedido gratuito (sem download):', pedido.id);
       const playerService = require('../services/playerService');
 
-      const pedidoPago = await prisma.pedidoMusica.update({
+      const pedidoPago = await prisma.pedidos_musica.update({
         where: { id: pedido.id },
         data: { status: 'pago' },
       });
@@ -381,7 +381,7 @@ async function atualizarPedido(req, res) {
     const prisma = require('../config/database');
 
     // Verificar se o pedido existe
-    const pedido = await prisma.pedidoMusica.findUnique({
+    const pedido = await prisma.pedidos_musica.findUnique({
       where: { id }
     });
 
@@ -390,7 +390,7 @@ async function atualizarPedido(req, res) {
     }
 
     // Atualizar o nome do cliente
-    const pedidoAtualizado = await prisma.pedidoMusica.update({
+    const pedidoAtualizado = await prisma.pedidos_musica.update({
       where: { id },
       data: { nomeCliente: nomeCliente.trim() }
     });

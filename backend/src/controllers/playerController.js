@@ -94,7 +94,7 @@ async function reset(req, res) {
     console.log('🔧 [RESET] Limpando estado do player...');
 
     // Limpar todas as músicas com status "tocando"
-    const musicasTocando = await prisma.pedidoMusica.findMany({
+    const musicasTocando = await prisma.pedidos_musica.findMany({
       where: { status: 'tocando' }
     });
 
@@ -102,7 +102,7 @@ async function reset(req, res) {
 
     for (const musica of musicasTocando) {
       console.log(`  - [RESET] ${musica.musicaTitulo} (ID: ${musica.id})`);
-      await prisma.pedidoMusica.update({
+      await prisma.pedidos_musica.update({
         where: { id: musica.id },
         data: { status: 'concluido' }
       });
