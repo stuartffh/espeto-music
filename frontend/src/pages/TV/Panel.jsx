@@ -758,18 +758,22 @@ function Panel() {
     }
   }, [musicaAmbiente, fila.length, estadoPlayer?.status, tocandoAmbiente]);
 
-  // Detectar mudanças de fullscreen
+  // Detectar mudanças de fullscreen DO IFRAME (botão do player, não F11)
   useEffect(() => {
     const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = !!(
+      const fullscreenElement =
         document.fullscreenElement ||
         document.webkitFullscreenElement ||
         document.mozFullScreenElement ||
-        document.msFullscreenElement
-      );
+        document.msFullscreenElement;
 
-      console.log('🖥️ Fullscreen mudou:', isCurrentlyFullscreen);
-      setIsFullscreen(isCurrentlyFullscreen);
+      // Detectar se o elemento em fullscreen é o containerRef (onde está o player)
+      // Quando o botão fullscreen do iframe é clicado, o container pai entra em fullscreen
+      const isPlayerFullscreen = fullscreenElement === containerRef.current ||
+                                  fullscreenElement === videoRef.current;
+
+      console.log('🖥️ Fullscreen mudou:', isPlayerFullscreen, 'Elemento:', fullscreenElement?.tagName);
+      setIsFullscreen(isPlayerFullscreen);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -777,11 +781,21 @@ function Panel() {
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
+    // Também escutar mensagens do iframe
+    const handleMessage = (event) => {
+      if (event.data.type === 'fullscreen-changed') {
+        console.log('📺 Iframe fullscreen mudou:', event.data.isFullscreen);
+        setIsFullscreen(event.data.isFullscreen);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      window.removeEventListener('message', handleMessage);
     };
   }, []);
 
@@ -825,8 +839,10 @@ function Panel() {
       {isFullscreen && (
         <FullscreenOverlay
           qrCodeData={qrCodeData}
+          musicaAtual={estadoPlayer?.musicaAtual}
           proximaMusica={fila.length > 0 ? fila[0] : null}
           showProxima={showProximaFullscreen}
+          fila={fila}
           configs={configs}
         />
       )}

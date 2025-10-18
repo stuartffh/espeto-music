@@ -779,15 +779,18 @@
     function handleFullscreenChange() {
       const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
 
+      // Notificar o Panel.jsx sobre mudança de fullscreen
+      window.parent.postMessage({
+        type: 'fullscreen-changed',
+        isFullscreen: isFullscreen
+      }, '*');
+
+      console.log('📺 [TV-PLAYER] Fullscreen mudou:', isFullscreen);
+
       // NÃO mostrar music-info e queue em fullscreen
       // Isso agora é controlado pelo FullscreenOverlay.jsx no Panel.jsx
-      if (isFullscreen) {
-        els.musicInfo.classList.remove('visible');
-        els.queue.classList.remove('visible');
-      } else {
-        els.musicInfo.classList.remove('visible');
-        els.queue.classList.remove('visible');
-      }
+      els.musicInfo.classList.remove('visible');
+      els.queue.classList.remove('visible');
 
       showOsd();
     }
