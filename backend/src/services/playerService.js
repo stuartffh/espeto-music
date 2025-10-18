@@ -218,11 +218,17 @@ async function iniciarMusica(musica) {
   iniciarBackup();
 
   // Emitir evento WebSocket
+  console.log('🔌 [PLAYER] Verificando io para emitir player:iniciar...');
+  console.log('🔌 [PLAYER] io disponível?', !!io);
   if (io) {
+    console.log('📡 [PLAYER] Emitindo player:iniciar para:', musica.musicaTitulo);
     io.emit('player:iniciar', {
       musica,
       estado: estadoMemoria,
     });
+    console.log('✅ [PLAYER] Evento player:iniciar emitido com sucesso');
+  } else {
+    console.error('❌ [PLAYER] IO não disponível! Evento player:iniciar NÃO foi emitido!');
   }
 
   return estadoMemoria;
@@ -517,8 +523,10 @@ async function garantirAutoplay() {
       console.log(`   - Cliente: ${proximaMusica.nomeCliente || 'Anônimo'}`);
       console.log(`   - Ação: Iniciando no player...`);
 
+      console.log('🎵 [AUTOPLAY] Chamando iniciarMusica...');
       await iniciarMusica(proximaMusica);
-      console.log('✅ AUTOPLAY BEM-SUCEDIDO! Música iniciada com sucesso');
+      console.log('✅ [AUTOPLAY] AUTOPLAY BEM-SUCEDIDO! Música iniciada com sucesso');
+      console.log('✅ [AUTOPLAY] Verificar se evento player:iniciar foi emitido acima ⬆️');
       console.log('═══════════════════════════════════════════════════════\n');
       return proximaMusica;
     }
