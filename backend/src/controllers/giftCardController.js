@@ -14,7 +14,7 @@ exports.listar = async (req, res) => {
     const gifts = await prisma.gift_cards.findMany({
       orderBy: { criadoEm: 'desc' },
       include: {
-        pedidoMusica: {
+        pedidos_musica: {
           select: {
             id: true,
             musicaTitulo: true,
