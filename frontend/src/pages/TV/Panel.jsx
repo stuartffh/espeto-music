@@ -681,7 +681,12 @@ function Panel() {
     console.log('✅ [TV] iframeReady:', iframeReady);
 
     if (!estadoPlayer?.musicaAtual) {
-      console.log('⏭️ [TV] Sem música atual, ignorando...');
+      console.log('⏭️ [TV] Sem música atual, parando player...');
+      // Quando não há música, parar o player do YouTube para evitar áudio em background
+      if (iframeReady && videoRef.current?.contentWindow) {
+        console.log('⏹️ [TV] Enviando comando stop para o iframe');
+        videoRef.current.contentWindow.postMessage({ type: 'stop' }, '*');
+      }
       return;
     }
 
