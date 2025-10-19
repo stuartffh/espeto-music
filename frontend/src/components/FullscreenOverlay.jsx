@@ -96,10 +96,10 @@ export default function FullscreenOverlay({
               <img
                 src={qrCodeData.qrCodeDataUrl}
                 alt="QR Code"
-                className="w-32 h-32 rounded-lg"
+                className="w-36 h-36 rounded-lg"
               />
             ) : (
-              <div className="w-32 h-32 bg-white rounded-lg flex items-center justify-center">
+              <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
                 <span className="text-gray-400 text-xs">QR Code</span>
               </div>
             )}
