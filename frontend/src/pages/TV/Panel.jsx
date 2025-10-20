@@ -99,6 +99,7 @@ function Panel() {
   const [tempoDedicatoria, setTempoDedicatoria] = useState(10); // Tempo de exibição da dedicatória
   const [isFullscreen, setIsFullscreen] = useState(false); // Detecta se está em fullscreen
   const [showProximaFullscreen, setShowProximaFullscreen] = useState(false); // Controle para próxima música em fullscreen
+  const [descansoErro, setDescansoErro] = useState(false); // Erro ao carregar vídeo de descanso
 
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -819,11 +820,11 @@ function Panel() {
     };
   }, [currentTime, duration, fila.length, estadoPlayer?.status]); // Removido showQueue das dependências
 
-  // Controlar música ambiente - tocar quando não há fila e parar quando houver músicas
+  // Controlar música ambiente - priorizar tela de descanso; fallback para ambiente se descanso falhar
   useEffect(() => {
-    const descansoAtivo = configs.VIDEO_DESCANSO_ATIVO === 'true' && Boolean(configs.VIDEO_DESCANSO_URL);
+    const descansoDisponivel = (configs.VIDEO_DESCANSO_ATIVO === 'true') && Boolean(configs.VIDEO_DESCANSO_URL) && !descansoErro;
     const deveMostrarAmbiente = musicaAmbiente &&
-                                !descansoAtivo && // Não tocar música ambiente se tela de descanso estiver ativa
+                                !descansoDisponivel && // Não tocar música ambiente se tela de descanso estiver disponível
                                 fila.length === 0 &&
                                 !estadoPlayer?.musicaAtual && // Sem música atual
                                 (!estadoPlayer || estadoPlayer.status === 'stopped');
@@ -835,7 +836,23 @@ function Panel() {
       console.log('⏹️ Parando música ambiente - música na fila ou tocando');
       setTocandoAmbiente(false);
     }
-  }, [musicaAmbiente, fila.length, estadoPlayer?.musicaAtual, estadoPlayer?.status, tocandoAmbiente, configs.VIDEO_DESCANSO_ATIVO, configs.VIDEO_DESCANSO_URL]);
+  }, [
+    musicaAmbiente,
+    fila.length,
+    estadoPlayer?.musicaAtual,
+    estadoPlayer?.status,
+    tocandoAmbiente,
+    configs.VIDEO_DESCANSO_ATIVO,
+    configs.VIDEO_DESCANSO_URL,
+    descansoErro
+  ]);
+
+  // Garantir que ao existir música atual, a música ambiente fique desligada
+  useEffect(() => {
+    if (estadoPlayer?.musicaAtual && tocandoAmbiente) {
+      setTocandoAmbiente(false);
+    }
+  }, [estadoPlayer?.musicaAtual, tocandoAmbiente]);
 
   // Garantir que vídeo de descanso toque quando visível
   useEffect(() => {
@@ -1099,6 +1116,12 @@ function Panel() {
                 if (videoDescansoRef.current) {
                   videoDescansoRef.current.style.display = 'none';
                 }
+                // Ativar fallback para música ambiente
+                setDescansoErro(true);
+              }}
+              onCanPlay={() => {
+                // Resetar erro quando o descanso estiver ok novamente
+                if (descansoErro) setDescansoErro(false);
               }}
             />
           )}
