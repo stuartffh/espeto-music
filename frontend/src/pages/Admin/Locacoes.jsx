@@ -32,7 +32,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-function Locacoes({ embedded = false }) {
+function Locacoes({ embedded = false, token: tokenFromDashboard = null }) {
   const navigate = useNavigate();
   const [locacoes, setLocacoes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,19 +62,25 @@ function Locacoes({ embedded = false }) {
     carregarLocacoes();
   }, [filtroStatus]);
 
+  // Helper para obter token (do Dashboard se embedded, ou localStorage se standalone)
+  const getToken = () => {
+    if (embedded && tokenFromDashboard) {
+      return tokenFromDashboard;
+    }
+    return localStorage.getItem('token');
+  };
+
   // Helper para tratar erros de autenticação
   const handleAuthError = (error) => {
     if (error.response && error.response.status === 401) {
-      // Sempre mostra alerta para o usuário saber o que aconteceu
-      alert('⚠️ Sua sessão expirou!\n\nPor favor, faça login novamente no painel admin para continuar.');
-
       if (!embedded) {
-        // Só redireciona se NÃO estiver embedded no Dashboard
+        // Standalone: mostra alerta e redireciona
+        alert('⚠️ Sua sessão expirou!\n\nPor favor, faça login novamente no painel admin para continuar.');
         localStorage.removeItem('token');
         navigate('/admin/login');
       } else {
-        // Se embedded, instrui o usuário a recarregar a página
-        alert('💡 Recarregue a página (F5) para fazer login novamente.');
+        // Embedded: apenas alerta simples (Dashboard gerencia sessão)
+        alert('⚠️ Sua sessão expirou!\n\nPor favor, recarregue a página (F5) para fazer login novamente.');
       }
       return true;
     }
@@ -84,7 +90,7 @@ function Locacoes({ embedded = false }) {
   const carregarLocacoes = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = getToken();
 
       if (!token) {
         if (!embedded) {
@@ -159,16 +165,12 @@ function Locacoes({ embedded = false }) {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
 
-      // Verificar se há token antes de tentar
-      if (!token) {
+      // Verificar se há token (apenas se standalone, Dashboard já protege)
+      if (!token && !embedded) {
         alert('⚠️ Você não está autenticado!\n\nPor favor, faça login no painel admin primeiro.');
-        if (!embedded) {
-          navigate('/admin/login');
-        } else {
-          alert('💡 Recarregue a página (F5) para fazer login novamente.');
-        }
+        navigate('/admin/login');
         return;
       }
 
@@ -207,7 +209,7 @@ function Locacoes({ embedded = false }) {
     if (!confirm('Deseja realmente desativar esta locação?')) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       await axios.delete(`${API_URL}/api/admin/locacoes/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -223,7 +225,7 @@ function Locacoes({ embedded = false }) {
 
   const reativarLocacao = async (id) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       await axios.post(
         `${API_URL}/api/admin/locacoes/${id}/reativar`,
         {},
@@ -241,7 +243,7 @@ function Locacoes({ embedded = false }) {
 
   const carregarEstatisticas = async (id) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const response = await axios.get(
         `${API_URL}/api/admin/locacoes/${id}/estatisticas`,
         { headers: { Authorization: `Bearer ${token}` } }

@@ -2150,7 +2150,7 @@ function AdminDashboard() {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <Locacoes embedded={true} />
+                <Locacoes embedded={true} token={token} />
               </motion.div>
             )}
             {abaAtiva === 'senha' && renderSenha()}
