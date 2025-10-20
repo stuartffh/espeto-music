@@ -12,6 +12,8 @@ const logger = require('./shared/utils/logger');
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 const metricsMiddleware = require('./middlewares/metricsMiddleware');
 const { setupContainer, containerMiddleware } = require('./infrastructure/container/container');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 
 const app = express();
 const server = http.createServer(app);
@@ -72,6 +74,13 @@ app.use((req, res, next) => {
 
 // Rotas da API
 app.use('/api', routes);
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Espeto Music API Documentation',
+  customfavIcon: '/favicon.ico'
+}));
 
 // Rota para gerar QR Code único (modelo "livepix")
 app.get('/qrcode', async (req, res) => {
