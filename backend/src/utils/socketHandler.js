@@ -198,8 +198,9 @@ function setupSocketHandlers(io) {
 
         // 🎯 GARANTIR AUTOPLAY - Função centralizada e robusta
         console.log('💚 [SOCKET] Garantindo autoplay...');
+        console.log(`   - Locação: ${locacaoId || 'global'}`);
         try {
-          const musicaIniciada = await playerService.garantirAutoplay();
+          const musicaIniciada = await playerService.garantirAutoplay(locacaoId);
 
           if (musicaIniciada) {
             console.log('✅ [SOCKET] Autoplay garantido! Música:', musicaIniciada.musicaTitulo);

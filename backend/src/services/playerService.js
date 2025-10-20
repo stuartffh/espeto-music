@@ -475,9 +475,10 @@ function pararVerificadorAutoplay() {
  * - Após socket receber evento de pagamento
  * - No verificador periódico
  *
+ * @param {string|null} locacaoId - ID da locação (null = global)
  * @returns {Promise<Object|null>} Música iniciada ou null
  */
-async function garantirAutoplay() {
+async function garantirAutoplay(locacaoId = null) {
   try {
     console.log('\n🎯 ═══════════════════════════════════════════════════════');
     console.log('   GARANTIR AUTOPLAY - Verificação Iniciada');
@@ -497,8 +498,9 @@ async function garantirAutoplay() {
 
     // 2. Verificar no banco se há música com status "tocando"
     console.log('\n2️⃣ Verificando música "tocando" no banco de dados...');
+    console.log(`   - Locação: ${locacaoId || 'global'}`);
     const musicaService = require('./musicaService');
-    const musicaTocandoBanco = await musicaService.buscarMusicaAtual();
+    const musicaTocandoBanco = await musicaService.buscarMusicaAtual(locacaoId);
 
     if (musicaTocandoBanco) {
       console.log(`⚠️  INCONSISTÊNCIA DETECTADA: Música no banco como "tocando" mas player parado`);
@@ -514,7 +516,8 @@ async function garantirAutoplay() {
 
     // 3. Buscar primeira música paga na fila
     console.log('\n3️⃣ Buscando primeira música "pago" na fila...');
-    const proximaMusica = await musicaService.iniciarProximaMusicaSeNecessario();
+    console.log(`   - Locação: ${locacaoId || 'global'}`);
+    const proximaMusica = await musicaService.iniciarProximaMusicaSeNecessario(locacaoId);
 
     if (proximaMusica) {
       console.log(`🎵 Música encontrada e marcada como "tocando":`);
