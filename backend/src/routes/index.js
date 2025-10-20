@@ -20,14 +20,70 @@ const historicoRoutes = require('./historico');
 // Timestamp de inicialização do servidor (usado para detectar reinicializações)
 const SERVER_START_TIME = Date.now();
 
-// Health check
-router.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
+const prisma = require('../config/database');
+const fs = require('fs');
+const path = require('path');
+
+// Health check melhorado
+router.get('/health', async (req, res) => {
+  const checks = {
+    database: false,
+    downloads: false,
+    memory: false,
+  };
+
+  let healthy = true;
+
+  try {
+    // Check database connection
+    await prisma.$queryRaw`SELECT 1`;
+    checks.database = true;
+  } catch (error) {
+    checks.database = false;
+    healthy = false;
+  }
+
+  try {
+    // Check downloads directory
+    const downloadsDir = path.join(__dirname, '../../downloads');
+    checks.downloads = fs.existsSync(downloadsDir);
+    if (!checks.downloads) healthy = false;
+  } catch (error) {
+    checks.downloads = false;
+    healthy = false;
+  }
+
+  // Check memory usage
+  const memUsage = process.memoryUsage();
+  const memLimit = 512 * 1024 * 1024; // 512MB
+  checks.memory = memUsage.heapUsed < memLimit;
+  if (!checks.memory) healthy = false;
+
+  const statusCode = healthy ? 200 : 503;
+
+  res.status(statusCode).json({
+    status: healthy ? 'healthy' : 'degraded',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    serverStartTime: SERVER_START_TIME, // Timestamp único de quando o servidor iniciou
+    serverStartTime: SERVER_START_TIME,
+    checks,
+    memory: {
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + ' MB',
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + ' MB',
+      rss: Math.round(memUsage.rss / 1024 / 1024) + ' MB',
+    },
   });
+});
+
+// Prometheus metrics endpoint
+const { register } = require('../shared/monitoring/metrics');
+router.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
 });
 
 // Rotas públicas (sem autenticação)

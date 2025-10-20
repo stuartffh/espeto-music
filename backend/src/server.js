@@ -7,6 +7,11 @@ const { Server } = require('socket.io');
 const routes = require('./routes');
 const { setupSocketHandlers } = require('./utils/socketHandler');
 
+// Novos imports
+const logger = require('./shared/utils/logger');
+const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
+const metricsMiddleware = require('./middlewares/metricsMiddleware');
+
 const app = express();
 const server = http.createServer(app);
 
@@ -45,16 +50,28 @@ app.use(express.urlencoded({ extended: true }));
 // Disponibilizar io para os controllers
 app.set('io', io);
 
-// Request logging em desenvolvimento
-if (process.env.NODE_ENV !== 'production') {
-  app.use((req, res, next) => {
-    console.log(`${req.method} ${req.path}`);
-    next();
+// Métricas (deve vir antes das rotas)
+app.use(metricsMiddleware);
+
+// Request logging com Winston
+app.use((req, res, next) => {
+  logger.http(`${req.method} ${req.path}`, {
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
   });
-}
+  next();
+});
 
 // Rotas da API
 app.use('/api', routes);
+
+// Error handlers (devem vir DEPOIS das rotas)
+// 404 - Not Found
+app.use(notFoundHandler);
+
+// Error handler global
+app.use(errorHandler);
 
 // Servir frontend unificado em produção
 const path = require('path');
@@ -64,8 +81,10 @@ const fs = require('fs');
 // No Docker: /app/backend/src -> /app/frontend/dist (um nível acima de backend)
 // No dev local: backend/src -> frontend/dist (dois níveis acima)
 const frontendPath = path.join(__dirname, '../..', 'frontend', 'dist');
-console.log('Frontend path:', frontendPath);
-console.log('Frontend exists:', fs.existsSync(frontendPath));
+logger.info('Frontend configuration', {
+  path: frontendPath,
+  exists: fs.existsSync(frontendPath),
+});
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
 
@@ -162,22 +181,24 @@ setInterval(executarLimpezaPeriodica, INTERVALO_LIMPEZA);
 // Executar limpeza inicial após 1 minuto do servidor iniciar
 setTimeout(executarLimpezaPeriodica, 60 * 1000);
 
-console.log('🧹 Sistema de limpeza automática iniciado (executa a cada 10 minutos)');
+logger.info('Sistema de limpeza automática iniciado', {
+  intervalo: '10 minutos',
+});
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-  console.log('\n🎵 ═══════════════════════════════════════════════════════');
-  console.log('   ESPETO MUSIC - Backend Server');
-  console.log('   ═══════════════════════════════════════════════════════');
-  console.log(`   🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`   🌐 URL: http://localhost:${PORT}`);
-  console.log(`   🔌 WebSocket: ws://localhost:${PORT}`);
-  console.log(`   📱 QR Code: http://localhost:${PORT}/qrcode`);
-  console.log(`   💾 Database: SQLite (${process.env.DATABASE_URL})`);
-  console.log(`   🔧 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log('   ═══════════════════════════════════════════════════════\n');
+  logger.info('\n🎵 ═══════════════════════════════════════════════════════');
+  logger.info('   ESPETO MUSIC - Backend Server');
+  logger.info('   ═══════════════════════════════════════════════════════');
+  logger.info(`   🚀 Servidor rodando na porta ${PORT}`);
+  logger.info(`   🌐 URL: http://localhost:${PORT}`);
+  logger.info(`   🔌 WebSocket: ws://localhost:${PORT}`);
+  logger.info(`   📱 QR Code: http://localhost:${PORT}/qrcode`);
+  logger.info(`   💾 Database: SQLite (${process.env.DATABASE_URL})`);
+  logger.info(`   🔧 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  logger.info('   ═══════════════════════════════════════════════════════\n');
 });
 
 // Graceful shutdown
