@@ -22,6 +22,7 @@ model admins {
 
 model pedidos_musica {
   id                  String      @id @default(uuid())
+  locacaoId           String?     // ID da locação (null = instância principal)
   nomeCliente         String?
   musicaTitulo        String
   musicaYoutubeId     String
@@ -41,7 +42,9 @@ model pedidos_musica {
   atualizadoEm        DateTime    @updatedAt
   gift_cards          gift_cards?
   pagamentos          pagamentos? @relation(fields: [pagamentoId], references: [id])
+  locacao             locacoes?   @relation(fields: [locacaoId], references: [id])
 
+  @@index([locacaoId])
   @@index([criadoEm])
   @@index([status])
   @@index([prioridade])
@@ -92,6 +95,7 @@ model estado_player {
 
 model gift_cards {
   id                String          @id @default(uuid())
+  locacaoId         String?         // ID da locação (null = instância principal)
   codigo            String          @unique
   valor             Float
   quantidadeMusicas Int
@@ -105,12 +109,15 @@ model gift_cards {
   criadoEm          DateTime        @default(now())
   atualizadoEm      DateTime        @updatedAt
   pedidos_musica    pedidos_musica? @relation(fields: [pedidoMusicaId], references: [id])
+  locacao           locacoes?       @relation(fields: [locacaoId], references: [id])
 
+  @@index([locacaoId])
   @@index([codigo])
 }
 
 model carrinhos {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
+  locacaoId       String?   // ID da locação (null = instância principal)
   sessionId       String
   nomeCliente     String?
   musicasTitulos  String
@@ -120,9 +127,11 @@ model carrinhos {
   valorTotal      Float
   quantidadeItens Int
   expiraEm        DateTime
-  criadoEm        DateTime @default(now())
-  atualizadoEm    DateTime @updatedAt
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+  locacao         locacoes? @relation(fields: [locacaoId], references: [id])
 
+  @@index([locacaoId])
   @@index([expiraEm])
   @@index([sessionId])
 }
@@ -197,4 +206,75 @@ model historico_musicas {
   @@index([inicioReproducao])
   @@index([tipo])
   @@map("historico_musicas")
+}
+
+model locacoes {
+  id                     String          @id @default(uuid())
+  slug                   String          @unique // URL amigável (ex: casamento-joao-maria)
+  nomeCliente            String          // Nome do contratante
+  nomeEvento             String          // Nome do evento/estabelecimento
+  emailContato           String?
+  telefoneContato        String?
+
+  // Período de locação
+  dataInicio             DateTime
+  dataFim                DateTime
+  ativo                  Boolean         @default(true)
+
+  // Customizações
+  nomeEstabelecimento    String?         // Nome exibido na tela de descanso
+  logoUrl                String?         // Logo personalizada
+  corTema                String?         // Cor do tema (#hexadecimal)
+  mensagemBoasVindas     String?         // Mensagem customizada
+  backgroundImageUrl     String?         // Imagem de fundo customizada
+
+  // QR Code único da locação
+  qrCodeData             String?         // Dados do QR Code (URL da locação)
+
+  // Configurações isoladas (JSON com override de configs)
+  configuracoes          String?         // JSON com configs específicas
+
+  // Estatísticas
+  totalPedidos           Int             @default(0)
+  totalArrecadado        Float           @default(0)
+
+  // Observações internas
+  observacoes            String?
+
+  criadoEm               DateTime        @default(now())
+  atualizadoEm           DateTime        @updatedAt
+
+  // Relações
+  pedidos_musica         pedidos_musica[]
+  gift_cards             gift_cards[]
+  carrinhos              carrinhos[]
+  historico_musicas      historico_musicas_locacao[]
+
+  @@index([slug])
+  @@index([ativo])
+  @@index([dataInicio, dataFim])
+}
+
+model historico_musicas_locacao {
+  id               String    @id @default(uuid())
+  locacaoId        String?
+  pedidoMusicaId   String?
+  musicaTitulo     String
+  musicaYoutubeId  String
+  musicaThumbnail  String?
+  musicaDuracao    Int?
+  nomeCliente      String?
+  valor            Float     @default(0)
+  inicioReproducao DateTime  @default(now())
+  fimReproducao    DateTime?
+  duracaoTocada    Int?
+  tipo             String    @default("cliente")
+  observacao       String?
+  criadoEm         DateTime  @default(now())
+
+  locacao          locacoes? @relation(fields: [locacaoId], references: [id])
+
+  @@index([locacaoId])
+  @@index([inicioReproducao])
+  @@index([tipo])
 }

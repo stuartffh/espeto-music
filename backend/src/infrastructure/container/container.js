@@ -12,6 +12,7 @@ const { PrismaClient } = require('@prisma/client');
 const PrismaPedidoRepository = require('../database/repositories/PrismaPedidoRepository');
 const PrismaFilaRepository = require('../database/repositories/PrismaFilaRepository');
 const PrismaGiftCardRepository = require('../database/repositories/PrismaGiftCardRepository');
+const PrismaLocacaoRepository = require('../repositories/PrismaLocacaoRepository');
 
 // Use Cases
 const CriarPedidoUseCase = require('../../application/use-cases/CriarPedidoUseCase');
@@ -19,6 +20,15 @@ const ProcessarPagamentoPedidoUseCase = require('../../application/use-cases/Pro
 const ObterFilaUseCase = require('../../application/use-cases/ObterFilaUseCase');
 const UsarGiftCardUseCase = require('../../application/use-cases/UsarGiftCardUseCase');
 const CriarGiftCardUseCase = require('../../application/use-cases/CriarGiftCardUseCase');
+
+// Locações Use Cases
+const CriarLocacaoUseCase = require('../../application/use-cases/locacoes/CriarLocacaoUseCase');
+const ListarLocacoesUseCase = require('../../application/use-cases/locacoes/ListarLocacoesUseCase');
+const ObterLocacaoPorSlugUseCase = require('../../application/use-cases/locacoes/ObterLocacaoPorSlugUseCase');
+const AtualizarLocacaoUseCase = require('../../application/use-cases/locacoes/AtualizarLocacaoUseCase');
+
+// Controllers
+const LocacaoController = require('../../interfaces/controllers/LocacaoController');
 
 /**
  * Cria e configura o container de dependências
@@ -41,6 +51,7 @@ function setupContainer() {
     pedidoRepository: asClass(PrismaPedidoRepository).scoped(),
     filaRepository: asClass(PrismaFilaRepository).scoped(),
     giftCardRepository: asClass(PrismaGiftCardRepository).scoped(),
+    locacaoRepository: asClass(PrismaLocacaoRepository).scoped(),
 
     // Use Cases (scoped)
     criarPedidoUseCase: asClass(CriarPedidoUseCase).scoped(),
@@ -48,6 +59,15 @@ function setupContainer() {
     obterFilaUseCase: asClass(ObterFilaUseCase).scoped(),
     usarGiftCardUseCase: asClass(UsarGiftCardUseCase).scoped(),
     criarGiftCardUseCase: asClass(CriarGiftCardUseCase).scoped(),
+
+    // Locações Use Cases (scoped)
+    criarLocacaoUseCase: asClass(CriarLocacaoUseCase).scoped(),
+    listarLocacoesUseCase: asClass(ListarLocacoesUseCase).scoped(),
+    obterLocacaoPorSlugUseCase: asClass(ObterLocacaoPorSlugUseCase).scoped(),
+    atualizarLocacaoUseCase: asClass(AtualizarLocacaoUseCase).scoped(),
+
+    // Controllers (scoped)
+    locacaoController: asClass(LocacaoController).scoped(),
   });
 
   return container;

@@ -16,6 +16,7 @@ const giftCardRoutes = require('./giftCardRoutes');
 const webhookRoutes = require('./webhookRoutes');
 const carrinhoRoutes = require('./carrinhoRoutes');
 const historicoRoutes = require('./historico');
+const locacaoRoutes = require('./locacaoRoutes');
 
 // Timestamp de inicialização do servidor (usado para detectar reinicializações)
 const SERVER_START_TIME = Date.now();
@@ -109,5 +110,8 @@ router.use('/theme', themeRoutes);
 router.use('/admin/theme', themeRoutes);
 router.use('/gifts', giftCardRoutes);
 router.use('/historico', historicoRoutes);
+
+// Locações (multi-tenancy)
+router.use('/', locacaoRoutes);
 
 module.exports = router;
