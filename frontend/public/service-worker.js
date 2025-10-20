@@ -1,6 +1,6 @@
 // Service Worker para PWA - Espeto Music
-const CACHE_NAME = 'espeto-music-v1';
-const OFFLINE_VERSION = 1;
+const CACHE_NAME = 'espeto-music-v2-locacao-fix'; // 🎯 INCREMENTADO PARA FORÇAR ATUALIZAÇÃO
+const OFFLINE_VERSION = 2;
 const OFFLINE_URL = '/offline.html';
 
 // Recursos essenciais para cache inicial
@@ -17,7 +17,10 @@ const urlsToCache = [
 
 // Instalação do Service Worker
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Instalando...');
+  console.log('[Service Worker] Instalando versão:', CACHE_NAME);
+
+  // 🎯 Força a ativação imediata do novo service worker
+  self.skipWaiting();
 
   event.waitUntil(
     (async () => {
@@ -104,20 +107,28 @@ self.addEventListener('message', (event) => {
 
 // Ativação do Service Worker
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Ativando...');
+  console.log('[Service Worker] Ativando versão:', CACHE_NAME);
 
   event.waitUntil(
     (async () => {
       // Limpar caches antigos
       const cacheNames = await caches.keys();
-      await Promise.all(
+      console.log('[Service Worker] Caches encontrados:', cacheNames);
+
+      const deletedCaches = await Promise.all(
         cacheNames
           .filter(name => name !== CACHE_NAME)
-          .map(name => caches.delete(name))
+          .map(name => {
+            console.log('[Service Worker] Deletando cache antigo:', name);
+            return caches.delete(name);
+          })
       );
+
+      console.log('[Service Worker] Caches deletados:', deletedCaches.length);
 
       // Permite que o SW controle a página imediatamente
       await self.clients.claim();
+      console.log('[Service Worker] Tomou controle de todos os clientes');
     })()
   );
 });
