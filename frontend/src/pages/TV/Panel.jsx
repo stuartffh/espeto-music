@@ -154,6 +154,11 @@ function Panel() {
             console.log('✅ [TV] Dados da locação carregados:', locacao);
             setLocacaoData(locacao);
 
+            // ⚠️ CRÍTICO: Armazenar locacaoId no sessionStorage para o interceptor
+            sessionStorage.setItem('locacaoId', locacao.id);
+            sessionStorage.setItem('locacaoSlug', locacao.slug);
+            console.log(`✅ [TV] locacaoId configurado no sessionStorage: ${locacao.id}`);
+
             // Configurar QR code do cliente
             setQrCodeData(`${API_URL}/l/${locacao.slug}`);
 
@@ -179,10 +184,15 @@ function Panel() {
           }
         });
     } else {
-      // Modo global (sem locação)
-      console.log('🌐 [TV] Modo global - sem locação específica');
+      // ⚠️ CRÍTICO: Modo global - LIMPAR locacaoId do sessionStorage
+      console.log('🌐 [TV] Modo global - limpando locacaoId do sessionStorage');
+      sessionStorage.removeItem('locacaoId');
+      sessionStorage.removeItem('locacaoSlug');
+      setLocacaoData(null);
+      console.log('✅ [TV] sessionStorage limpo - modo global puro');
+
       joinRoom(null).then(() => {
-        console.log('✅ [TV] Conectado à room global');
+        console.log('✅ [TV] Conectado à room global (sem locação)');
       });
     }
   }, [slugPainelTV]);
@@ -206,13 +216,11 @@ function Panel() {
       console.warn('⚠️  [TV] Não foi possível limpar localStorage:', e);
     }
 
-    // Limpar sessionStorage
-    try {
-      sessionStorage.clear();
-      console.log('✅ [TV] sessionStorage limpo');
-    } catch (e) {
-      console.warn('⚠️  [TV] Não foi possível limpar sessionStorage:', e);
-    }
+    // ⚠️ ATENÇÃO: NÃO limpar sessionStorage aqui!
+    // O sessionStorage será gerenciado pelo useEffect de locação (linhas 146-198)
+    // - Modo global (/tv): limpa locacaoId
+    // - Modo locação (/tv/:slug): seta locacaoId
+    console.log('ℹ️  [TV] sessionStorage será gerenciado pelo useEffect de locação');
 
     // Limpar IndexedDB (se houver)
     try {
