@@ -11,14 +11,32 @@
 const prisma = require('../config/database');
 const historicoService = require('./historicoService');
 
-// Estado em memória (rápido para leitura)
-let estadoMemoria = {
-  musicaAtual: null,
-  status: 'stopped', // 'playing', 'paused', 'stopped'
-  tempoAtual: 0,
-  volume: 80,
-  ultimaAtualizacao: Date.now(),
+// Estado em memória separado por locação (rápido para leitura)
+// Chave: locacaoId ou 'global' para sistema global
+let estadosMemoria = {
+  global: {
+    musicaAtual: null,
+    status: 'stopped', // 'playing', 'paused', 'stopped'
+    tempoAtual: 0,
+    volume: 80,
+    ultimaAtualizacao: Date.now(),
+  }
 };
+
+// Helper para obter estado de uma locação específica
+function getEstadoMemoria(locacaoId = null) {
+  const key = locacaoId || 'global';
+  if (!estadosMemoria[key]) {
+    estadosMemoria[key] = {
+      musicaAtual: null,
+      status: 'stopped',
+      tempoAtual: 0,
+      volume: 80,
+      ultimaAtualizacao: Date.now(),
+    };
+  }
+  return estadosMemoria[key];
+}
 
 let intervalSync = null;
 let intervalBackup = null;
@@ -78,13 +96,12 @@ async function recuperarEstado() {
         console.log('🎵 Recuperando música:', musicaAtual.musicaTitulo);
         console.log('⏱️  Tempo salvo:', Math.floor(estadoSalvo.tempoAtual), 'segundos');
 
-        estadoMemoria = {
-          musicaAtual,
-          status: estadoSalvo.status,
-          tempoAtual: estadoSalvo.tempoAtual,
-          volume: estadoSalvo.volume,
-          ultimaAtualizacao: Date.now(),
-        };
+        const estadoGlobal = getEstadoMemoria('global');
+        estadoGlobal.musicaAtual = musicaAtual;
+        estadoGlobal.status = estadoSalvo.status;
+        estadoGlobal.tempoAtual = estadoSalvo.tempoAtual;
+        estadoGlobal.volume = estadoSalvo.volume;
+        estadoGlobal.ultimaAtualizacao = Date.now();
 
         // Se estava tocando, retomar
         if (estadoSalvo.status === 'playing') {
@@ -96,7 +113,7 @@ async function recuperarEstado() {
           if (io) {
             io.emit('player:iniciar', {
               musica: musicaAtual,
-              estado: estadoMemoria,
+              estado: estadoGlobal,
             });
           }
         }
@@ -106,7 +123,8 @@ async function recuperarEstado() {
       }
     } else {
       console.log('ℹ️  Nenhuma música em reprodução');
-      estadoMemoria.volume = estadoSalvo.volume;
+      const estadoGlobal = getEstadoMemoria('global');
+      estadoGlobal.volume = estadoSalvo.volume;
     }
 
   } catch (error) {
@@ -117,23 +135,31 @@ async function recuperarEstado() {
 /**
  * Salva o estado atual no banco de dados
  */
-async function salvarEstado() {
+async function salvarEstado(locacaoId = null) {
   try {
+    // Por enquanto, salvar apenas o estado global no banco
+    // TODO: Implementar salvamento separado por locação se necessário
+    if (locacaoId && locacaoId !== 'global') {
+      console.log(`ℹ️ [SALVAR] Estado de locação ${locacaoId} não salvo no banco (apenas em memória)`);
+      return;
+    }
+
+    const estadoGlobal = getEstadoMemoria('global');
     await prisma.estado_player.upsert({
       where: { id: 'singleton' },
       update: {
-        musicaAtualId: estadoMemoria.musicaAtual?.id || null,
-        status: estadoMemoria.status,
-        tempoAtual: estadoMemoria.tempoAtual,
-        volume: estadoMemoria.volume,
+        musicaAtualId: estadoGlobal.musicaAtual?.id || null,
+        status: estadoGlobal.status,
+        tempoAtual: estadoGlobal.tempoAtual,
+        volume: estadoGlobal.volume,
         ultimaAtualizacao: new Date(),
       },
       create: {
         id: 'singleton',
-        musicaAtualId: estadoMemoria.musicaAtual?.id || null,
-        status: estadoMemoria.status,
-        tempoAtual: estadoMemoria.tempoAtual,
-        volume: estadoMemoria.volume,
+        musicaAtualId: estadoGlobal.musicaAtual?.id || null,
+        status: estadoGlobal.status,
+        tempoAtual: estadoGlobal.tempoAtual,
+        volume: estadoGlobal.volume,
         atualizadoEm: new Date()
       }
     });
@@ -181,20 +207,21 @@ function pararBackup() {
 
 /**
  * Inicia uma nova música
+ * @param {Object} musica - Dados da música
+ * @param {string|null} locacaoId - ID da locação (null = global)
  */
-async function iniciarMusica(musica) {
+async function iniciarMusica(musica, locacaoId = null) {
   console.log('▶️ Player: Iniciando música', musica.musicaTitulo);
+  console.log(`   - Locação: ${locacaoId || 'global'}`);
 
-  estadoMemoria = {
-    musicaAtual: musica,
-    status: 'playing',
-    tempoAtual: 0,
-    volume: estadoMemoria.volume,
-    ultimaAtualizacao: Date.now(),
-  };
+  const estado = getEstadoMemoria(locacaoId);
+  estado.musicaAtual = musica;
+  estado.status = 'playing';
+  estado.tempoAtual = 0;
+  estado.ultimaAtualizacao = Date.now();
 
   // Salvar no banco imediatamente
-  await salvarEstado();
+  await salvarEstado(locacaoId);
 
   // Registrar no histórico
   try {
@@ -224,65 +251,74 @@ async function iniciarMusica(musica) {
     console.log('📡 [PLAYER] Emitindo player:iniciar para:', musica.musicaTitulo);
     io.emit('player:iniciar', {
       musica,
-      estado: estadoMemoria,
+      estado: estado,
     });
     console.log('✅ [PLAYER] Evento player:iniciar emitido com sucesso');
   } else {
     console.error('❌ [PLAYER] IO não disponível! Evento player:iniciar NÃO foi emitido!');
   }
 
-  return estadoMemoria;
+  return estado;
 }
 
 /**
  * Pausa a música
  */
-async function pausar() {
-  if (estadoMemoria.status === 'playing') {
+async function pausar(locacaoId = null) {
+  const estado = getEstadoMemoria(locacaoId);
+  
+  if (estado.status === 'playing') {
     console.log('⏸️ Player: Pausando');
-    estadoMemoria.status = 'paused';
-    estadoMemoria.ultimaAtualizacao = Date.now();
+    console.log(`   - Locação: ${locacaoId || 'global'}`);
+    estado.status = 'paused';
+    estado.ultimaAtualizacao = Date.now();
 
-    await salvarEstado();
+    await salvarEstado(locacaoId);
     pararSincronizacao();
     // Manter backup para salvar estado pausado
 
     if (io) {
-      io.emit('player:pausar', { estado: estadoMemoria });
+      io.emit('player:pausar', { estado: estado });
     }
   }
-  return estadoMemoria;
+  return estado;
 }
 
 /**
  * Retoma a música pausada
  */
-async function retomar() {
-  if (estadoMemoria.status === 'paused') {
+async function retomar(locacaoId = null) {
+  const estado = getEstadoMemoria(locacaoId);
+  
+  if (estado.status === 'paused') {
     console.log('▶️ Player: Retomando');
-    estadoMemoria.status = 'playing';
-    estadoMemoria.ultimaAtualizacao = Date.now();
+    console.log(`   - Locação: ${locacaoId || 'global'}`);
+    estado.status = 'playing';
+    estado.ultimaAtualizacao = Date.now();
 
-    await salvarEstado();
+    await salvarEstado(locacaoId);
     iniciarSincronizacao();
 
     if (io) {
-      io.emit('player:retomar', { estado: estadoMemoria });
+      io.emit('player:retomar', { estado: estado });
     }
   }
-  return estadoMemoria;
+  return estado;
 }
 
 /**
  * Para completamente
  */
-async function parar() {
+async function parar(locacaoId = null) {
   console.log('⏹️ Player: Parando');
+  console.log(`   - Locação: ${locacaoId || 'global'}`);
+
+  const estado = getEstadoMemoria(locacaoId);
 
   // Registrar fim da música no histórico
   if (historicoAtualId) {
     try {
-      await historicoService.registrarFimMusica(historicoAtualId, Math.floor(estadoMemoria.tempoAtual));
+      await historicoService.registrarFimMusica(historicoAtualId, Math.floor(estado.tempoAtual));
       historicoAtualId = null;
     } catch (error) {
       console.error('❌ Erro ao registrar fim da música no histórico:', error);
@@ -292,109 +328,118 @@ async function parar() {
   pararSincronizacao();
   pararBackup();
 
-  estadoMemoria = {
-    musicaAtual: null,
-    status: 'stopped',
-    tempoAtual: 0,
-    volume: estadoMemoria.volume,
-    ultimaAtualizacao: Date.now(),
-  };
+  estado.musicaAtual = null;
+  estado.status = 'stopped';
+  estado.tempoAtual = 0;
+  estado.ultimaAtualizacao = Date.now();
 
-  await salvarEstado();
+  await salvarEstado(locacaoId);
 
   if (io) {
-    io.emit('player:parar', { estado: estadoMemoria });
+    io.emit('player:parar', { estado: estado });
   }
 
-  return estadoMemoria;
+  return estado;
 }
 
 /**
  * Pula para a próxima música
  */
-async function pularMusica() {
+async function pularMusica(locacaoId = null) {
   console.log('⏭️ Player: Pulando música');
+  console.log(`   - Locação: ${locacaoId || 'global'}`);
 
   const musicaService = require('./musicaService');
+  const estado = getEstadoMemoria(locacaoId);
 
-  if (estadoMemoria.musicaAtual) {
-    const proximaMusica = await musicaService.pularMusica(estadoMemoria.musicaAtual.id);
+  if (estado.musicaAtual) {
+    const proximaMusica = await musicaService.pularMusica(estado.musicaAtual.id);
 
     pararSincronizacao();
     pararBackup();
 
     if (proximaMusica) {
-      return await iniciarMusica(proximaMusica);
+      return await iniciarMusica(proximaMusica, locacaoId);
     } else {
-      return await parar();
+      return await parar(locacaoId);
     }
   }
 
-  return estadoMemoria;
+  return estado;
 }
 
 /**
  * Chamado quando a música termina naturalmente
+ * @param {string|null} locacaoId - ID da locação (null = global)
  */
-async function musicaTerminou() {
+async function musicaTerminou(locacaoId = null) {
   console.log('🎵 Player: Música terminou');
+  console.log(`   - Locação: ${locacaoId || 'global'}`);
 
   const musicaService = require('./musicaService');
+  const estado = getEstadoMemoria(locacaoId);
 
-  if (estadoMemoria.musicaAtual) {
-    const proximaMusica = await musicaService.concluirMusica(estadoMemoria.musicaAtual.id);
+  if (estado.musicaAtual) {
+    const proximaMusica = await musicaService.concluirMusica(estado.musicaAtual.id, locacaoId);
 
     pararSincronizacao();
     pararBackup();
 
     if (proximaMusica) {
-      return await iniciarMusica(proximaMusica);
+      return await iniciarMusica(proximaMusica, locacaoId);
     } else {
-      return await parar();
+      return await parar(locacaoId);
     }
   }
 
-  return estadoMemoria;
+  return estado;
 }
 
 /**
  * Ajusta o volume
  */
-async function ajustarVolume(nivel) {
+async function ajustarVolume(nivel, locacaoId = null) {
   console.log('🔊 Player: Volume ajustado para', nivel);
-  estadoMemoria.volume = nivel;
+  console.log(`   - Locação: ${locacaoId || 'global'}`);
+  
+  const estado = getEstadoMemoria(locacaoId);
+  estado.volume = nivel;
 
-  await salvarEstado();
+  await salvarEstado(locacaoId);
 
   if (io) {
     io.emit('player:volume', { volume: nivel });
   }
 
-  return estadoMemoria;
+  return estado;
 }
 
 /**
  * Busca para um tempo específico
  */
-async function buscarTempo(tempo) {
+async function buscarTempo(tempo, locacaoId = null) {
   console.log('⏩ Player: Buscando para', tempo, 'segundos');
-  estadoMemoria.tempoAtual = tempo;
-  estadoMemoria.ultimaAtualizacao = Date.now();
+  console.log(`   - Locação: ${locacaoId || 'global'}`);
+  
+  const estado = getEstadoMemoria(locacaoId);
+  estado.tempoAtual = tempo;
+  estado.ultimaAtualizacao = Date.now();
 
-  await salvarEstado();
+  await salvarEstado(locacaoId);
 
   if (io) {
     io.emit('player:buscar', { tempo });
   }
 
-  return estadoMemoria;
+  return estado;
 }
 
 /**
  * Retorna o estado atual
  */
-function obterEstado() {
-  return { ...estadoMemoria };
+function obterEstado(locacaoId = null) {
+  const estado = getEstadoMemoria(locacaoId);
+  return { ...estado };
 }
 
 /**
@@ -508,7 +553,7 @@ async function garantirAutoplay(locacaoId = null) {
       console.log(`   - ID: ${musicaTocandoBanco.id}`);
       console.log(`   - Ação: Iniciando esta música no player...`);
 
-      await iniciarMusica(musicaTocandoBanco);
+      await iniciarMusica(musicaTocandoBanco, locacaoId);
       console.log('✅ Música inconsistente iniciada com sucesso');
       console.log('═══════════════════════════════════════════════════════\n');
       return musicaTocandoBanco;
@@ -527,7 +572,7 @@ async function garantirAutoplay(locacaoId = null) {
       console.log(`   - Ação: Iniciando no player...`);
 
       console.log('🎵 [AUTOPLAY] Chamando iniciarMusica...');
-      await iniciarMusica(proximaMusica);
+      await iniciarMusica(proximaMusica, locacaoId);
       console.log('✅ [AUTOPLAY] AUTOPLAY BEM-SUCEDIDO! Música iniciada com sucesso');
       console.log('✅ [AUTOPLAY] Verificar se evento player:iniciar foi emitido acima ⬆️');
       console.log('═══════════════════════════════════════════════════════\n');

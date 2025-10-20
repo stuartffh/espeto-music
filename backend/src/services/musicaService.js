@@ -114,10 +114,12 @@ async function buscarMusicaAtual(locacaoId = null) {
 
 /**
  * Marca música como tocando
+ * @param {string} pedidoId - ID do pedido
+ * @param {string|null} locacaoId - ID da locação (null = global)
  */
-async function tocarMusica(pedidoId) {
-  // Verificar se já existe música tocando
-  const musicaTocando = await buscarMusicaAtual();
+async function tocarMusica(pedidoId, locacaoId = null) {
+  // Verificar se já existe música tocando NA MESMA LOCAÇÃO
+  const musicaTocando = await buscarMusicaAtual(locacaoId);
 
   if (musicaTocando && musicaTocando.id !== pedidoId) {
     throw new Error('Já existe uma música tocando');
@@ -152,7 +154,7 @@ async function concluirMusica(pedidoId, locacaoId = null) {
   });
 
   if (proximaMusica) {
-    return await tocarMusica(proximaMusica.id);
+    return await tocarMusica(proximaMusica.id, locacaoId);
   }
 
   return null;
@@ -182,7 +184,7 @@ async function iniciarProximaMusicaSeNecessario(locacaoId = null) {
 
   if (proximaMusica) {
     console.log('🎵 Autoplay: Iniciando primeira música da fila:', proximaMusica.musicaTitulo);
-    return await tocarMusica(proximaMusica.id);
+    return await tocarMusica(proximaMusica.id, locacaoId);
   }
 
   return null;

@@ -167,7 +167,7 @@ function setupSocketHandlers(io) {
         console.log(`📍 [WEBSOCKET] Música terminou na room: ${room} (locacaoId: ${locacaoId || 'null'})`);
 
         // Usar o playerService para gerenciar a transição
-        await playerService.musicaTerminou();
+        await playerService.musicaTerminou(locacaoId);
 
         // ⚠️ CRÍTICO: Atualizar fila APENAS da mesma locação
         const fila = await musicaService.buscarFilaMusicas(locacaoId);
