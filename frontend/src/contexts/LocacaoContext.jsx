@@ -14,31 +14,42 @@ export const useLocacao = () => {
 
 export const LocacaoProvider = ({ children }) => {
   const [locacao, setLocacao] = useState(null);
-  const [locacaoId, setLocacaoId] = useState(null);
+  const [locacaoId, setLocacaoId] = useState(() => {
+    // 🎯 Inicializar com valor do sessionStorage se existir
+    return sessionStorage.getItem('locacaoId') || null;
+  });
 
+  // 🎯 Sincronizar locacaoId do sessionStorage periodicamente
   useEffect(() => {
-    // Detectar se está em uma rota de locação
-    const path = window.location.pathname;
-    const match = path.match(/^\/l\/([^/]+)/);
+    const syncLocacaoId = () => {
+      const storedId = sessionStorage.getItem('locacaoId');
+      if (storedId !== locacaoId) {
+        console.log(`🔄 [LOCAÇÃO CONTEXT] Sincronizando locacaoId: ${storedId || 'null'}`);
+        setLocacaoId(storedId);
+      }
+    };
 
-    if (match) {
-      const slug = match[1];
-      carregarLocacao(slug);
-    }
-  }, []);
+    // Verificar a cada 500ms se sessionStorage mudou
+    const interval = setInterval(syncLocacaoId, 500);
+
+    // Verificar imediatamente também
+    syncLocacaoId();
+
+    return () => clearInterval(interval);
+  }, [locacaoId]);
 
   // 🎯 Entrar na room quando locacaoId mudar
   useEffect(() => {
     if (locacaoId) {
-      console.log(`🎯 [LOCAÇÃO] Entrando na room da locação: ${locacaoId}`);
+      console.log(`🎯 [LOCAÇÃO CONTEXT] Entrando na room da locação: ${locacaoId}`);
       joinRoom(locacaoId).then(() => {
-        console.log(`✅ [LOCAÇÃO] Conectado à room da locação`);
+        console.log(`✅ [LOCAÇÃO CONTEXT] Conectado à room da locação`);
       });
     } else {
       // Sem locação = room global
-      console.log('🌐 [LOCAÇÃO] Sem locação específica, entrando na room global');
+      console.log('🌐 [LOCAÇÃO CONTEXT] Entrando na room global');
       joinRoom(null).then(() => {
-        console.log('✅ [LOCAÇÃO] Conectado à room global');
+        console.log('✅ [LOCAÇÃO CONTEXT] Conectado à room global');
       });
     }
   }, [locacaoId]);
