@@ -387,7 +387,7 @@ function Locacoes({ embedded = false, token: tokenFromDashboard = null }) {
                     </p>
                     <p className="text-purple-100 text-xs">
                       <span className="opacity-60">Painel TV:</span>{' '}
-                      <span className="font-mono text-blue-300">/painel/{locacao.slugPainelTV}</span>
+                      <span className="font-mono text-blue-300">/tv/{locacao.slugPainelTV}</span>
                     </p>
                   </div>
 
@@ -881,7 +881,7 @@ function Locacoes({ embedded = false, token: tokenFromDashboard = null }) {
             <div className="bg-white p-6 rounded-lg inline-block shadow-xl mb-6 border-4 border-blue-200">
               <QRCodeCanvas
                 id={`qr-${mostrarQRCode.slugPainelTV}`}
-                value={mostrarQRCode.qrCodeData || `${API_URL}/painel/${mostrarQRCode.slugPainelTV}`}
+                value={mostrarQRCode.qrCodeData || `${API_URL}/tv/${mostrarQRCode.slugPainelTV}`}
                 size={256}
                 level="H"
                 includeMargin={true}
@@ -892,7 +892,7 @@ function Locacoes({ embedded = false, token: tokenFromDashboard = null }) {
               <div className="bg-blue-50 p-3 rounded-lg">
                 <p className="text-xs text-blue-600 mb-1">Painel TV (para QR code):</p>
                 <p className="text-sm font-mono text-blue-900 font-semibold">
-                  {mostrarQRCode.qrCodeData || `${API_URL}/painel/${mostrarQRCode.slugPainelTV}`}
+                  {mostrarQRCode.qrCodeData || `${API_URL}/tv/${mostrarQRCode.slugPainelTV}`}
                 </p>
               </div>
               <div className="bg-green-50 p-3 rounded-lg">

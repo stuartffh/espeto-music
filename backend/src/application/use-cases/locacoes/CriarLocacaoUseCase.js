@@ -36,8 +36,8 @@ class CriarLocacaoUseCase {
 
     const baseUrl = process.env.BASE_URL || 'https://espeto.zapchatbr.com';
 
-    // QR Code aponta para o PAINEL TV (que contém o slug do cliente embedded)
-    const qrCodeData = `${baseUrl}/painel/${slugPainelTV}`;
+    // QR Code aponta para o PAINEL TV (URL simplificada /tv/:slugPainelTV)
+    const qrCodeData = `${baseUrl}/tv/${slugPainelTV}`;
 
     // Criar locação
     const locacao = new Locacao({

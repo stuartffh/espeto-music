@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Music, User, Clock, Wifi, WifiOff } from 'lucide-react';
 import axios from 'axios';
@@ -83,6 +84,8 @@ const formatTime = (seconds) => {
 };
 
 function Panel() {
+  const { slugPainelTV } = useParams(); // Detecta se está em modo locação
+  const [locacaoData, setLocacaoData] = useState(null); // Dados da locação
   const [fila, setFila] = useState([]);
   const [estadoPlayer, setEstadoPlayer] = useState(null);
   const [iframeReady, setIframeReady] = useState(false);
@@ -113,6 +116,60 @@ function Panel() {
   // Variáveis derivadas do estado (devem vir antes dos useEffects que as usam)
   const musicaAtual = estadoPlayer?.musicaAtual;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  // 🎨 Mesclar configurações globais com dados da locação
+  const getConfig = (key, defaultValue = '') => {
+    // Se tem dados de locação, priorizar eles
+    if (locacaoData) {
+      switch(key) {
+        case 'NOME_ESTABELECIMENTO':
+          return locacaoData.nomeEstabelecimento || locacaoData.nomeEvento || configs[key] || defaultValue;
+        case 'LOGO_URL':
+          return locacaoData.logoUrl || configs[key] || defaultValue;
+        case 'COR_PRIMARIA':
+          return locacaoData.corPrimaria || configs[key] || defaultValue;
+        case 'COR_SECUNDARIA':
+          return locacaoData.corSecundaria || configs[key] || defaultValue;
+        case 'VIDEO_DESCANSO_URL':
+          return locacaoData.videoDescansoUrl || configs[key] || defaultValue;
+        case 'VIDEO_DESCANSO_ATIVO':
+          return locacaoData.videoDescansoUrl ? 'true' : (configs[key] || defaultValue);
+        default:
+          return configs[key] || defaultValue;
+      }
+    }
+    // Caso contrário, usar config global
+    return configs[key] || defaultValue;
+  };
+
+  // 📺 BUSCAR DADOS DA LOCAÇÃO (se slugPainelTV presente)
+  useEffect(() => {
+    if (slugPainelTV) {
+      console.log('🎯 [TV] Carregando dados da locação:', slugPainelTV);
+
+      api.get(`/api/public/painel/${slugPainelTV}`)
+        .then(res => {
+          if (res.data.sucesso && res.data.locacao) {
+            const locacao = res.data.locacao;
+            console.log('✅ [TV] Dados da locação carregados:', locacao);
+            setLocacaoData(locacao);
+
+            // Configurar QR code do cliente
+            setQrCodeData(`${API_URL}/l/${locacao.slug}`);
+
+            // Aplicar título personalizado
+            document.title = `${locacao.nomeEstabelecimento || locacao.nomeEvento} - TV`;
+          }
+        })
+        .catch(error => {
+          console.error('❌ [TV] Erro ao carregar locação:', error);
+          // Se erro 404/403, redirecionar para /tv padrão
+          if (error.response && (error.response.status === 404 || error.response.status === 403)) {
+            window.location.href = '/tv';
+          }
+        });
+    }
+  }, [slugPainelTV]);
 
   // 🧹 LIMPEZA AUTOMÁTICA: Sempre começar com conexão limpa na TV
   useEffect(() => {
@@ -202,6 +259,11 @@ function Panel() {
         // Aplicar título customizado
         if (configMap.NOME_ESTABELECIMENTO) {
           document.title = `${configMap.NOME_ESTABELECIMENTO} - TV`;
+        }
+
+        // Se houver dados de locação, sobrescrever título
+        if (locacaoData) {
+          document.title = `${locacaoData.nomeEstabelecimento || locacaoData.nomeEvento} - TV`;
         }
       })
       .catch(console.error);
@@ -1006,17 +1068,17 @@ function Panel() {
               </>
             ) : (
               <div className="flex items-center gap-3">
-                {configs.LOGO_URL ? (
-                  <img src={configs.LOGO_URL} alt="Logo" className="h-14 object-contain" decoding="async" referrerPolicy="no-referrer" />
+                {getConfig('LOGO_URL') ? (
+                  <img src={getConfig('LOGO_URL')} alt="Logo" className="h-14 object-contain" decoding="async" referrerPolicy="no-referrer" />
                 ) : (
                   <Music className="w-10 h-10 text-neon-purple" />
                 )}
                 <div>
                   <h2 className="text-2xl font-bold gradient-text">
-                    {configs.NOME_ESTABELECIMENTO || 'Espeto Music'}
+                    {getConfig('NOME_ESTABELECIMENTO', 'Espeto Music')}
                   </h2>
                   <p className="text-sm text-gray-400">
-                    {configs.SLOGAN_ESTABELECIMENTO || 'Seu pedido, sua música!'}
+                    {getConfig('SLOGAN_ESTABELECIMENTO', 'Seu pedido, sua música!')}
                   </p>
                 </div>
               </div>
@@ -1102,10 +1164,10 @@ function Panel() {
           </div>
 
           {/* Vídeo de descanso - SEMPRE renderizado para carregar antecipadamente */}
-          {configs.VIDEO_DESCANSO_ATIVO === 'true' && configs.VIDEO_DESCANSO_URL && (
+          {getConfig('VIDEO_DESCANSO_ATIVO') === 'true' && getConfig('VIDEO_DESCANSO_URL') && (
             <video
               ref={videoDescansoRef}
-              src={configs.VIDEO_DESCANSO_URL}
+              src={getConfig('VIDEO_DESCANSO_URL')}
               className={`absolute inset-0 w-full h-full object-cover ${musicaAtual ? 'hidden' : ''}`}
               autoPlay
               loop
@@ -1136,9 +1198,9 @@ function Panel() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
-                {configs.LOGO_URL ? (
+                {getConfig('LOGO_URL') ? (
                   <motion.img
-                    src={configs.LOGO_URL}
+                    src={getConfig('LOGO_URL')}
                     alt="Logo"
                     className="mx-auto mb-8 max-w-md max-h-48 object-contain drop-shadow-2xl"
                     animate={{ y: [0, -20, 0] }}
@@ -1149,7 +1211,7 @@ function Panel() {
                 )}
 
                 <h1 className="text-7xl font-black mb-6 gradient-text">
-                  {configs.NOME_ESTABELECIMENTO || 'Espeto Music'}
+                  {getConfig('NOME_ESTABELECIMENTO', 'Espeto Music')}
                 </h1>
 
                 <motion.div
