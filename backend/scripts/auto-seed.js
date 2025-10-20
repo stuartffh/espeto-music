@@ -22,9 +22,9 @@ async function autoSeed() {
     console.log('\n🔍 Verificando necessidade de seed automático...');
 
     // Verificar se o banco de dados existe (tentar ambos os caminhos)
-    const dbPath1 = path.join(__dirname, 'dev.db');
-    const dbPath2 = path.join(__dirname, 'prisma', 'dev.db');
-    const dbPath3 = path.join(__dirname, 'prisma', 'production.db');
+    const dbPath1 = path.join(__dirname, '..', 'dev.db');
+    const dbPath2 = path.join(__dirname, '..', 'prisma', 'dev.db');
+    const dbPath3 = path.join(__dirname, '..', 'prisma', 'production.db');
 
     const dbExists = fs.existsSync(dbPath1) || fs.existsSync(dbPath2) || fs.existsSync(dbPath3);
 

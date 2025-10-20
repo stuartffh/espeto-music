@@ -22,7 +22,7 @@ npx prisma generate
 
 # Verificar e semear banco de dados se necessário
 echo "🌱 Verificando se precisa semear o banco de dados..."
-node auto-seed.js || echo "⚠️ Erro ao verificar/semear banco, continuando..."
+node scripts/auto-seed.js || echo "⚠️ Erro ao verificar/semear banco, continuando..."
 
 # Verificar se o diretório de frontend existe
 if [ -d "/app/frontend/dist" ]; then
