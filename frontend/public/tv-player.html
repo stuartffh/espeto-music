@@ -538,8 +538,9 @@
               hideLoading();
 
               // Notificar Panel.jsx que player está pronto (importante após recriar player)
-              sendMessage('player-ready');
-              console.log('📡 Evento player-ready enviado ao Panel.jsx');
+              // IMPORTANTE: Enviar autoplayConsent como true para permitir áudio
+              sendMessage('player-ready', { autoplayConsent: true });
+              console.log('📡 Evento player-ready enviado ao Panel.jsx com autoplayConsent: true');
 
               // FORÇAR QUALIDADE HD para melhor FPS (aguardar um pouco para carregar)
               setTimeout(() => {
@@ -974,8 +975,15 @@
           break;
         case 'stop':
           if (state.player) {
-            state.player.stopVideo();
-            state.player.seekTo(0);
+            console.log('⏹️ Comando stop recebido - destruindo player para evitar reprodução fantasma');
+            try {
+              stopUpdateLoop(); // Para o loop de atualização
+              state.player.destroy(); // Destroi o player completamente
+              state.player = null;
+              console.log('✅ Player destruído com sucesso');
+            } catch (e) {
+              console.warn('⚠️ Erro ao destruir player:', e);
+            }
           }
           break;
         case 'set-volume':
@@ -1015,8 +1023,15 @@
             state.player.pauseVideo();
             break;
           case 'stop':
-            state.player.stopVideo();
-            state.player.seekTo(0);
+            console.log('⏹️ Comando stop (remote) recebido - destruindo player');
+            try {
+              stopUpdateLoop();
+              state.player.destroy();
+              state.player = null;
+              console.log('✅ Player destruído com sucesso (remote)');
+            } catch (e) {
+              console.warn('⚠️ Erro ao destruir player (remote):', e);
+            }
             break;
           case 'seek':
             if (typeof time === 'number') {
