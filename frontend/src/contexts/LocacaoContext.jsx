@@ -88,6 +88,11 @@ export const setupLocacaoInterceptor = () => {
     (config) => {
       const locacaoId = sessionStorage.getItem('locacaoId');
 
+      // 🎯 LOG: Rastrear locacaoId em todas as requisições
+      console.log('\n🌐 [AXIOS INTERCEPTOR] ═══════════════════════════════════');
+      console.log(`📍 URL: ${config.method?.toUpperCase()} ${config.url}`);
+      console.log(`🏢 locacaoId (sessionStorage): "${locacaoId || 'null (global)'}"`);
+
       if (locacaoId) {
         // Adicionar locacaoId no body para POST/PUT
         if (config.method === 'post' || config.method === 'put') {
@@ -99,6 +104,7 @@ export const setupLocacaoInterceptor = () => {
           } else {
             config.data = { locacaoId };
           }
+          console.log(`✅ locacaoId adicionado ao body`);
         }
 
         // Adicionar locacaoId como query param para GET/DELETE
@@ -107,11 +113,16 @@ export const setupLocacaoInterceptor = () => {
             ...config.params,
             locacaoId,
           };
+          console.log(`✅ locacaoId adicionado aos query params`);
         }
 
         // Adicionar header customizado
         config.headers['X-Locacao-Id'] = locacaoId;
+        console.log(`✅ locacaoId adicionado ao header X-Locacao-Id`);
+      } else {
+        console.log(`ℹ️  Requisição GLOBAL (sem locacaoId)`);
       }
+      console.log('═══════════════════════════════════════════════════════\n');
 
       return config;
     },

@@ -156,7 +156,19 @@ async function criar(req, res) {
       prioridade,
       dedicatoria,
       dedicatoriaDe,
+      locacaoId,
     } = req.body;
+
+    // 🎯 LOG: Rastrear locacaoId recebido
+    console.log('\n🎯 ═══════════════════════════════════════════════════════');
+    console.log('   [CONTROLLER] Criar Pedido de Música');
+    console.log('   ═══════════════════════════════════════════════════════');
+    console.log(`📋 Nome Cliente: "${nomeCliente}"`);
+    console.log(`🎵 Título: "${musicaTitulo}"`);
+    console.log(`🏢 locacaoId: "${locacaoId || 'null (global)'}"`);
+    console.log(`📍 Headers X-Locacao-Id: "${req.headers['x-locacao-id'] || 'não enviado'}"`);
+    console.log(`🔍 Query locacaoId: "${req.query.locacaoId || 'não enviado'}"`);
+    console.log('═══════════════════════════════════════════════════════\n');
 
     // Validações
     if (!musicaTitulo || !musicaYoutubeId) {
@@ -232,7 +244,10 @@ async function criar(req, res) {
       prioridade: prioridade || false,
       dedicatoria: dedicatoria || null,
       dedicatoriaDe: dedicatoriaDe || null,
+      locacaoId: locacaoId || null, // 🎯 PASSAR locacaoId para o service
     });
+
+    console.log(`✅ [CONTROLLER] Pedido criado com ID: ${pedido.id} para locacaoId: ${locacaoId || 'null (global)'}`);
 
     // Se modo gratuito, processar imediatamente (sem necessidade de download)
     // Música toca direto do YouTube via iframe/player (igual modo pago)
@@ -251,15 +266,20 @@ async function criar(req, res) {
       console.log('🔌 [MODO GRATUITO] WebSocket io disponível?', !!io);
 
       if (io) {
-        const fila = await musicaService.buscarFilaMusicas();
-        console.log('📋 [MODO GRATUITO] Fila atual:', fila.length, 'músicas');
-        io.emit('fila:atualizada', fila);
+        // 🎯 Buscar fila da locação específica
+        const fila = await musicaService.buscarFilaMusicas(locacaoId || null);
+        console.log(`📋 [MODO GRATUITO] Fila atual (locacaoId: ${locacaoId || 'global'}):`, fila.length, 'músicas');
+
+        // 🎯 Emitir para a room correta
+        const roomName = locacaoId ? `locacao:${locacaoId}` : 'global';
+        console.log(`📡 [MODO GRATUITO] Emitindo fila:atualizada para room: ${roomName}`);
+        io.to(roomName).emit('fila:atualizada', fila);
       }
 
       // 🎯 GARANTIR AUTOPLAY - Função centralizada e robusta
-      console.log('💚 [MODO GRATUITO] Garantindo autoplay...');
+      console.log(`💚 [MODO GRATUITO] Garantindo autoplay para locacaoId: ${locacaoId || 'global'}...`);
       try {
-        const musicaIniciada = await playerService.garantirAutoplay();
+        const musicaIniciada = await playerService.garantirAutoplay(locacaoId || null);
 
         if (musicaIniciada) {
           console.log('✅ [MODO GRATUITO] Autoplay garantido! Música:', musicaIniciada.musicaTitulo);

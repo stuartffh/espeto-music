@@ -22,18 +22,34 @@ function LocacaoCliente() {
   const carregarLocacao = async () => {
     try {
       setLoading(true);
+      console.log(`🎯 [LOCAÇÃO CLIENTE] Carregando locação com slug: ${slug}`);
+
       const response = await axios.get(`${API_URL}/api/public/locacao/${slug}`);
 
       if (response.data.sucesso) {
-        setLocacao(response.data.locacao);
+        const locacaoData = response.data.locacao;
+        setLocacao(locacaoData);
+
+        // 🎯 CRITICAL: Armazenar locacaoId no sessionStorage
+        console.log(`✅ [LOCAÇÃO CLIENTE] Locação carregada:`, {
+          id: locacaoData.id,
+          slug: locacaoData.slug,
+          nomeEvento: locacaoData.nomeEvento
+        });
+
+        sessionStorage.setItem('locacaoId', locacaoData.id);
+        sessionStorage.setItem('locacaoSlug', locacaoData.slug);
+
+        console.log(`📦 [LOCAÇÃO CLIENTE] sessionStorage.locacaoId definido como: "${locacaoData.id}"`);
+        console.log(`📦 [LOCAÇÃO CLIENTE] sessionStorage.locacaoSlug definido como: "${locacaoData.slug}"`);
 
         // Aplicar customizações
-        aplicarCustomizacoes(response.data.locacao);
+        aplicarCustomizacoes(locacaoData);
       } else {
         setErro('Locação não encontrada');
       }
     } catch (error) {
-      console.error('Erro ao carregar locação:', error);
+      console.error('❌ [LOCAÇÃO CLIENTE] Erro ao carregar locação:', error);
       setErro(
         error.response?.data?.erro ||
         'Locação não encontrada ou não está ativa'
