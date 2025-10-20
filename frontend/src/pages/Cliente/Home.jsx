@@ -30,7 +30,7 @@ import useCarrinhoStore from '../../store/carrinhoStore';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useToast } from '../../hooks/useToast';
 
-function Home() {
+function Home({ locacao }) {
   const [busca, setBusca] = useState('');
   const [resultados, setResultados] = useState([]);
   const [carregandoBusca, setCarregandoBusca] = useState(false);
@@ -65,6 +65,19 @@ function Home() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { toast, showToast, hideToast } = useToast();
   const { adicionarMusica, carregarCarrinho } = useCarrinhoStore();
+
+  // 🎯 CRITICAL: Garantir que locacaoId está no sessionStorage ANTES de qualquer requisição
+  useEffect(() => {
+    if (locacao && locacao.id) {
+      console.log(`🎯 [HOME] Configurando locacaoId no sessionStorage: ${locacao.id}`);
+      sessionStorage.setItem('locacaoId', locacao.id);
+      sessionStorage.setItem('locacaoSlug', locacao.slug);
+    } else {
+      console.log(`🌐 [HOME] Modo global - sem locacaoId`);
+      sessionStorage.removeItem('locacaoId');
+      sessionStorage.removeItem('locacaoSlug');
+    }
+  }, [locacao]);
 
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';

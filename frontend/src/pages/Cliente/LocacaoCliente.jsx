@@ -16,6 +16,11 @@ function LocacaoCliente() {
   const [mostrarQR, setMostrarQR] = useState(false);
 
   useEffect(() => {
+    // 🎯 CRITICAL: Limpar sessionStorage ANTES de carregar nova locação
+    console.log(`🧹 [LOCAÇÃO CLIENTE] Limpando sessionStorage antes de carregar slug: ${slug}`);
+    sessionStorage.removeItem('locacaoId');
+    sessionStorage.removeItem('locacaoSlug');
+
     carregarLocacao();
   }, [slug]);
 
@@ -28,23 +33,25 @@ function LocacaoCliente() {
 
       if (response.data.sucesso) {
         const locacaoData = response.data.locacao;
-        setLocacao(locacaoData);
 
-        // 🎯 CRITICAL: Armazenar locacaoId no sessionStorage
+        // 🎯 CRITICAL: Armazenar locacaoId no sessionStorage ANTES DE TUDO
+        sessionStorage.setItem('locacaoId', locacaoData.id);
+        sessionStorage.setItem('locacaoSlug', locacaoData.slug);
+
         console.log(`✅ [LOCAÇÃO CLIENTE] Locação carregada:`, {
           id: locacaoData.id,
           slug: locacaoData.slug,
           nomeEvento: locacaoData.nomeEvento
         });
 
-        sessionStorage.setItem('locacaoId', locacaoData.id);
-        sessionStorage.setItem('locacaoSlug', locacaoData.slug);
-
         console.log(`📦 [LOCAÇÃO CLIENTE] sessionStorage.locacaoId definido como: "${locacaoData.id}"`);
         console.log(`📦 [LOCAÇÃO CLIENTE] sessionStorage.locacaoSlug definido como: "${locacaoData.slug}"`);
 
         // Aplicar customizações
         aplicarCustomizacoes(locacaoData);
+
+        // Setar locacao por último (isso vai renderizar o Home que vai fazer requisições)
+        setLocacao(locacaoData);
       } else {
         setErro('Locação não encontrada');
       }
