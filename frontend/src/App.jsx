@@ -8,7 +8,9 @@ const Home = lazy(() => import('./pages/Cliente/Home'));
 const Pagamento = lazy(() => import('./pages/Cliente/Pagamento'));
 const AdminLogin = lazy(() => import('./pages/Admin/Login'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
+const AdminLocacoes = lazy(() => import('./pages/Admin/Locacoes'));
 const TVPanel = lazy(() => import('./pages/TV/Panel'));
+const LocacaoCliente = lazy(() => import('./pages/Cliente/LocacaoCliente'));
 
 const RouteFallback = () => (
   <div className="flex h-[60vh] w-full items-center justify-center text-lg font-medium text-gray-700 dark:text-gray-200">
@@ -40,6 +42,17 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin/locacoes"
+              element={
+                <ProtectedRoute>
+                  <AdminLocacoes />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Locação Cliente Route */}
+            <Route path="/l/:slug" element={<LocacaoCliente />} />
 
             {/* TV Panel Route */}
             <Route path="/tv" element={<TVPanel />} />
