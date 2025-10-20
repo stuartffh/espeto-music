@@ -355,12 +355,145 @@ Documentação completa da arquitetura: \`/backend/CLEAN_ARCHITECTURE.md\`
               example: '3:33'
             }
           }
+        },
+        Carrinho: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid'
+            },
+            sessionId: {
+              type: 'string',
+              description: 'ID da sessão (baseado em IP)'
+            },
+            nomeCliente: {
+              type: 'string',
+              nullable: true,
+              example: 'João Silva'
+            },
+            itens: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  musicaTitulo: {
+                    type: 'string'
+                  },
+                  musicaYoutubeId: {
+                    type: 'string'
+                  },
+                  musicaThumbnail: {
+                    type: 'string'
+                  },
+                  musicaDuracao: {
+                    type: 'integer'
+                  },
+                  valor: {
+                    type: 'number',
+                    format: 'float'
+                  }
+                }
+              }
+            },
+            valorTotal: {
+              type: 'number',
+              format: 'float',
+              description: 'Valor total do carrinho'
+            },
+            quantidadeItens: {
+              type: 'integer',
+              description: 'Quantidade de músicas no carrinho'
+            },
+            criadoEm: {
+              type: 'string',
+              format: 'date-time'
+            }
+          }
+        },
+        Mesa: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid'
+            },
+            numero: {
+              type: 'integer',
+              example: 10
+            },
+            nome: {
+              type: 'string',
+              nullable: true,
+              example: 'Mesa VIP'
+            },
+            token: {
+              type: 'string',
+              description: 'Token único para QR Code'
+            },
+            ativa: {
+              type: 'boolean',
+              description: 'Se a mesa está ativa'
+            },
+            criadaEm: {
+              type: 'string',
+              format: 'date-time'
+            }
+          }
+        },
+        PalavraProibida: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid'
+            },
+            palavra: {
+              type: 'string',
+              example: 'palavrao'
+            },
+            ativa: {
+              type: 'boolean',
+              description: 'Se a palavra está ativa na moderação'
+            },
+            criadaEm: {
+              type: 'string',
+              format: 'date-time'
+            }
+          }
+        },
+        Configuracao: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid'
+            },
+            chave: {
+              type: 'string',
+              example: 'valor_por_musica'
+            },
+            valor: {
+              type: 'string',
+              description: 'Valor como string (pode ser convertido)'
+            },
+            tipo: {
+              type: 'string',
+              enum: ['string', 'number', 'boolean'],
+              example: 'number'
+            },
+            descricao: {
+              type: 'string',
+              nullable: true
+            }
+          }
         }
       }
     }
   },
   apis: [
     './src/docs/swagger-docs.js',
+    './src/docs/swagger-docs-extended.js',
     './src/routes/*.js',
     './src/controllers/*.js',
     './src/interfaces/http/controllers/*.js'
