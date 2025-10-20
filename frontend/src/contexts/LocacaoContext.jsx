@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { joinRoom } from '../services/socket';
 
 const LocacaoContext = createContext();
 
@@ -25,6 +26,22 @@ export const LocacaoProvider = ({ children }) => {
       carregarLocacao(slug);
     }
   }, []);
+
+  // 🎯 Entrar na room quando locacaoId mudar
+  useEffect(() => {
+    if (locacaoId) {
+      console.log(`🎯 [LOCAÇÃO] Entrando na room da locação: ${locacaoId}`);
+      joinRoom(locacaoId).then(() => {
+        console.log(`✅ [LOCAÇÃO] Conectado à room da locação`);
+      });
+    } else {
+      // Sem locação = room global
+      console.log('🌐 [LOCAÇÃO] Sem locação específica, entrando na room global');
+      joinRoom(null).then(() => {
+        console.log('✅ [LOCAÇÃO] Conectado à room global');
+      });
+    }
+  }, [locacaoId]);
 
   const carregarLocacao = async (slug) => {
     try {

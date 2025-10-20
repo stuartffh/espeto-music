@@ -132,6 +132,27 @@ export const reconnectSocket = () => {
   }
 };
 
+// Função para entrar em uma room específica (locação ou global)
+export const joinRoom = (locacaoId = null) => {
+  if (!socketInstance) {
+    console.warn('⚠️  [SOCKET] Socket não inicializado, não é possível entrar na room');
+    return;
+  }
+
+  const roomName = locacaoId ? `locacao:${locacaoId}` : 'global';
+  console.log(`🎯 [SOCKET] Entrando na room: ${roomName}`);
+
+  socketInstance.emit('join:room', { locacaoId });
+
+  // Retornar promise que resolve quando confirmado
+  return new Promise((resolve) => {
+    socketInstance.once('room:joined', (data) => {
+      console.log(`✅ [SOCKET] Confirmado entrada na room: ${data.room}`);
+      resolve(data);
+    });
+  });
+};
+
 // Log de status
 console.log('🔌 [SOCKET] Módulo carregado');
 

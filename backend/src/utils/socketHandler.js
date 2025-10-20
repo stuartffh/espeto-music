@@ -5,10 +5,15 @@ const remoteControlService = require('../services/remoteControlService');
 /**
  * 🔌 CONFIGURAÇÃO DE WEBSOCKET
  *
- * Sistema centralizado de eventos WebSocket.
- * Uma única conexão, organizada e eficiente.
+ * Sistema centralizado de eventos WebSocket com isolamento por locação.
+ * Cada locação tem sua própria "sala" (room) isolada.
+ *
+ * SISTEMA DE ROOMS:
+ * - Room global: "global" - Para o painel TV principal (sem locação)
+ * - Room de locação: "locacao:{locacaoId}" - Para cada locação separada
  *
  * Eventos disponíveis:
+ * - join:room - Cliente entra em uma room específica
  * - request:estado-inicial - Cliente solicita estado completo ao conectar
  * - request:fila - Cliente solicita atualização da fila
  * - request:musica-atual - Cliente solicita música atual
@@ -47,6 +52,37 @@ function setupSocketHandlers(io) {
     console.log(`✅ [WEBSOCKET] Cliente conectado: ${socket.id}`);
     console.log(`📊 [WEBSOCKET] Total de clientes: ${io.engine.clientsCount}`);
     console.log(`🔧 [WEBSOCKET] Transport: ${socket.conn.transport.name}`);
+
+    // Armazenar a room do socket para uso posterior
+    socket.currentRoom = null;
+
+    // ========== GERENCIAMENTO DE ROOMS ==========
+
+    // Cliente entra em uma room específica (locação ou global)
+    socket.on('join:room', (data) => {
+      try {
+        const { locacaoId } = data || {};
+
+        // Sair da room anterior se existir
+        if (socket.currentRoom) {
+          socket.leave(socket.currentRoom);
+          console.log(`🚪 [WEBSOCKET] Cliente ${socket.id} saiu da room: ${socket.currentRoom}`);
+        }
+
+        // Definir nova room
+        const roomName = locacaoId ? `locacao:${locacaoId}` : 'global';
+        socket.join(roomName);
+        socket.currentRoom = roomName;
+
+        console.log(`🎯 [WEBSOCKET] Cliente ${socket.id} entrou na room: ${roomName}`);
+
+        // Confirmar entrada na room
+        socket.emit('room:joined', { room: roomName, locacaoId });
+      } catch (error) {
+        console.error('❌ [WEBSOCKET] Erro ao entrar na room:', error);
+        socket.emit('error', { message: 'Erro ao entrar na sala' });
+      }
+    });
 
     // ========== REQUESTS DO CLIENTE ==========
 
@@ -112,12 +148,17 @@ function setupSocketHandlers(io) {
       try {
         console.log('🎵 Música terminou:', data);
 
+        // Verificar em qual room o socket está
+        const room = socket.currentRoom || 'global';
+        console.log(`📍 [WEBSOCKET] Música terminou na room: ${room}`);
+
         // Usar o playerService para gerenciar a transição
         await playerService.musicaTerminou();
 
-        // Atualizar fila para todos os clientes
+        // Atualizar fila APENAS para clientes da mesma room
         const fila = await musicaService.buscarFilaMusicas();
-        io.emit('fila:atualizada', fila);
+        io.to(room).emit('fila:atualizada', fila);
+        console.log(`📡 [WEBSOCKET] Fila atualizada emitida para room: ${room}`);
       } catch (error) {
         console.error('Erro ao processar término da música:', error);
         socket.emit('error', { message: 'Erro ao processar término da música' });
@@ -129,12 +170,16 @@ function setupSocketHandlers(io) {
       try {
         console.log('💰 [SOCKET] Pedido pago recebido:', data);
 
+        // Verificar em qual room o socket está
+        const room = socket.currentRoom || 'global';
+        console.log(`📍 [WEBSOCKET] Pedido pago na room: ${room}`);
+
         // Buscar estado atualizado
         const fila = await musicaService.buscarFilaMusicas();
 
-        // Notificar todos os clientes
-        io.emit('fila:atualizada', fila);
-        console.log('📡 [SOCKET] Fila atualizada emitida');
+        // Notificar APENAS clientes da mesma room
+        io.to(room).emit('fila:atualizada', fila);
+        console.log(`📡 [SOCKET] Fila atualizada emitida para room: ${room}`);
 
         // 🎯 GARANTIR AUTOPLAY - Função centralizada e robusta
         console.log('💚 [SOCKET] Garantindo autoplay...');

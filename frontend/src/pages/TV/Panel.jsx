@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Music, User, Clock, Wifi, WifiOff } from 'lucide-react';
 import axios from 'axios';
-import socket from '../../services/socket';
+import socket, { joinRoom } from '../../services/socket';
 import EqualizerAnimation from '../../components/EqualizerAnimation';
 
 const sanitizeUrl = (url) => {
@@ -159,6 +159,11 @@ function Panel() {
 
             // Aplicar título personalizado
             document.title = `${locacao.nomeEstabelecimento || locacao.nomeEvento} - TV`;
+
+            // 🎯 ENTRAR NA ROOM DA LOCAÇÃO
+            joinRoom(locacao.id).then(() => {
+              console.log(`✅ [TV] Conectado à room da locação: ${locacao.id}`);
+            });
           }
         })
         .catch(error => {
@@ -168,6 +173,12 @@ function Panel() {
             window.location.href = '/tv';
           }
         });
+    } else {
+      // Modo global (sem locação)
+      console.log('🌐 [TV] Modo global - sem locação específica');
+      joinRoom(null).then(() => {
+        console.log('✅ [TV] Conectado à room global');
+      });
     }
   }, [slugPainelTV]);
 
