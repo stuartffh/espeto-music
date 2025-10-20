@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeCanvas } from 'qrcode.react';
 import {
@@ -23,6 +24,7 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function Locacoes({ embedded = false }) {
+  const navigate = useNavigate();
   const [locacoes, setLocacoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState('todas');
@@ -51,10 +53,27 @@ function Locacoes({ embedded = false }) {
     carregarLocacoes();
   }, [filtroStatus]);
 
+  // Helper para tratar erros de autenticação
+  const handleAuthError = (error) => {
+    if (error.response && error.response.status === 401) {
+      alert('Sua sessão expirou. Por favor, faça login novamente.');
+      localStorage.removeItem('token');
+      navigate('/admin/login');
+      return true;
+    }
+    return false;
+  };
+
   const carregarLocacoes = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
+
+      if (!token) {
+        // Sem token, redirecionar para login
+        navigate('/admin/login');
+        return;
+      }
 
       let url = `${API_URL}/api/admin/locacoes`;
       if (filtroStatus !== 'todas') {
@@ -68,7 +87,9 @@ function Locacoes({ embedded = false }) {
       setLocacoes(response.data.locacoes || []);
     } catch (error) {
       console.error('Erro ao carregar locações:', error);
-      alert('Erro ao carregar locações');
+      if (!handleAuthError(error)) {
+        alert('Erro ao carregar locações');
+      }
     } finally {
       setLoading(false);
     }
@@ -146,7 +167,9 @@ function Locacoes({ embedded = false }) {
       carregarLocacoes();
     } catch (error) {
       console.error('Erro ao salvar locação:', error);
-      alert(error.response?.data?.erro || 'Erro ao salvar locação');
+      if (!handleAuthError(error)) {
+        alert(error.response?.data?.erro || 'Erro ao salvar locação');
+      }
     }
   };
 
@@ -162,7 +185,9 @@ function Locacoes({ embedded = false }) {
       carregarLocacoes();
     } catch (error) {
       console.error('Erro ao desativar locação:', error);
-      alert('Erro ao desativar locação');
+      if (!handleAuthError(error)) {
+        alert('Erro ao desativar locação');
+      }
     }
   };
 
@@ -178,7 +203,9 @@ function Locacoes({ embedded = false }) {
       carregarLocacoes();
     } catch (error) {
       console.error('Erro ao reativar locação:', error);
-      alert('Erro ao reativar locação');
+      if (!handleAuthError(error)) {
+        alert('Erro ao reativar locação');
+      }
     }
   };
 
@@ -192,7 +219,9 @@ function Locacoes({ embedded = false }) {
       setMostrarEstatisticas(response.data.estatisticas);
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
-      alert('Erro ao carregar estatísticas');
+      if (!handleAuthError(error)) {
+        alert('Erro ao carregar estatísticas');
+      }
     }
   };
 
