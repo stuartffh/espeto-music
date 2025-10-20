@@ -180,9 +180,11 @@ async function limparEstado() {
       tempoAtual: 0,
     }
   });
-  estadoMemoria.musicaAtual = null;
-  estadoMemoria.status = 'stopped';
-  estadoMemoria.tempoAtual = 0;
+  // Limpar estado global em memória
+  const estadoGlobal = getEstadoMemoria('global');
+  estadoGlobal.musicaAtual = null;
+  estadoGlobal.status = 'stopped';
+  estadoGlobal.tempoAtual = 0;
 }
 
 /**
@@ -444,27 +446,34 @@ function obterEstado(locacaoId = null) {
 
 /**
  * Sincronização de tempo (a cada segundo)
+ * Atualiza tempo de TODAS as locações que estão tocando
  */
 function iniciarSincronizacao() {
   pararSincronizacao();
 
   intervalSync = setInterval(() => {
-    if (estadoMemoria.status === 'playing') {
-      const agora = Date.now();
-      const deltaSegundos = (agora - estadoMemoria.ultimaAtualizacao) / 1000;
-      estadoMemoria.tempoAtual += deltaSegundos;
-      estadoMemoria.ultimaAtualizacao = agora;
+    // Sincronizar tempo para TODAS as locações
+    Object.keys(estadosMemoria).forEach((key) => {
+      const estadoMemoria = estadosMemoria[key];
 
-      // Emitir sync a cada 5 segundos
-      if (Math.floor(estadoMemoria.tempoAtual) % 5 === 0) {
-        if (io) {
-          io.emit('player:sync', {
-            tempo: estadoMemoria.tempoAtual,
-            status: estadoMemoria.status,
-          });
+      if (estadoMemoria.status === 'playing') {
+        const agora = Date.now();
+        const deltaSegundos = (agora - estadoMemoria.ultimaAtualizacao) / 1000;
+        estadoMemoria.tempoAtual += deltaSegundos;
+        estadoMemoria.ultimaAtualizacao = agora;
+
+        // Emitir sync a cada 5 segundos para a room específica
+        if (Math.floor(estadoMemoria.tempoAtual) % 5 === 0) {
+          if (io) {
+            const roomName = key === 'global' ? 'global' : `locacao:${key}`;
+            io.to(roomName).emit('player:sync', {
+              tempo: estadoMemoria.tempoAtual,
+              status: estadoMemoria.status,
+            });
+          }
         }
       }
-    }
+    });
   }, 1000);
 }
 
@@ -600,8 +609,11 @@ async function garantirAutoplay(locacaoId = null) {
 
 /**
  * Atualiza o tempo atual do player (recebido do frontend via WebSocket)
+ * @param {number} tempo - Tempo em segundos
+ * @param {string|null} locacaoId - ID da locação (null = global)
  */
-function atualizarTempoAtual(tempo) {
+function atualizarTempoAtual(tempo, locacaoId = null) {
+  const estadoMemoria = getEstadoMemoria(locacaoId);
   if (estadoMemoria.musicaAtual && (estadoMemoria.status === 'playing' || estadoMemoria.status === 'paused')) {
     estadoMemoria.tempoAtual = tempo;
     estadoMemoria.ultimaAtualizacao = Date.now();

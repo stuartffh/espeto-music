@@ -219,7 +219,8 @@ function setupSocketHandlers(io) {
     socket.on('player:tempo-sync', (data) => {
       try {
         if (typeof data.tempo === 'number' && data.tempo >= 0) {
-          playerService.atualizarTempoAtual(data.tempo);
+          const locacaoId = getLocacaoId();
+          playerService.atualizarTempoAtual(data.tempo, locacaoId);
         }
       } catch (error) {
         console.error('Erro ao sincronizar tempo do player:', error);
