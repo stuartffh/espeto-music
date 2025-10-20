@@ -526,7 +526,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 bg-white"
                           placeholder="casamento-joao-maria"
                         />
                         <FaMapMarkerAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -549,7 +549,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, nomeCliente: e.target.value })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 bg-white"
                           placeholder="João Silva"
                         />
                         <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -569,7 +569,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, nomeEvento: e.target.value })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 bg-white"
                           placeholder="Casamento João & Maria"
                         />
                         <FaMusic className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -588,7 +588,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, emailContato: e.target.value })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 bg-white"
                           placeholder="cliente@email.com"
                         />
                         <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -607,7 +607,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, telefoneContato: e.target.value })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 bg-white"
                           placeholder="(11) 99999-9999"
                         />
                         <FaPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -627,7 +627,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, dataInicio: e.target.value })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 bg-white"
                         />
                         <FaClock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       </div>
@@ -646,7 +646,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, dataFim: e.target.value })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 bg-white"
                         />
                         <FaClock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       </div>
@@ -674,7 +674,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, nomeEstabelecimento: e.target.value })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all text-gray-900 bg-white"
                           placeholder="Nome exibido na tela de descanso"
                         />
                         <FaMapMarkerAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -693,7 +693,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, logoUrl: e.target.value })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all text-gray-900 bg-white"
                           placeholder="https://exemplo.com/logo.png"
                         />
                         <FaImage className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -721,7 +721,7 @@ function Locacoes({ embedded = false }) {
                             onChange={(e) =>
                               setFormData({ ...formData, corTema: e.target.value })
                             }
-                            className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                            className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all text-gray-900 bg-white"
                             placeholder="#FF6B6B"
                           />
                           <FaPalette className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -739,7 +739,7 @@ function Locacoes({ embedded = false }) {
                         onChange={(e) =>
                           setFormData({ ...formData, mensagemBoasVindas: e.target.value })
                         }
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all text-gray-900 bg-white resize-none"
                         rows="3"
                         placeholder="Bem-vindo ao nosso evento!"
                       ></textarea>
@@ -760,7 +760,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, backgroundImageUrl: e.target.value })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all text-gray-900 bg-white"
                           placeholder="https://exemplo.com/background.jpg"
                         />
                         <FaImage className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -782,7 +782,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, videoDescansoUrl: e.target.value })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all text-gray-900 bg-white"
                           placeholder="https://www.youtube.com/watch?v=..."
                         />
                         <FaVideo className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -803,7 +803,7 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, observacoes: e.target.value })
                           }
-                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none"
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all text-gray-900 bg-white resize-none"
                           rows="3"
                           placeholder="Notas internas sobre a locação..."
                         ></textarea>
