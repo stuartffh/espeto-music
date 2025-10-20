@@ -55,6 +55,12 @@ function setupSocketHandlers(io) {
 
     // Armazenar a room do socket para uso posterior
     socket.currentRoom = null;
+    socket.locacaoId = null; // Armazenar locacaoId diretamente
+
+    // Helper: Extrair locacaoId da room atual
+    const getLocacaoId = () => {
+      return socket.locacaoId; // null = global, string = locação específica
+    };
 
     // ========== GERENCIAMENTO DE ROOMS ==========
 
@@ -69,12 +75,13 @@ function setupSocketHandlers(io) {
           console.log(`🚪 [WEBSOCKET] Cliente ${socket.id} saiu da room: ${socket.currentRoom}`);
         }
 
-        // Definir nova room
+        // Definir nova room E armazenar locacaoId
         const roomName = locacaoId ? `locacao:${locacaoId}` : 'global';
         socket.join(roomName);
         socket.currentRoom = roomName;
+        socket.locacaoId = locacaoId || null; // Armazenar para uso nos serviços
 
-        console.log(`🎯 [WEBSOCKET] Cliente ${socket.id} entrou na room: ${roomName}`);
+        console.log(`🎯 [WEBSOCKET] Cliente ${socket.id} entrou na room: ${roomName} (locacaoId: ${locacaoId || 'null'})`);
 
         // Confirmar entrada na room
         socket.emit('room:joined', { room: roomName, locacaoId });
@@ -107,8 +114,12 @@ function setupSocketHandlers(io) {
           return; // Não enviar estado inicial, cliente vai recarregar
         }
 
-        const musicaAtual = await musicaService.buscarMusicaAtual();
-        const fila = await musicaService.buscarFilaMusicas();
+        // ⚠️ CRÍTICO: Buscar dados APENAS da locação do socket
+        const locacaoId = getLocacaoId();
+        const musicaAtual = await musicaService.buscarMusicaAtual(locacaoId);
+        const fila = await musicaService.buscarFilaMusicas(locacaoId);
+
+        console.log(`📊 [WEBSOCKET] Estado inicial para locação: ${locacaoId || 'global'}`);
 
         socket.emit('estado:inicial', {
           musicaAtual,
@@ -124,7 +135,8 @@ function setupSocketHandlers(io) {
     // Cliente solicita atualização da fila
     socket.on('request:fila', async () => {
       try {
-        const fila = await musicaService.buscarFilaMusicas();
+        const locacaoId = getLocacaoId();
+        const fila = await musicaService.buscarFilaMusicas(locacaoId);
         socket.emit('fila:atualizada', fila);
       } catch (error) {
         console.error('Erro ao enviar fila:', error);
@@ -135,7 +147,8 @@ function setupSocketHandlers(io) {
     // Cliente solicita música atual
     socket.on('request:musica-atual', async () => {
       try {
-        const musicaAtual = await musicaService.buscarMusicaAtual();
+        const locacaoId = getLocacaoId();
+        const musicaAtual = await musicaService.buscarMusicaAtual(locacaoId);
         socket.emit('musica:atual', musicaAtual);
       } catch (error) {
         console.error('Erro ao enviar música atual:', error);
@@ -150,13 +163,14 @@ function setupSocketHandlers(io) {
 
         // Verificar em qual room o socket está
         const room = socket.currentRoom || 'global';
-        console.log(`📍 [WEBSOCKET] Música terminou na room: ${room}`);
+        const locacaoId = getLocacaoId();
+        console.log(`📍 [WEBSOCKET] Música terminou na room: ${room} (locacaoId: ${locacaoId || 'null'})`);
 
         // Usar o playerService para gerenciar a transição
         await playerService.musicaTerminou();
 
-        // Atualizar fila APENAS para clientes da mesma room
-        const fila = await musicaService.buscarFilaMusicas();
+        // ⚠️ CRÍTICO: Atualizar fila APENAS da mesma locação
+        const fila = await musicaService.buscarFilaMusicas(locacaoId);
         io.to(room).emit('fila:atualizada', fila);
         console.log(`📡 [WEBSOCKET] Fila atualizada emitida para room: ${room}`);
       } catch (error) {
@@ -172,10 +186,11 @@ function setupSocketHandlers(io) {
 
         // Verificar em qual room o socket está
         const room = socket.currentRoom || 'global';
-        console.log(`📍 [WEBSOCKET] Pedido pago na room: ${room}`);
+        const locacaoId = getLocacaoId();
+        console.log(`📍 [WEBSOCKET] Pedido pago na room: ${room} (locacaoId: ${locacaoId || 'null'})`);
 
-        // Buscar estado atualizado
-        const fila = await musicaService.buscarFilaMusicas();
+        // ⚠️ CRÍTICO: Buscar fila APENAS da mesma locação
+        const fila = await musicaService.buscarFilaMusicas(locacaoId);
 
         // Notificar APENAS clientes da mesma room
         io.to(room).emit('fila:atualizada', fila);

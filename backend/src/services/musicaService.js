@@ -14,9 +14,10 @@ async function criarPedidoMusica({
   prioridade = false,
   dedicatoria = null,
   dedicatoriaDe = null,
+  locacaoId = null, // ID da locação (null = global)
 }) {
 
-  // Verificar limite de músicas na fila
+  // Verificar limite de músicas na fila DA MESMA LOCAÇÃO
   const config = await prisma.configuracoes.findUnique({
     where: { chave: 'MAX_MUSICAS_FILA' },
   });
@@ -27,6 +28,7 @@ async function criarPedidoMusica({
       status: {
         in: ['pago', 'tocando'],
       },
+      locacaoId: locacaoId, // Contar apenas da mesma locação
     },
   });
 
@@ -34,7 +36,7 @@ async function criarPedidoMusica({
     throw new Error('Fila de músicas está cheia no momento');
   }
 
-  // Verificar se permite músicas duplicadas
+  // Verificar se permite músicas duplicadas NA MESMA LOCAÇÃO
   const configDuplicadas = await prisma.configuracoes.findUnique({
     where: { chave: 'PERMITIR_MUSICAS_DUPLICADAS' },
   });
@@ -45,6 +47,7 @@ async function criarPedidoMusica({
     const musicaDuplicada = await prisma.pedidos_musica.findFirst({
       where: {
         musicaYoutubeId,
+        locacaoId: locacaoId, // Verificar duplicação apenas na mesma locação
         status: {
           in: ['pago', 'tocando'],
         },
@@ -56,7 +59,7 @@ async function criarPedidoMusica({
     }
   }
 
-  // Criar pedido
+  // Criar pedido COM locacaoId
   const pedido = await prisma.pedidos_musica.create({
     data: {
       nomeCliente,
@@ -69,6 +72,7 @@ async function criarPedidoMusica({
       prioridade,
       dedicatoria,
       dedicatoriaDe,
+      locacaoId, // Armazenar a locação
     },
   });
 
@@ -78,13 +82,15 @@ async function criarPedidoMusica({
 /**
  * Busca fila de músicas (pagas e não tocadas)
  * Ordenação: música tocando > prioritárias > normais (por ordem de chegada)
+ * @param {string|null} locacaoId - ID da locação (null = global)
  */
-async function buscarFilaMusicas() {
+async function buscarFilaMusicas(locacaoId = null) {
   // Retorna apenas músicas PAGAS (próximas a tocar)
   // Não inclui a música que está tocando (status: 'tocando')
   return await prisma.pedidos_musica.findMany({
     where: {
       status: 'pago',
+      locacaoId: locacaoId, // null = músicas globais, específico = locação
     },
     orderBy: [
       { prioridade: 'desc' },  // músicas prioritárias antes
@@ -95,10 +101,14 @@ async function buscarFilaMusicas() {
 
 /**
  * Busca música atual (tocando)
+ * @param {string|null} locacaoId - ID da locação (null = global)
  */
-async function buscarMusicaAtual() {
+async function buscarMusicaAtual(locacaoId = null) {
   return await prisma.pedidos_musica.findFirst({
-    where: { status: 'tocando' },
+    where: {
+      status: 'tocando',
+      locacaoId: locacaoId, // null = músicas globais, específico = locação
+    },
   });
 }
 
@@ -123,17 +133,20 @@ async function tocarMusica(pedidoId) {
 
 /**
  * Marca música como concluída e toca próxima
+ * @param {string} pedidoId - ID do pedido
+ * @param {string|null} locacaoId - ID da locação (null = global)
  */
-async function concluirMusica(pedidoId) {
+async function concluirMusica(pedidoId, locacaoId = null) {
   await prisma.pedidos_musica.update({
     where: { id: pedidoId },
     data: { status: 'concluida' },
   });
 
-  // Buscar próxima música na fila
+  // Buscar próxima música na fila DA MESMA LOCAÇÃO
   const proximaMusica = await prisma.pedidos_musica.findFirst({
     where: {
       status: 'pago',
+      locacaoId: locacaoId, // null = músicas globais, específico = locação
     },
     orderBy: { criadoEm: 'asc' },
   });
@@ -148,19 +161,21 @@ async function concluirMusica(pedidoId) {
 /**
  * Verifica se há músicas na fila aguardando e inicia automaticamente
  * Retorna a música iniciada ou null
+ * @param {string|null} locacaoId - ID da locação (null = global)
  */
-async function iniciarProximaMusicaSeNecessario() {
-  // Verificar se já há música tocando
-  const musicaTocando = await buscarMusicaAtual();
+async function iniciarProximaMusicaSeNecessario(locacaoId = null) {
+  // Verificar se já há música tocando NA MESMA LOCAÇÃO
+  const musicaTocando = await buscarMusicaAtual(locacaoId);
 
   if (musicaTocando) {
     return null; // Já há música tocando
   }
 
-  // Buscar primeira música paga na fila
+  // Buscar primeira música paga na fila DA MESMA LOCAÇÃO
   const proximaMusica = await prisma.pedidos_musica.findFirst({
     where: {
       status: 'pago',
+      locacaoId: locacaoId, // null = músicas globais, específico = locação
     },
     orderBy: { criadoEm: 'asc' },
   });
