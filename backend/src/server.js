@@ -73,12 +73,26 @@ app.use((req, res, next) => {
 // Rotas da API
 app.use('/api', routes);
 
-// Error handlers (devem vir DEPOIS das rotas)
-// 404 - Not Found
-app.use(notFoundHandler);
+// Rota para gerar QR Code único (modelo "livepix")
+app.get('/qrcode', async (req, res) => {
+  try {
+    const QRCode = require('qrcode');
+    const url = `${process.env.BASE_URL || 'http://localhost:5173'}`;
+    const qrCode = await QRCode.toDataURL(url, {
+      width: 400,
+      margin: 2,
+    });
 
-// Error handler global
-app.use(errorHandler);
+    res.json({
+      url,
+      qrCode,
+      message: 'Escaneie este QR Code para acessar o Espeto Music',
+    });
+  } catch (error) {
+    console.error('Erro ao gerar QR Code:', error);
+    res.status(500).json({ error: 'Erro ao gerar QR Code' });
+  }
+});
 
 // Servir frontend unificado em produção
 const path = require('path');
@@ -123,40 +137,12 @@ if (fs.existsSync(frontendPath)) {
   });
 }
 
-// Rota para gerar QR Code único (modelo "livepix")
-app.get('/qrcode', async (req, res) => {
-  try {
-    const QRCode = require('qrcode');
-    const url = `${process.env.BASE_URL || 'http://localhost:5173'}`;
-    const qrCode = await QRCode.toDataURL(url, {
-      width: 400,
-      margin: 2,
-    });
+// Error handlers (devem vir DEPOIS de todas as rotas, incluindo frontend)
+// 404 - Not Found
+app.use(notFoundHandler);
 
-    res.json({
-      url,
-      qrCode,
-      message: 'Escaneie este QR Code para acessar o Espeto Music',
-    });
-  } catch (error) {
-    console.error('Erro ao gerar QR Code:', error);
-    res.status(500).json({ error: 'Erro ao gerar QR Code' });
-  }
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('Erro:', err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Erro interno do servidor',
-    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Rota não encontrada' });
-});
+// Error handler global
+app.use(errorHandler);
 
 // Configurar WebSocket handlers
 setupSocketHandlers(io);
