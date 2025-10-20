@@ -227,6 +227,7 @@ model locacoes {
   corTema                String?         // Cor do tema (#hexadecimal)
   mensagemBoasVindas     String?         // Mensagem customizada
   backgroundImageUrl     String?         // Imagem de fundo customizada
+  videoDescansoUrl       String?         // Vídeo customizado de tela de descanso
 
   // QR Code único da locação
   qrCodeData             String?         // Dados do QR Code (URL da locação)

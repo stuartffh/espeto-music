@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Gift,
-  Clock
+  Clock,
+  Calendar
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '../store/authStore';
@@ -23,6 +24,7 @@ const menuItems = [
   { id: 'moderacao', label: 'Moderação', icon: Shield },
   { id: 'sugestoes', label: 'Sugestões', icon: TrendingUp },
   { id: 'giftcards', label: 'Gift Cards', icon: Gift },
+  { id: 'locacoes', label: 'Locações', icon: Calendar },
   { id: 'senha', label: 'Alterar Senha', icon: Lock },
 ];
 

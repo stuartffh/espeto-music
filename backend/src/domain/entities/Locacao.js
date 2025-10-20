@@ -21,6 +21,7 @@ class Locacao {
     corTema,
     mensagemBoasVindas,
     backgroundImageUrl,
+    videoDescansoUrl,
     qrCodeData,
     configuracoes,
     totalPedidos,
@@ -45,6 +46,7 @@ class Locacao {
     this.corTema = corTema;
     this.mensagemBoasVindas = mensagemBoasVindas;
     this.backgroundImageUrl = backgroundImageUrl;
+    this.videoDescansoUrl = videoDescansoUrl;
 
     // QR Code e configs
     this.qrCodeData = qrCodeData;
@@ -181,6 +183,8 @@ class Locacao {
       corTema: this.corTema,
       mensagemBoasVindas: this.mensagemBoasVindas,
       backgroundImageUrl: this.backgroundImageUrl,
+      videoDescansoUrl: this.videoDescansoUrl,
+    videoDescansoUrl,
       qrCodeData: this.qrCodeData,
       configuracoes: this.configuracoes,
       totalPedidos: this.totalPedidos,

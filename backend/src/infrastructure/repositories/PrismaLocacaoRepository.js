@@ -179,6 +179,7 @@ class PrismaLocacaoRepository {
       corTema: prismaLocacao.corTema,
       mensagemBoasVindas: prismaLocacao.mensagemBoasVindas,
       backgroundImageUrl: prismaLocacao.backgroundImageUrl,
+      videoDescansoUrl: prismaLocacao.videoDescansoUrl,
       qrCodeData: prismaLocacao.qrCodeData,
       configuracoes: prismaLocacao.configuracoes,
       totalPedidos: prismaLocacao.totalPedidos,

@@ -43,6 +43,7 @@ function Locacoes() {
     corTema: '#FF6B6B',
     mensagemBoasVindas: '',
     backgroundImageUrl: '',
+    videoDescansoUrl: '',
     observacoes: '',
   });
 
@@ -89,6 +90,7 @@ function Locacoes() {
         corTema: locacao.corTema || '#FF6B6B',
         mensagemBoasVindas: locacao.mensagemBoasVindas || '',
         backgroundImageUrl: locacao.backgroundImageUrl || '',
+        videoDescansoUrl: locacao.videoDescansoUrl || '',
         observacoes: locacao.observacoes || '',
       });
     } else {
@@ -106,6 +108,7 @@ function Locacoes() {
         corTema: '#FF6B6B',
         mensagemBoasVindas: '',
         backgroundImageUrl: '',
+    videoDescansoUrl: '',
         observacoes: '',
       });
     }
@@ -635,6 +638,25 @@ function Locacoes() {
                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                         placeholder="https://exemplo.com/background.jpg"
                       />
+                    </div>
+
+                    {/* Vídeo de Descanso URL */}
+                    <div className="col-span-2">
+                      <label className="block text-sm font-semibold mb-2">
+                        URL do Vídeo de Descanso (YouTube)
+                      </label>
+                      <input
+                        type="url"
+                        value={formData.videoDescansoUrl}
+                        onChange={(e) =>
+                          setFormData({ ...formData, videoDescansoUrl: e.target.value })
+                        }
+                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Vídeo exibido na tela de descanso quando não houver músicas na fila
+                      </p>
                     </div>
 
                     {/* Observações */}
