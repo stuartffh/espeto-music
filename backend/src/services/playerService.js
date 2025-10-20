@@ -529,8 +529,10 @@ async function garantirAutoplay(locacaoId = null) {
     console.log('   GARANTIR AUTOPLAY - Verificação Iniciada');
     console.log('   ═══════════════════════════════════════════════════════');
 
-    // 1. Verificar estado atual do player em memória
+    // 1. Verificar estado atual do player em memória (da locação correta)
+    const estadoMemoria = getEstadoMemoria(locacaoId);
     console.log('1️⃣ Verificando estado do player em memória...');
+    console.log(`   - Locação: ${locacaoId || 'global'}`);
     console.log(`   - Status: ${estadoMemoria.status}`);
     console.log(`   - Música atual: ${estadoMemoria.musicaAtual?.musicaTitulo || 'Nenhuma'}`);
     console.log(`   - ID: ${estadoMemoria.musicaAtual?.id || 'N/A'}`);
