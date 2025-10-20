@@ -821,7 +821,9 @@ function Panel() {
 
   // Controlar música ambiente - tocar quando não há fila e parar quando houver músicas
   useEffect(() => {
+    const descansoAtivo = configs.VIDEO_DESCANSO_ATIVO === 'true' && Boolean(configs.VIDEO_DESCANSO_URL);
     const deveMostrarAmbiente = musicaAmbiente &&
+                                !descansoAtivo && // Não tocar música ambiente se tela de descanso estiver ativa
                                 fila.length === 0 &&
                                 !estadoPlayer?.musicaAtual && // Sem música atual
                                 (!estadoPlayer || estadoPlayer.status === 'stopped');
@@ -833,7 +835,7 @@ function Panel() {
       console.log('⏹️ Parando música ambiente - música na fila ou tocando');
       setTocandoAmbiente(false);
     }
-  }, [musicaAmbiente, fila.length, estadoPlayer?.musicaAtual, estadoPlayer?.status, tocandoAmbiente]);
+  }, [musicaAmbiente, fila.length, estadoPlayer?.musicaAtual, estadoPlayer?.status, tocandoAmbiente, configs.VIDEO_DESCANSO_ATIVO, configs.VIDEO_DESCANSO_URL]);
 
   // Garantir que vídeo de descanso toque quando visível
   useEffect(() => {
