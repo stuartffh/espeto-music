@@ -86,6 +86,10 @@ const formatTime = (seconds) => {
 function Panel() {
   const { slugPainelTV } = useParams(); // Detecta se está em modo locação
   const [locacaoData, setLocacaoData] = useState(null); // Dados da locação
+
+  // 🔍 DEBUG: Log do slug capturado
+  console.log('🔍 [PANEL] slugPainelTV capturado:', slugPainelTV);
+  console.log('🔍 [PANEL] URL atual:', window.location.pathname);
   const [fila, setFila] = useState([]);
   const [estadoPlayer, setEstadoPlayer] = useState(null);
   const [iframeReady, setIframeReady] = useState(false);
@@ -144,8 +148,10 @@ function Panel() {
 
   // 📺 BUSCAR DADOS DA LOCAÇÃO (se slugPainelTV presente)
   useEffect(() => {
+    console.log('📺 [TV] useEffect executado - slugPainelTV:', slugPainelTV);
+
     if (slugPainelTV) {
-      console.log('🎯 [TV] Carregando dados da locação:', slugPainelTV);
+      console.log('🎯 [TV] MODO LOCAÇÃO DETECTADO - Slug:', slugPainelTV);
 
       api.get(`/api/public/painel/${slugPainelTV}`)
         .then(res => {
@@ -185,7 +191,7 @@ function Panel() {
         });
     } else {
       // ⚠️ CRÍTICO: Modo global - LIMPAR locacaoId do sessionStorage
-      console.log('🌐 [TV] Modo global - limpando locacaoId do sessionStorage');
+      console.log('🌐 [TV] MODO GLOBAL DETECTADO - Limpando locacaoId do sessionStorage');
       sessionStorage.removeItem('locacaoId');
       sessionStorage.removeItem('locacaoSlug');
       setLocacaoData(null);

@@ -54,9 +54,9 @@ function App() {
             {/* Locação Cliente Route */}
             <Route path="/l/:slug" element={<LocacaoCliente />} />
 
-            {/* TV Panel Routes - Suporta tanto /tv quanto /tv/:slugPainelTV */}
-            <Route path="/tv" element={<TVPanel />} />
+            {/* TV Panel Routes - ORDEM IMPORTA: rota específica ANTES da genérica */}
             <Route path="/tv/:slugPainelTV" element={<TVPanel />} />
+            <Route path="/tv" element={<TVPanel />} />
 
             {/* Redirect old routes for compatibility */}
             <Route path="/cliente" element={<Navigate to="/" replace />} />
