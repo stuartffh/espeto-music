@@ -11,6 +11,7 @@ const { setupSocketHandlers } = require('./utils/socketHandler');
 const logger = require('./shared/utils/logger');
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 const metricsMiddleware = require('./middlewares/metricsMiddleware');
+const { setupContainer, containerMiddleware } = require('./infrastructure/container/container');
 
 const app = express();
 const server = http.createServer(app);
@@ -39,6 +40,9 @@ const io = new Server(server, {
   perMessageDeflate: false, // Desabilitar compressão (melhor performance)
 });
 
+// Setup Dependency Injection Container
+const container = setupContainer();
+
 // Middlewares
 app.use(helmet({
   contentSecurityPolicy: false, // Desabilitar para desenvolvimento
@@ -46,6 +50,9 @@ app.use(helmet({
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Dependency Injection (deve vir antes das rotas)
+app.use(containerMiddleware(container));
 
 // Disponibilizar io para os controllers
 app.set('io', io);
