@@ -210,7 +210,8 @@ model historico_musicas {
 
 model locacoes {
   id                     String          @id @default(uuid())
-  slug                   String          @unique // URL amigável (ex: casamento-joao-maria)
+  slug                   String          @unique // URL do cliente (ex: casamento-joao-maria) - /l/:slug
+  slugPainelTV           String          @unique // URL do painel TV/Admin (ex: painel-casamento-123) - /painel/:slugPainelTV
   nomeCliente            String          // Nome do contratante
   nomeEvento             String          // Nome do evento/estabelecimento
   emailContato           String?

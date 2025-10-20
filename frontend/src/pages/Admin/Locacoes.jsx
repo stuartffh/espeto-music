@@ -257,13 +257,13 @@ function Locacoes({ embedded = false, token: tokenFromDashboard = null }) {
     }
   };
 
-  const baixarQRCode = (slug) => {
-    const canvas = document.getElementById(`qr-${slug}`);
+  const baixarQRCode = (slugPainelTV) => {
+    const canvas = document.getElementById(`qr-${slugPainelTV}`);
     if (canvas) {
       const url = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = url;
-      link.download = `qrcode-${slug}.png`;
+      link.download = `qrcode-painel-${slugPainelTV}.png`;
       link.click();
     }
   };
@@ -380,9 +380,16 @@ function Locacoes({ embedded = false, token: tokenFromDashboard = null }) {
                   <p className="text-purple-200 text-sm mb-1">
                     Cliente: {locacao.nomeCliente}
                   </p>
-                  <p className="text-purple-200 text-sm mb-4">
-                    Slug: <span className="font-mono">/l/{locacao.slug}</span>
-                  </p>
+                  <div className="bg-white/5 rounded-lg p-3 mb-4 space-y-2">
+                    <p className="text-purple-100 text-xs">
+                      <span className="opacity-60">Cliente:</span>{' '}
+                      <span className="font-mono text-green-300">/l/{locacao.slug}</span>
+                    </p>
+                    <p className="text-purple-100 text-xs">
+                      <span className="opacity-60">Painel TV:</span>{' '}
+                      <span className="font-mono text-blue-300">/painel/{locacao.slugPainelTV}</span>
+                    </p>
+                  </div>
 
                   {/* Datas */}
                   <div className="flex items-center gap-2 text-white/80 text-sm mb-4">
@@ -864,27 +871,41 @@ function Locacoes({ embedded = false, token: tokenFromDashboard = null }) {
             className="bg-white rounded-lg p-8 max-w-md w-full text-center"
           >
             <h2 className="text-2xl font-bold mb-4">{mostrarQRCode.nomeEvento}</h2>
-            <p className="text-gray-600 mb-6">
-              Escaneie para acessar a locação
-            </p>
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-blue-900 font-semibold mb-2">📺 QR Code do Painel TV</p>
+              <p className="text-blue-700 text-sm">
+                Este QR code leva ao painel de administração da TV, que já inclui o acesso do cliente.
+              </p>
+            </div>
 
-            <div className="bg-white p-6 rounded-lg inline-block shadow-xl mb-6">
+            <div className="bg-white p-6 rounded-lg inline-block shadow-xl mb-6 border-4 border-blue-200">
               <QRCodeCanvas
-                id={`qr-${mostrarQRCode.slug}`}
-                value={mostrarQRCode.qrCodeData || `${API_URL}/l/${mostrarQRCode.slug}`}
+                id={`qr-${mostrarQRCode.slugPainelTV}`}
+                value={mostrarQRCode.qrCodeData || `${API_URL}/painel/${mostrarQRCode.slugPainelTV}`}
                 size={256}
                 level="H"
                 includeMargin={true}
               />
             </div>
 
-            <p className="text-sm text-gray-600 mb-4 font-mono bg-gray-100 p-2 rounded">
-              {mostrarQRCode.qrCodeData || `${API_URL}/l/${mostrarQRCode.slug}`}
-            </p>
+            <div className="space-y-2 mb-4">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-xs text-blue-600 mb-1">Painel TV (para QR code):</p>
+                <p className="text-sm font-mono text-blue-900 font-semibold">
+                  {mostrarQRCode.qrCodeData || `${API_URL}/painel/${mostrarQRCode.slugPainelTV}`}
+                </p>
+              </div>
+              <div className="bg-green-50 p-3 rounded-lg">
+                <p className="text-xs text-green-600 mb-1">Cliente (acesso direto):</p>
+                <p className="text-sm font-mono text-green-900">
+                  {`${API_URL}/l/${mostrarQRCode.slug}`}
+                </p>
+              </div>
+            </div>
 
             <div className="flex gap-4">
               <button
-                onClick={() => baixarQRCode(mostrarQRCode.slug)}
+                onClick={() => baixarQRCode(mostrarQRCode.slugPainelTV)}
                 className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2"
               >
                 <FaDownload />

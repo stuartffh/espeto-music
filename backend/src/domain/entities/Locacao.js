@@ -9,6 +9,7 @@ class Locacao {
   constructor({
     id,
     slug,
+    slugPainelTV,
     nomeCliente,
     nomeEvento,
     emailContato,
@@ -32,6 +33,7 @@ class Locacao {
   }) {
     this.id = id;
     this.slug = slug;
+    this.slugPainelTV = slugPainelTV;
     this.nomeCliente = nomeCliente;
     this.nomeEvento = nomeEvento;
     this.emailContato = emailContato;
@@ -171,6 +173,7 @@ class Locacao {
     return {
       id: this.id,
       slug: this.slug,
+      slugPainelTV: this.slugPainelTV,
       nomeCliente: this.nomeCliente,
       nomeEvento: this.nomeEvento,
       emailContato: this.emailContato,

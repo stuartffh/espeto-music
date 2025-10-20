@@ -69,4 +69,11 @@ router.get('/admin/locacoes/:id/estatisticas', authMiddleware, locacaoController
  */
 router.get('/public/locacao/:slug', locacaoController.obterPorSlug);
 
+/**
+ * @route GET /api/public/painel/:slugPainelTV
+ * @desc Obter informações da locação por slugPainelTV (para painel TV)
+ * @access Public
+ */
+router.get('/public/painel/:slugPainelTV', locacaoController.obterPorSlugPainelTV);
+
 module.exports = router;

@@ -48,6 +48,17 @@ class PrismaLocacaoRepository {
   }
 
   /**
+   * Buscar locação por slugPainelTV
+   */
+  async findBySlugPainelTV(slugPainelTV) {
+    const locacao = await this.prisma.locacoes.findUnique({
+      where: { slugPainelTV }
+    });
+
+    return locacao ? this._toDomain(locacao) : null;
+  }
+
+  /**
    * Listar todas as locações
    */
   async findAll(filters = {}) {
@@ -167,6 +178,7 @@ class PrismaLocacaoRepository {
     return new Locacao({
       id: prismaLocacao.id,
       slug: prismaLocacao.slug,
+      slugPainelTV: prismaLocacao.slugPainelTV,
       nomeCliente: prismaLocacao.nomeCliente,
       nomeEvento: prismaLocacao.nomeEvento,
       emailContato: prismaLocacao.emailContato,

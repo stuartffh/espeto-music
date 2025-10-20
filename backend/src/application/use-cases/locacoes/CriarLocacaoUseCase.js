@@ -24,12 +24,25 @@ class CriarLocacaoUseCase {
       throw new Error('Já existe uma locação com este slug');
     }
 
-    // Gerar QR Code data (URL da locação)
-    const qrCodeData = `${process.env.BASE_URL || 'https://espeto.zapchatbr.com'}/l/${data.slug}`;
+    // Gerar slugPainelTV automaticamente (slug + timestamp para garantir unicidade)
+    const timestamp = Date.now().toString().slice(-6);
+    const slugPainelTV = `painel-${data.slug}-${timestamp}`;
+
+    // Verificar se slugPainelTV já existe (improvável, mas garantir)
+    const existentePainel = await this.locacaoRepository.findBySlugPainelTV(slugPainelTV);
+    if (existentePainel) {
+      throw new Error('Erro ao gerar slug do painel. Tente novamente.');
+    }
+
+    const baseUrl = process.env.BASE_URL || 'https://espeto.zapchatbr.com';
+
+    // QR Code aponta para o PAINEL TV (que contém o slug do cliente embedded)
+    const qrCodeData = `${baseUrl}/painel/${slugPainelTV}`;
 
     // Criar locação
     const locacao = new Locacao({
       ...data,
+      slugPainelTV,
       qrCodeData,
       totalPedidos: 0,
       totalArrecadado: 0

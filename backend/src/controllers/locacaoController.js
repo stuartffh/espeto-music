@@ -129,6 +129,42 @@ exports.obterPorSlug = async (req, res) => {
 };
 
 /**
+ * GET /api/public/painel/:slugPainelTV
+ * Obter locação por slugPainelTV (público - para painel TV)
+ */
+exports.obterPorSlugPainelTV = async (req, res) => {
+  try {
+    const locacao = await locacaoRepository.findBySlugPainelTV(req.params.slugPainelTV);
+
+    if (!locacao) {
+      return res.status(404).json({
+        sucesso: false,
+        erro: 'Painel não encontrado'
+      });
+    }
+
+    // Verificar se a locação está ativa
+    if (!locacao.ativo || !locacao.isAtiva()) {
+      return res.status(403).json({
+        sucesso: false,
+        erro: 'Esta locação não está ativa no momento'
+      });
+    }
+
+    res.json({
+      sucesso: true,
+      locacao: locacao.toObject()
+    });
+  } catch (error) {
+    console.error('Erro ao obter locação por slugPainelTV:', error);
+    res.status(500).json({
+      sucesso: false,
+      erro: error.message
+    });
+  }
+};
+
+/**
  * PUT /api/admin/locacoes/:id
  * Atualizar locação
  */
