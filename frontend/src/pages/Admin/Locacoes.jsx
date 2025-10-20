@@ -65,11 +65,16 @@ function Locacoes({ embedded = false }) {
   // Helper para tratar erros de autenticação
   const handleAuthError = (error) => {
     if (error.response && error.response.status === 401) {
+      // Sempre mostra alerta para o usuário saber o que aconteceu
+      alert('⚠️ Sua sessão expirou!\n\nPor favor, faça login novamente no painel admin para continuar.');
+
       if (!embedded) {
         // Só redireciona se NÃO estiver embedded no Dashboard
-        alert('Sua sessão expirou. Por favor, faça login novamente.');
         localStorage.removeItem('token');
         navigate('/admin/login');
+      } else {
+        // Se embedded, instrui o usuário a recarregar a página
+        alert('💡 Recarregue a página (F5) para fazer login novamente.');
       }
       return true;
     }
@@ -155,6 +160,17 @@ function Locacoes({ embedded = false }) {
 
     try {
       const token = localStorage.getItem('token');
+
+      // Verificar se há token antes de tentar
+      if (!token) {
+        alert('⚠️ Você não está autenticado!\n\nPor favor, faça login no painel admin primeiro.');
+        if (!embedded) {
+          navigate('/admin/login');
+        } else {
+          alert('💡 Recarregue a página (F5) para fazer login novamente.');
+        }
+        return;
+      }
 
       // Converter datas para ISO
       const dados = {
