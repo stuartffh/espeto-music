@@ -160,6 +160,11 @@ function Panel() {
             // Aplicar título personalizado
             document.title = `${locacao.nomeEstabelecimento || locacao.nomeEvento} - TV`;
 
+            // 🎵 Configurar música ambiente da locação (se não tiver vídeo de descanso)
+            // Locações NÃO têm música ambiente - apenas vídeo de descanso
+            setMusicaAmbiente(null);
+            console.log('🎯 [LOCAÇÃO] Música ambiente desativada (locações usam vídeo de descanso)');
+
             // 🎯 ENTRAR NA ROOM DA LOCAÇÃO
             joinRoom(locacao.id).then(() => {
               console.log(`✅ [TV] Conectado à room da locação: ${locacao.id}`);
@@ -246,16 +251,22 @@ function Panel() {
         setConfigs(configMap);
         console.log('⚙️ Configurações carregadas:', configMap);
 
-        // Configurar música ambiente se ativa
-        if (configMap.MUSICA_AMBIENTE_ATIVA === 'true' && configMap.MUSICA_AMBIENTE_YOUTUBE_ID) {
-          setMusicaAmbiente({
-            youtubeId: configMap.MUSICA_AMBIENTE_YOUTUBE_ID,
-            titulo: configMap.MUSICA_AMBIENTE_TITULO || 'Música Ambiente',
-            volume: parseInt(configMap.MUSICA_AMBIENTE_VOLUME) || 30
-          });
-          console.log('🎵 Música ambiente configurada:', configMap.MUSICA_AMBIENTE_TITULO);
+        // ⚠️ Configurar música ambiente APENAS se NÃO estiver em modo locação
+        // Se estiver em modo locação, a música ambiente vem dos dados da locação
+        if (!slugPainelTV) {
+          // Modo global: usar configuração global
+          if (configMap.MUSICA_AMBIENTE_ATIVA === 'true' && configMap.MUSICA_AMBIENTE_YOUTUBE_ID) {
+            setMusicaAmbiente({
+              youtubeId: configMap.MUSICA_AMBIENTE_YOUTUBE_ID,
+              titulo: configMap.MUSICA_AMBIENTE_TITULO || 'Música Ambiente',
+              volume: parseInt(configMap.MUSICA_AMBIENTE_VOLUME) || 30
+            });
+            console.log('🎵 [GLOBAL] Música ambiente configurada:', configMap.MUSICA_AMBIENTE_TITULO);
+          } else {
+            setMusicaAmbiente(null);
+          }
         } else {
-          setMusicaAmbiente(null);
+          console.log('🎯 [LOCAÇÃO] Música ambiente será configurada pelos dados da locação, ignorando global');
         }
 
         // Aplicar favicon customizado
@@ -895,7 +906,8 @@ function Panel() {
 
   // Controlar música ambiente - priorizar tela de descanso; fallback para ambiente se descanso falhar
   useEffect(() => {
-    const descansoDisponivel = (configs.VIDEO_DESCANSO_ATIVO === 'true') && Boolean(configs.VIDEO_DESCANSO_URL) && !descansoErro;
+    // ⚠️ USAR getConfig() para respeitar hierarquia: locação > global
+    const descansoDisponivel = (getConfig('VIDEO_DESCANSO_ATIVO') === 'true') && Boolean(getConfig('VIDEO_DESCANSO_URL')) && !descansoErro;
     const deveMostrarAmbiente = musicaAmbiente &&
                                 !descansoDisponivel && // Não tocar música ambiente se tela de descanso estiver disponível
                                 fila.length === 0 &&
@@ -915,8 +927,8 @@ function Panel() {
     estadoPlayer?.musicaAtual,
     estadoPlayer?.status,
     tocandoAmbiente,
-    configs.VIDEO_DESCANSO_ATIVO,
-    configs.VIDEO_DESCANSO_URL,
+    locacaoData, // Quando locação muda, reavaliar
+    configs, // Quando configs mudam, reavaliar
     descansoErro
   ]);
 
@@ -1233,7 +1245,7 @@ function Panel() {
                   <Music className="w-20 h-20 mx-auto text-neon-purple mb-4" />
                   <p className="text-3xl text-white mb-2 font-bold">Aguardando músicas...</p>
                   <p className="text-xl text-gray-300">
-                    {configs.SLOGAN_ESTABELECIMENTO || 'Escaneie o QR Code para adicionar!'}
+                    {getConfig('SLOGAN_ESTABELECIMENTO', 'Escaneie o QR Code para adicionar!')}
                   </p>
                 </motion.div>
 
