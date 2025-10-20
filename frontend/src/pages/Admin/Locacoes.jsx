@@ -22,7 +22,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-function Locacoes() {
+function Locacoes({ embedded = false }) {
   const [locacoes, setLocacoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState('todas');
@@ -234,7 +234,7 @@ function Locacoes() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-6">
+    <div className={embedded ? "p-6" : "min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-6"}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">

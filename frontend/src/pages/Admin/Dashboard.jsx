@@ -39,6 +39,7 @@ import QueueItem from '../../components/QueueItem';
 import AdminMusicControl from '../../components/AdminMusicControl';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { listarGiftCards, criarGiftCard, deletarGiftCard, desativarGiftCard } from '../../services/api';
+import Locacoes from './Locacoes';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -2142,6 +2143,16 @@ function AdminDashboard() {
             {abaAtiva === 'moderacao' && renderModeracao()}
             {abaAtiva === 'sugestoes' && renderSugestoes()}
             {abaAtiva === 'giftcards' && renderGiftCards()}
+            {abaAtiva === 'locacoes' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Locacoes embedded={true} />
+              </motion.div>
+            )}
             {abaAtiva === 'senha' && renderSenha()}
           </AnimatePresence>
         </div>
