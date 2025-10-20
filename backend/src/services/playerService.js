@@ -38,6 +38,11 @@ function getEstadoMemoria(locacaoId = null) {
   return estadosMemoria[key];
 }
 
+// 🎯 Helper para obter o nome da room baseado no locacaoId
+function getRoomName(locacaoId = null) {
+  return locacaoId ? `locacao:${locacaoId}` : 'global';
+}
+
 let intervalSync = null;
 let intervalBackup = null;
 let intervalAutoplay = null;
@@ -109,9 +114,10 @@ async function recuperarEstado() {
           iniciarSincronizacao();
           iniciarBackup();
 
-          // Emitir evento para TVs retomarem
+          // Emitir evento para TVs retomarem (apenas global, pois recuperação é só do global)
           if (io) {
-            io.emit('player:iniciar', {
+            console.log('📡 [PLAYER] Emitindo player:iniciar para room: global (recuperação)');
+            io.to('global').emit('player:iniciar', {
               musica: musicaAtual,
               estado: estadoGlobal,
             });
@@ -246,16 +252,19 @@ async function iniciarMusica(musica, locacaoId = null) {
   iniciarSincronizacao();
   iniciarBackup();
 
-  // Emitir evento WebSocket
+  // Emitir evento WebSocket para a room específica
   console.log('🔌 [PLAYER] Verificando io para emitir player:iniciar...');
   console.log('🔌 [PLAYER] io disponível?', !!io);
   if (io) {
-    console.log('📡 [PLAYER] Emitindo player:iniciar para:', musica.musicaTitulo);
-    io.emit('player:iniciar', {
+    const roomName = getRoomName(locacaoId);
+    console.log(`📡 [PLAYER] Emitindo player:iniciar para room: ${roomName}`);
+    console.log(`🎵 [PLAYER] Música: ${musica.musicaTitulo}`);
+
+    io.to(roomName).emit('player:iniciar', {
       musica,
       estado: estado,
     });
-    console.log('✅ [PLAYER] Evento player:iniciar emitido com sucesso');
+    console.log(`✅ [PLAYER] Evento player:iniciar emitido para room: ${roomName}`);
   } else {
     console.error('❌ [PLAYER] IO não disponível! Evento player:iniciar NÃO foi emitido!');
   }
@@ -280,7 +289,9 @@ async function pausar(locacaoId = null) {
     // Manter backup para salvar estado pausado
 
     if (io) {
-      io.emit('player:pausar', { estado: estado });
+      const roomName = getRoomName(locacaoId);
+      console.log(`📡 [PLAYER] Emitindo player:pausar para room: ${roomName}`);
+      io.to(roomName).emit('player:pausar', { estado: estado });
     }
   }
   return estado;
@@ -302,7 +313,9 @@ async function retomar(locacaoId = null) {
     iniciarSincronizacao();
 
     if (io) {
-      io.emit('player:retomar', { estado: estado });
+      const roomName = getRoomName(locacaoId);
+      console.log(`📡 [PLAYER] Emitindo player:retomar para room: ${roomName}`);
+      io.to(roomName).emit('player:retomar', { estado: estado });
     }
   }
   return estado;
@@ -338,7 +351,9 @@ async function parar(locacaoId = null) {
   await salvarEstado(locacaoId);
 
   if (io) {
-    io.emit('player:parar', { estado: estado });
+    const roomName = getRoomName(locacaoId);
+    console.log(`📡 [PLAYER] Emitindo player:parar para room: ${roomName}`);
+    io.to(roomName).emit('player:parar', { estado: estado });
   }
 
   return estado;
@@ -410,7 +425,9 @@ async function ajustarVolume(nivel, locacaoId = null) {
   await salvarEstado(locacaoId);
 
   if (io) {
-    io.emit('player:volume', { volume: nivel });
+    const roomName = getRoomName(locacaoId);
+    console.log(`📡 [PLAYER] Emitindo player:volume para room: ${roomName}`);
+    io.to(roomName).emit('player:volume', { volume: nivel });
   }
 
   return estado;
@@ -430,7 +447,9 @@ async function buscarTempo(tempo, locacaoId = null) {
   await salvarEstado(locacaoId);
 
   if (io) {
-    io.emit('player:buscar', { tempo });
+    const roomName = getRoomName(locacaoId);
+    console.log(`📡 [PLAYER] Emitindo player:buscar para room: ${roomName}`);
+    io.to(roomName).emit('player:buscar', { tempo });
   }
 
   return estado;
