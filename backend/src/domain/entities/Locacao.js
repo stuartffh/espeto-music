@@ -184,7 +184,6 @@ class Locacao {
       mensagemBoasVindas: this.mensagemBoasVindas,
       backgroundImageUrl: this.backgroundImageUrl,
       videoDescansoUrl: this.videoDescansoUrl,
-    videoDescansoUrl,
       qrCodeData: this.qrCodeData,
       configuracoes: this.configuracoes,
       totalPedidos: this.totalPedidos,
