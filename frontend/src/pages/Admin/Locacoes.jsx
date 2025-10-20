@@ -56,9 +56,12 @@ function Locacoes({ embedded = false }) {
   // Helper para tratar erros de autenticação
   const handleAuthError = (error) => {
     if (error.response && error.response.status === 401) {
-      alert('Sua sessão expirou. Por favor, faça login novamente.');
-      localStorage.removeItem('token');
-      navigate('/admin/login');
+      if (!embedded) {
+        // Só redireciona se NÃO estiver embedded no Dashboard
+        alert('Sua sessão expirou. Por favor, faça login novamente.');
+        localStorage.removeItem('token');
+        navigate('/admin/login');
+      }
       return true;
     }
     return false;
@@ -70,8 +73,10 @@ function Locacoes({ embedded = false }) {
       const token = localStorage.getItem('token');
 
       if (!token) {
-        // Sem token, redirecionar para login
-        navigate('/admin/login');
+        if (!embedded) {
+          // Só redireciona se NÃO estiver embedded no Dashboard
+          navigate('/admin/login');
+        }
         return;
       }
 
