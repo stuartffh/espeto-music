@@ -10,6 +10,7 @@ const AdminLogin = lazy(() => import('./pages/Admin/Login'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
 const AdminLocacoes = lazy(() => import('./pages/Admin/Locacoes'));
 const TVPanel = lazy(() => import('./pages/TV/Panel'));
+const PainelLocacao = lazy(() => import('./pages/TV/PainelLocacao'));
 const LocacaoCliente = lazy(() => import('./pages/Cliente/LocacaoCliente'));
 
 const RouteFallback = () => (
@@ -54,7 +55,8 @@ function App() {
             {/* Locação Cliente Route */}
             <Route path="/l/:slug" element={<LocacaoCliente />} />
 
-            {/* TV Panel Route */}
+            {/* TV Panel Routes */}
+            <Route path="/painel/:slugPainelTV" element={<PainelLocacao />} />
             <Route path="/tv" element={<TVPanel />} />
 
             {/* Redirect old routes for compatibility */}
