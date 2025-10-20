@@ -107,6 +107,7 @@ function Panel() {
   const ambientePlayerRef = useRef(null); // Ref para o player de música ambiente
   const dedicatoriaTimerRef = useRef(null); // Timer para auto-hide da dedicatória
   const lastLoadedVideoIdRef = useRef(null); // Rastrear último vídeo enviado para evitar duplicação
+  const lastTimeUpdateRef = useRef(0); // Throttle para updates de tempo
 
   // Variáveis derivadas do estado (devem vir antes dos useEffects que as usam)
   const musicaAtual = estadoPlayer?.musicaAtual;
@@ -534,6 +535,14 @@ function Panel() {
 
   useEffect(() => {
     const messageHandler = (event) => {
+      // Segurança: validar origem das mensagens do iframe
+      try {
+        const allowedOrigin = new URL(API_URL).origin;
+        const currentOrigin = window.location.origin;
+        if (event.origin && event.origin !== allowedOrigin && event.origin !== currentOrigin) {
+          return;
+        }
+      } catch (_) {}
       const { type, autoplayConsent: consentValue } = event.data || {};
 
       switch (type) {
@@ -556,15 +565,20 @@ function Panel() {
           console.warn('ℹ️ Player da TV iniciou reprodução sem áudio. Aguarde interação para ativar o som.');
           break;
         case 'time-update':
-        case 'player-time-update':
-          if (event.data.currentTime !== undefined || event.data.time !== undefined) {
-            const time = event.data.currentTime || event.data.time;
-            setCurrentTime(time);
-          }
-          if (event.data.duration !== undefined && event.data.duration > 0) {
-            setDuration(event.data.duration);
+        case 'player-time-update': {
+          const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+          if (now - lastTimeUpdateRef.current > 250) {
+            if (event.data.currentTime !== undefined || event.data.time !== undefined) {
+              const time = event.data.currentTime || event.data.time;
+              setCurrentTime(time);
+            }
+            if (event.data.duration !== undefined && event.data.duration > 0) {
+              setDuration(event.data.duration);
+            }
+            lastTimeUpdateRef.current = now;
           }
           break;
+        }
         case 'toggle-fullscreen':
           console.log('📺 [PANEL] Recebido comando toggle-fullscreen do iframe');
           toggleFullscreen();
@@ -631,6 +645,22 @@ function Panel() {
       window.removeEventListener('message', messageHandler);
     };
   }, [handleVideoEnd, toggleFullscreen]);
+
+  // Hotkeys: 'f' para alternar fullscreen, 'Escape' para sair
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      } else if (e.key === 'Escape') {
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [toggleFullscreen]);
 
   const sendVideoToIframe = useCallback((musica) => {
     console.log('📤 [TV] sendVideoToIframe chamado para:', musica?.musicaTitulo);
@@ -937,6 +967,8 @@ function Panel() {
                       src={musicaAtual.musicaThumbnail}
                       alt={musicaAtual.musicaTitulo}
                       className="w-full h-full object-cover"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
                     />
                   </motion.div>
                 )}
@@ -956,7 +988,7 @@ function Panel() {
             ) : (
               <div className="flex items-center gap-3">
                 {configs.LOGO_URL ? (
-                  <img src={configs.LOGO_URL} alt="Logo" className="h-14 object-contain" />
+                  <img src={configs.LOGO_URL} alt="Logo" className="h-14 object-contain" decoding="async" referrerPolicy="no-referrer" />
                 ) : (
                   <Music className="w-10 h-10 text-neon-purple" />
                 )}
@@ -1020,8 +1052,9 @@ function Panel() {
                   backgroundImage: `url(${configs.BACKGROUND_IMAGE_URL})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  filter: 'blur(10px)',
-                  transform: 'scale(1.1)'
+                  filter: isFullscreen ? 'blur(6px)' : 'blur(10px)',
+                  transform: 'scale(1.05)',
+                  willChange: 'transform, filter'
                 }}
               />
               <div className="absolute inset-0 bg-black/70" />
@@ -1036,6 +1069,8 @@ function Panel() {
                 src="/tv-player.html"
                 className="w-full h-full border-0"
                 allow="autoplay; fullscreen"
+                referrerPolicy="no-referrer"
+                loading="eager"
                 onLoad={() => {
                   console.log('✅ Player da TV carregado');
                   const iframeWindow = videoRef.current?.contentWindow;
@@ -1117,6 +1152,9 @@ function Panel() {
                       src={qrCodeData.qrCode}
                       alt="QR Code"
                       className="w-48 h-48 mx-auto rounded-xl shadow-2xl"
+                      width="192"
+                      height="192"
+                      loading="lazy"
                     />
                   </motion.div>
                 )}
@@ -1206,6 +1244,9 @@ function Panel() {
                     src={qrCodeData.qrCode}
                     alt="QR Code"
                     className="w-32 h-32 mx-auto"
+                    width="128"
+                    height="128"
+                    loading="eager"
                   />
                 </motion.div>
               </div>
