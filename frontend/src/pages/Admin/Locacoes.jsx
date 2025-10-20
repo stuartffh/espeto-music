@@ -18,6 +18,15 @@ import {
   FaChartLine,
   FaDollarSign,
   FaMusic,
+  FaTimes,
+  FaUser,
+  FaEnvelope,
+  FaPhone,
+  FaImage,
+  FaPalette,
+  FaMapMarkerAlt,
+  FaVideo,
+  FaStickyNote,
 } from 'react-icons/fa';
 import axios from 'axios';
 
@@ -449,176 +458,235 @@ function Locacoes({ embedded = false }) {
       {mostrarModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
           >
-            <div className="p-6">
-              <h2 className="text-2xl font-bold mb-6">
-                {locacaoEditando ? 'Editar Locação' : 'Nova Locação'}
-              </h2>
+            {/* Header do Modal */}
+            <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 p-6 text-white">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-3xl font-bold mb-1">
+                    {locacaoEditando ? '✏️ Editar Locação' : '✨ Nova Locação'}
+                  </h2>
+                  <p className="text-purple-100 text-sm">
+                    {locacaoEditando
+                      ? 'Atualize as informações da locação temporária'
+                      : 'Configure um novo aluguel temporário do sistema'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setMostrarModal(false)}
+                  className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all"
+                >
+                  <FaTimes size={24} />
+                </button>
+              </div>
+            </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Slug */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">
-                      Slug * (URL amigável)
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.slug}
-                      onChange={(e) =>
-                        setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })
-                      }
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="casamento-joao-maria"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      URL: /l/{formData.slug || 'seu-slug'}
-                    </p>
-                  </div>
+            {/* Conteúdo do Modal */}
+            <div className="p-8 overflow-y-auto max-h-[calc(90vh-120px)]">
 
-                  {/* Nome do Cliente */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">
-                      Nome do Cliente *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.nomeCliente}
-                      onChange={(e) =>
-                        setFormData({ ...formData, nomeCliente: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="João Silva"
-                    />
-                  </div>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Seção: Informações Básicas */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-purple-100">
+                  <h3 className="text-lg font-bold text-purple-900 mb-4 flex items-center gap-2">
+                    <FaCalendar className="text-purple-600" />
+                    Informações Básicas
+                  </h3>
 
-                  {/* Nome do Evento */}
-                  <div className="col-span-2">
-                    <label className="block text-sm font-semibold mb-2">
-                      Nome do Evento *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.nomeEvento}
-                      onChange={(e) =>
-                        setFormData({ ...formData, nomeEvento: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="Casamento João & Maria"
-                    />
-                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Slug */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Slug * (URL amigável)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          value={formData.slug}
+                          onChange={(e) =>
+                            setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          placeholder="casamento-joao-maria"
+                        />
+                        <FaMapMarkerAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      </div>
+                      <p className="text-xs text-purple-600 mt-1 font-medium">
+                        🔗 URL: /l/{formData.slug || 'seu-slug'}
+                      </p>
+                    </div>
 
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">
-                      Email de Contato
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.emailContato}
-                      onChange={(e) =>
-                        setFormData({ ...formData, emailContato: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="cliente@email.com"
-                    />
-                  </div>
+                    {/* Nome do Cliente */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Nome do Cliente *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          value={formData.nomeCliente}
+                          onChange={(e) =>
+                            setFormData({ ...formData, nomeCliente: e.target.value })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          placeholder="João Silva"
+                        />
+                        <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      </div>
+                    </div>
 
-                  {/* Telefone */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">
-                      Telefone de Contato
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.telefoneContato}
-                      onChange={(e) =>
-                        setFormData({ ...formData, telefoneContato: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="(11) 99999-9999"
-                    />
-                  </div>
+                    {/* Nome do Evento */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Nome do Evento *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          value={formData.nomeEvento}
+                          onChange={(e) =>
+                            setFormData({ ...formData, nomeEvento: e.target.value })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          placeholder="Casamento João & Maria"
+                        />
+                        <FaMusic className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      </div>
+                    </div>
 
-                  {/* Data Início */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">
-                      Data/Hora Início *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      required
-                      value={formData.dataInicio}
-                      onChange={(e) =>
-                        setFormData({ ...formData, dataInicio: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
+                    {/* Email */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Email de Contato
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="email"
+                          value={formData.emailContato}
+                          onChange={(e) =>
+                            setFormData({ ...formData, emailContato: e.target.value })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          placeholder="cliente@email.com"
+                        />
+                        <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      </div>
+                    </div>
 
-                  {/* Data Fim */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">
-                      Data/Hora Fim *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      required
-                      value={formData.dataFim}
-                      onChange={(e) =>
-                        setFormData({ ...formData, dataFim: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
+                    {/* Telefone */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Telefone de Contato
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="tel"
+                          value={formData.telefoneContato}
+                          onChange={(e) =>
+                            setFormData({ ...formData, telefoneContato: e.target.value })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          placeholder="(11) 99999-9999"
+                        />
+                        <FaPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      </div>
+                    </div>
+
+                    {/* Data Início */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Data/Hora Início *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="datetime-local"
+                          required
+                          value={formData.dataInicio}
+                          onChange={(e) =>
+                            setFormData({ ...formData, dataInicio: e.target.value })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        />
+                        <FaClock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      </div>
+                    </div>
+
+                    {/* Data Fim */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Data/Hora Fim *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="datetime-local"
+                          required
+                          value={formData.dataFim}
+                          onChange={(e) =>
+                            setFormData({ ...formData, dataFim: e.target.value })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        />
+                        <FaClock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Customizações */}
-                <div className="border-t pt-4 mt-4">
-                  <h3 className="text-lg font-bold mb-4">Customizações</h3>
+                {/* Seção: Customizações */}
+                <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-6 shadow-sm border border-pink-100">
+                  <h3 className="text-lg font-bold text-purple-900 mb-4 flex items-center gap-2">
+                    <FaPalette className="text-pink-600" />
+                    Personalização Visual
+                  </h3>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Nome do Estabelecimento */}
-                    <div className="col-span-2">
-                      <label className="block text-sm font-semibold mb-2">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Nome do Estabelecimento (Tela de Descanso)
                       </label>
-                      <input
-                        type="text"
-                        value={formData.nomeEstabelecimento}
-                        onChange={(e) =>
-                          setFormData({ ...formData, nomeEstabelecimento: e.target.value })
-                        }
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="Nome exibido na tela"
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={formData.nomeEstabelecimento}
+                          onChange={(e) =>
+                            setFormData({ ...formData, nomeEstabelecimento: e.target.value })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                          placeholder="Nome exibido na tela de descanso"
+                        />
+                        <FaMapMarkerAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      </div>
                     </div>
 
                     {/* Logo URL */}
                     <div>
-                      <label className="block text-sm font-semibold mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         URL da Logo
                       </label>
-                      <input
-                        type="url"
-                        value={formData.logoUrl}
-                        onChange={(e) =>
-                          setFormData({ ...formData, logoUrl: e.target.value })
-                        }
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="https://exemplo.com/logo.png"
-                      />
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={formData.logoUrl}
+                          onChange={(e) =>
+                            setFormData({ ...formData, logoUrl: e.target.value })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                          placeholder="https://exemplo.com/logo.png"
+                        />
+                        <FaImage className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      </div>
                     </div>
 
                     {/* Cor do Tema */}
                     <div>
-                      <label className="block text-sm font-semibold mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Cor do Tema
                       </label>
                       <div className="flex gap-2">
@@ -628,23 +696,26 @@ function Locacoes({ embedded = false }) {
                           onChange={(e) =>
                             setFormData({ ...formData, corTema: e.target.value })
                           }
-                          className="w-16 h-10 border rounded cursor-pointer"
+                          className="w-20 h-12 border-2 border-gray-200 rounded-lg cursor-pointer"
                         />
-                        <input
-                          type="text"
-                          value={formData.corTema}
-                          onChange={(e) =>
-                            setFormData({ ...formData, corTema: e.target.value })
-                          }
-                          className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          placeholder="#FF6B6B"
-                        />
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={formData.corTema}
+                            onChange={(e) =>
+                              setFormData({ ...formData, corTema: e.target.value })
+                            }
+                            className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                            placeholder="#FF6B6B"
+                          />
+                          <FaPalette className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        </div>
                       </div>
                     </div>
 
                     {/* Mensagem de Boas-Vindas */}
-                    <div className="col-span-2">
-                      <label className="block text-sm font-semibold mb-2">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Mensagem de Boas-Vindas
                       </label>
                       <textarea
@@ -652,80 +723,113 @@ function Locacoes({ embedded = false }) {
                         onChange={(e) =>
                           setFormData({ ...formData, mensagemBoasVindas: e.target.value })
                         }
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        rows="2"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none"
+                        rows="3"
                         placeholder="Bem-vindo ao nosso evento!"
                       ></textarea>
+                      <p className="text-xs text-gray-500 mt-1">
+                        💬 Mensagem exibida no topo da página do cliente
+                      </p>
                     </div>
 
                     {/* Background URL */}
-                    <div className="col-span-2">
-                      <label className="block text-sm font-semibold mb-2">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         URL da Imagem de Fundo
                       </label>
-                      <input
-                        type="url"
-                        value={formData.backgroundImageUrl}
-                        onChange={(e) =>
-                          setFormData({ ...formData, backgroundImageUrl: e.target.value })
-                        }
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="https://exemplo.com/background.jpg"
-                      />
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={formData.backgroundImageUrl}
+                          onChange={(e) =>
+                            setFormData({ ...formData, backgroundImageUrl: e.target.value })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                          placeholder="https://exemplo.com/background.jpg"
+                        />
+                        <FaImage className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        🖼️ Imagem de fundo personalizada para a página do evento
+                      </p>
                     </div>
 
                     {/* Vídeo de Descanso URL */}
-                    <div className="col-span-2">
-                      <label className="block text-sm font-semibold mb-2">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         URL do Vídeo de Descanso (YouTube)
                       </label>
-                      <input
-                        type="url"
-                        value={formData.videoDescansoUrl}
-                        onChange={(e) =>
-                          setFormData({ ...formData, videoDescansoUrl: e.target.value })
-                        }
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="https://www.youtube.com/watch?v=..."
-                      />
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={formData.videoDescansoUrl}
+                          onChange={(e) =>
+                            setFormData({ ...formData, videoDescansoUrl: e.target.value })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                          placeholder="https://www.youtube.com/watch?v=..."
+                        />
+                        <FaVideo className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Vídeo exibido na tela de descanso quando não houver músicas na fila
+                        🎬 Vídeo exibido na tela de descanso quando não houver músicas na fila
                       </p>
                     </div>
 
                     {/* Observações */}
-                    <div className="col-span-2">
-                      <label className="block text-sm font-semibold mb-2">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Observações Internas
                       </label>
-                      <textarea
-                        value={formData.observacoes}
-                        onChange={(e) =>
-                          setFormData({ ...formData, observacoes: e.target.value })
-                        }
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        rows="2"
-                        placeholder="Notas internas sobre a locação..."
-                      ></textarea>
+                      <div className="relative">
+                        <textarea
+                          value={formData.observacoes}
+                          onChange={(e) =>
+                            setFormData({ ...formData, observacoes: e.target.value })
+                          }
+                          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none"
+                          rows="3"
+                          placeholder="Notas internas sobre a locação..."
+                        ></textarea>
+                        <FaStickyNote className="absolute left-3 top-4 text-gray-400" />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        📝 Anotações visíveis apenas para administradores
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Botões */}
-                <div className="flex gap-4 mt-6">
-                  <button
+                {/* Botões de Ação */}
+                <div className="flex gap-4 pt-6 border-t border-gray-200">
+                  <motion.button
                     type="button"
                     onClick={() => setMostrarModal(false)}
-                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-100"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex-1 px-6 py-4 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all shadow-sm hover:shadow flex items-center justify-center gap-2"
                   >
+                    <FaTimes />
                     Cancelar
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
                     type="submit"
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-semibold hover:shadow-lg"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
                   >
-                    {locacaoEditando ? 'Atualizar' : 'Criar'} Locação
-                  </button>
+                    {locacaoEditando ? (
+                      <>
+                        <FaEdit />
+                        Atualizar Locação
+                      </>
+                    ) : (
+                      <>
+                        <FaPlus />
+                        Criar Locação
+                      </>
+                    )}
+                  </motion.button>
                 </div>
               </form>
             </div>
