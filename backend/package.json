@@ -10,12 +10,13 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "seed": "node seed-all.js",
-    "seed:config": "node seed-config.js",
-    "seed:moderation": "node seed-moderation.js",
-    "seed:all": "node seed-all.js",
-    "modo:gratuito": "node set-modo-gratuito.js",
-    "postinstall": "prisma generate && node auto-seed.js"
+    "seed": "node scripts/seed-all.js",
+    "seed:config": "node scripts/seed-config.js",
+    "seed:moderation": "node scripts/seed-moderation.js",
+    "seed:all": "node scripts/seed-all.js",
+    "modo:gratuito": "node scripts/set-modo-gratuito.js",
+    "admin:create": "node scripts/create-admin-production.js",
+    "postinstall": "prisma generate && node scripts/auto-seed.js"
   },
   "keywords": [
     "espeto",
