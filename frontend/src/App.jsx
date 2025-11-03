@@ -21,10 +21,11 @@ const RouteFallback = () => (
 
 function App() {
   const location = useLocation();
+  const isTV = location.pathname.startsWith('/tv');
 
   return (
     <div className="min-h-screen bg-futura-bg text-white relative">
-      <ParticlesBackground />
+      {!isTV && <ParticlesBackground />}
       <OfflineIndicator />
       <AnimatePresence mode="wait" initial={false}>
         <Suspense fallback={<RouteFallback />}>

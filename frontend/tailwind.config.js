@@ -17,7 +17,7 @@ export default {
           success: '#00FF88',      // Verde neon
           warning: '#FFB800',       // Amarelo ouro
           danger: '#FF3366',       // Vermelho neon
-          
+
           // Escala de cinzas
           'gray-50': '#0A0A0F',
           'gray-100': '#14141F',
@@ -29,7 +29,7 @@ export default {
           'gray-700': '#646480',
           'gray-800': '#787890',
           'gray-900': '#8C8CA0',
-          
+
           // Backgrounds
           bg: '#0A0A0F',
           surface: '#14141F',
@@ -37,6 +37,11 @@ export default {
           elevated: '#1E1E2F',
           border: '#28283F',
         },
+        // Aliases para classes legadas usadas no código
+        'neon-cyan': '#00F5FF',
+        'neon-purple': '#7B2CBF',
+        'dark-border': '#28283F',
+        'dark-card': '#14141F',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],

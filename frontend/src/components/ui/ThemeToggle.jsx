@@ -8,7 +8,7 @@ export default function ThemeToggle() {
   return (
     <motion.button
       onClick={toggleTheme}
-      className="p-3 rounded-lg glass border-2 border-neon-cyan/30 hover:border-neon-cyan/60 hover:bg-neon-cyan/10 transition-all duration-300 shadow-lg"
+      className="p-3 rounded-lg glass border-2 border-futura-primary/30 hover:border-futura-primary/60 hover:bg-futura-primary/10 transition-all duration-300 shadow-lg"
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.92 }}
       aria-label="Toggle theme"
@@ -19,7 +19,7 @@ export default function ThemeToggle() {
         transition={{ duration: 0.3, type: 'spring', stiffness: 200 }}
       >
         {isDark ? (
-          <Moon className="w-5 h-5 md:w-6 md:h-6 text-neon-cyan drop-shadow-neon" />
+          <Moon className="w-5 h-5 md:w-6 md:h-6 text-futura-primary drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" />
         ) : (
           <Sun className="w-5 h-5 md:w-6 md:h-6 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
         )}

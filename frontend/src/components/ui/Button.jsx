@@ -30,12 +30,16 @@ export default function Button({
     lg: 'px-6 py-3 text-lg',
   };
 
+  const prefersReduced = typeof window !== 'undefined'
+    && window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   return (
     <motion.button
       className={clsx(baseStyles, variants[variant], sizes[size], className)}
       disabled={disabled || loading}
-      whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
-      whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
+      whileHover={prefersReduced ? undefined : { scale: (disabled || loading) ? 1 : 1.02 }}
+      whileTap={prefersReduced ? undefined : { scale: (disabled || loading) ? 1 : 0.98 }}
       {...props}
     >
       {/* Efeito shimmer no hover */}

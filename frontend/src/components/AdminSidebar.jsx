@@ -67,6 +67,7 @@ export default function AdminSidebar({ activeTab, onTabChange, collapsed, onTogg
             {/* Close button mobile */}
             <button
               onClick={onToggle}
+              aria-label="Fechar menu"
               className="md:hidden p-2 hover:bg-neon-cyan/10 rounded-lg transition-colors"
             >
               <ChevronLeft className="w-5 h-5 text-gray-400" />
@@ -144,6 +145,7 @@ export default function AdminSidebar({ activeTab, onTabChange, collapsed, onTogg
         {/* Collapse Toggle - Desktop only */}
         <button
           onClick={onToggle}
+          aria-label="Alternar sidebar"
           className="hidden md:flex mt-2 w-full items-center justify-center px-4 py-2 rounded-lg glass hover:bg-neon-cyan/10 transition-all"
         >
           {collapsed ? (

@@ -7,9 +7,16 @@ export default function ParticlesBackground() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Respeitar preferência do usuário por menos movimento
+    const prefersReduced = typeof window !== 'undefined'
+      && window.matchMedia
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+
     const ctx = canvas.getContext('2d');
     const particles = [];
-    const particleCount = 30;
+    const baseCount = window.innerWidth < 768 ? 15 : 30;
+    let animationId = null;
 
     // Configurar canvas
     const resizeCanvas = () => {
@@ -48,7 +55,7 @@ export default function ParticlesBackground() {
     }
 
     // Inicializar partículas
-    for (let i = 0; i < particleCount; i++) {
+    for (let i = 0; i < baseCount; i++) {
       particles.push(new Particle());
     }
 
@@ -77,13 +84,25 @@ export default function ParticlesBackground() {
         });
       });
 
-      requestAnimationFrame(animate);
+      animationId = requestAnimationFrame(animate);
     };
 
-    animate();
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (animationId) cancelAnimationFrame(animationId);
+        animationId = null;
+      } else {
+        animationId = requestAnimationFrame(animate);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    animationId = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (animationId) cancelAnimationFrame(animationId);
     };
   }, []);
 

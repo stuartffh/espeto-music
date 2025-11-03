@@ -11,7 +11,13 @@ export default function Tooltip({
   const [isVisible, setIsVisible] = useState(false);
   const [timeoutId, setTimeoutId] = useState(null);
 
+  const isCoarse = typeof window !== 'undefined'
+    && window.matchMedia
+    && window.matchMedia('(pointer: coarse)').matches;
+  const trigger = isCoarse ? 'click' : 'hover';
+
   const handleMouseEnter = () => {
+    if (trigger !== 'hover') return;
     const id = setTimeout(() => {
       setIsVisible(true);
     }, delay);
@@ -19,10 +25,16 @@ export default function Tooltip({
   };
 
   const handleMouseLeave = () => {
+    if (trigger !== 'hover') return;
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
     setIsVisible(false);
+  };
+
+  const handleClick = () => {
+    if (trigger !== 'click') return;
+    setIsVisible((v) => !v);
   };
 
   const positions = {
@@ -44,6 +56,7 @@ export default function Tooltip({
       className="relative inline-block"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
     >
       {children}
       <AnimatePresence>
