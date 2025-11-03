@@ -661,18 +661,18 @@ function Home({ locacao }) {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <Card variant="glass" className="text-center py-16 sm:py-20 border-2 border-dashed border-neon-cyan/30 hover:border-neon-cyan/60 transition-all duration-300 bg-gradient-to-br from-neon-cyan/5 to-transparent shadow-lg">
+                  <Card variant="retro" className="text-center py-16 sm:py-20 border-2 border-dashed border-tv-beige hover:border-tv-phosphor transition-all duration-300 shadow-tv-glow">
                     <motion.div
                       animate={{ y: [0, -10, 0] }}
                       transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                     >
-                      <Music className="w-20 h-20 sm:w-24 sm:h-24 mx-auto text-neon-cyan mb-6 sm:mb-8 drop-shadow-neon" />
+                      <Music className="w-20 h-20 sm:w-24 sm:h-24 mx-auto text-tv-phosphor mb-6 sm:mb-8 tv-text-glow" />
                     </motion.div>
-                    <h3 className="text-xl sm:text-2xl font-extrabold text-white mb-4">
-                      🎧 Pronto para escolher sua música?
+                    <h3 className="text-xl sm:text-2xl font-mono font-extrabold text-tv-phosphor mb-4 tv-text-glow">
+                      🎧 PRONTO PARA ESCOLHER SUA MÚSICA?
                     </h3>
-                    <p className="text-sm sm:text-base text-gray-200 dark:text-gray-200 max-w-lg mx-auto px-4 leading-relaxed">
-                      Digite o nome da música ou artista no campo de busca acima e clique em <span className="font-bold text-neon-cyan bg-neon-cyan/10 px-2 py-1 rounded">"Buscar Músicas"</span> para começar!
+                    <p className="text-sm sm:text-base text-tv-gray font-mono max-w-lg mx-auto px-4 leading-relaxed">
+                      Digite o nome da música ou artista no campo de busca acima e clique em <span className="font-bold text-tv-phosphor bg-tv-screen border border-tv-phosphor px-2 py-1 font-mono tv-text-glow">"BUSCAR MÚSICAS"</span> para começar!
                     </p>
                   </Card>
                 </motion.div>
@@ -683,16 +683,16 @@ function Home({ locacao }) {
           {/* Fila - Desktop */}
           {!isMobile && (
             <div className="lg:col-span-1">
-              <Card variant="glass" className="sticky top-4 border-2 border-neon-purple/30 shadow-xl">
+              <Card variant="retro" className="sticky top-4 border-tv-beige shadow-tv-glow">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-gradient-to-br from-neon-purple to-neon-pink p-2 rounded-lg">
-                    <Music className="w-5 h-5 text-white" />
+                  <div className="retro-bg border-2 border-tv-beige p-2">
+                    <Music className="w-5 h-5 text-tv-black" />
                   </div>
-                  <h3 className="text-xl font-extrabold bg-gradient-to-r from-neon-purple to-neon-pink bg-clip-text text-transparent">
-                    Fila de Músicas
+                  <h3 className="text-xl font-mono font-extrabold text-tv-phosphor tv-text-glow">
+                    FILA DE MÚSICAS
                   </h3>
                   {fila.length > 0 && (
-                    <Badge variant="neon" className="ml-auto">
+                    <Badge variant="retro" className="ml-auto">
                       {fila.length}
                     </Badge>
                   )}
@@ -712,16 +712,16 @@ function Home({ locacao }) {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="text-center py-12 bg-gradient-to-br from-neon-purple/5 to-transparent rounded-xl border border-dashed border-neon-purple/20"
+                      className="text-center py-12 retro-card border-tv-beige border-dashed"
                     >
                       <motion.div
                         animate={{ rotate: [0, 10, -10, 0] }}
                         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                       >
-                        <Music className="w-16 h-16 mx-auto text-neon-purple/50 mb-4 drop-shadow-neon" />
+                        <Music className="w-16 h-16 mx-auto text-tv-gray mb-4" />
                       </motion.div>
-                      <p className="text-white font-bold mb-1">Fila vazia</p>
-                      <p className="text-sm text-gray-300 dark:text-gray-300 mt-2 px-4">Seja o primeiro a adicionar uma música!</p>
+                      <p className="text-tv-phosphor font-mono font-bold mb-1 tv-text-glow">FILA VAZIA</p>
+                      <p className="text-sm text-tv-gray font-mono mt-2 px-4">Seja o primeiro a adicionar uma música!</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -733,18 +733,18 @@ function Home({ locacao }) {
         {/* FAB Mobile */}
         {isMobile && (
           <motion.button
-            className="fixed bottom-6 right-6 bg-gradient-to-br from-neon-cyan via-neon-purple to-neon-pink p-4 rounded-full z-30 shadow-2xl shadow-neon-cyan/50 border-2 border-white/20"
+            className="fixed bottom-6 right-6 retro-button p-4 rounded-none z-30 shadow-tv-glow border-tv-beige"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             animate={{ y: [0, -5, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             onClick={() => setShowFilaModal(true)}
           >
-            <Music className="w-6 h-6 text-white drop-shadow-lg" />
+            <Music className="w-6 h-6 text-tv-black" />
             {fila.length > 0 && (
               <Badge
-                className="absolute -top-2 -right-2 text-xs font-bold"
-                variant="neon"
+                className="absolute -top-2 -right-2 text-xs font-bold font-mono"
+                variant="danger"
                 pulse
               >
                 {fila.length}
@@ -780,7 +780,7 @@ function Home({ locacao }) {
           size="md"
         >
           <div className="space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+            <p className="text-sm text-tv-gray font-mono text-center">
               Escolha o método de pagamento para adicionar sua música à fila
             </p>
 
@@ -791,15 +791,15 @@ function Home({ locacao }) {
             >
               <button
                 onClick={handlePayWithPix}
-                className="w-full p-4 glass rounded-xl border-2 border-neon-cyan/20 hover:border-neon-cyan transition-all"
+                className="w-full p-4 retro-card border-tv-beige hover:border-tv-phosphor transition-all"
               >
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-neon-cyan/10 rounded-lg">
-                    <CreditCard className="w-6 h-6 text-neon-cyan" />
+                  <div className="p-3 retro-bg border-2 border-tv-beige">
+                    <CreditCard className="w-6 h-6 text-tv-black" />
                   </div>
                   <div className="flex-1 text-left">
-                    <h3 className="font-bold text-white">Pagar com PIX</h3>
-                    <p className="text-sm text-gray-400">Pagamento via QR Code do Mercado Pago</p>
+                    <h3 className="font-mono font-bold text-tv-phosphor tv-text-glow">PAGAR COM PIX</h3>
+                    <p className="text-sm text-tv-gray font-mono">Pagamento via QR Code do Mercado Pago</p>
                   </div>
                 </div>
               </button>
@@ -807,24 +807,24 @@ function Home({ locacao }) {
 
             {/* Divider */}
             <div className="flex items-center gap-4">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent" />
-              <span className="text-sm text-gray-500">OU</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent" />
+              <div className="flex-1 h-px bg-tv-beige" />
+              <span className="text-sm text-tv-gray font-mono">OU</span>
+              <div className="flex-1 h-px bg-tv-beige" />
             </div>
 
             {/* Opção Gift Card */}
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="p-4 glass rounded-xl border-2 border-neon-purple/20 hover:border-neon-purple transition-all"
+              className="p-4 retro-card border-tv-beige hover:border-tv-blue transition-all"
             >
               <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-neon-purple/10 rounded-lg">
-                  <Gift className="w-6 h-6 text-neon-purple" />
+                <div className="p-3 retro-bg border-2 border-tv-beige">
+                  <Gift className="w-6 h-6 text-tv-black" />
                 </div>
                 <div className="flex-1 text-left">
-                  <h3 className="font-bold text-white">Usar Gift Card</h3>
-                  <p className="text-sm text-gray-400">Digite seu código de presente</p>
+                  <h3 className="font-mono font-bold text-tv-phosphor tv-text-glow">USAR GIFT CARD</h3>
+                  <p className="text-sm text-tv-gray font-mono">Digite seu código de presente</p>
                 </div>
               </div>
 
@@ -886,7 +886,7 @@ function Home({ locacao }) {
           title="Nome obrigatório"
           size="sm"
         >
-          <p className="text-sm text-gray-400 mb-4">
+          <p className="text-sm text-tv-gray font-mono mb-4">
             Para adicionar músicas no modo gratuito, é necessário informar seu nome.
           </p>
           <Input
@@ -923,17 +923,17 @@ function Home({ locacao }) {
           {musicaSelecionada && (
             <div className="space-y-6">
               {/* Informações da Música */}
-              <div className="flex items-center gap-4 p-4 glass rounded-xl">
+              <div className="flex items-center gap-4 p-4 retro-card border-tv-beige">
                 <img
                   src={musicaSelecionada.thumbnail}
                   alt={musicaSelecionada.titulo}
-                  className="w-20 h-20 rounded-lg object-cover"
+                  className="w-20 h-20 border-2 border-tv-beige object-cover pixelated"
                 />
                 <div className="flex-1">
-                  <h3 className="font-bold text-white line-clamp-2">
+                  <h3 className="font-mono font-bold text-tv-phosphor line-clamp-2 tv-text-glow">
                     {musicaSelecionada.titulo}
                   </h3>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-tv-gray font-mono mt-1">
                     {Math.floor(musicaSelecionada.duracao / 60)}:{String(musicaSelecionada.duracao % 60).padStart(2, '0')}
                   </p>
                 </div>
@@ -941,8 +941,8 @@ function Home({ locacao }) {
 
               {/* Seleção de Prioridade */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-white flex items-center gap-2">
-                  <span className="text-neon-cyan">💎</span> Escolha a prioridade
+                <h4 className="font-mono font-semibold text-tv-phosphor flex items-center gap-2 tv-text-glow">
+                  <span>💎</span> ESCOLHA A PRIORIDADE
                 </h4>
 
                 {/* Opção Normal */}
@@ -952,27 +952,27 @@ function Home({ locacao }) {
                 >
                   <button
                     onClick={() => setPrioridadeSelecionada(false)}
-                    className={`w-full p-4 rounded-xl border-2 transition-all ${
+                    className={`w-full p-4 retro-card border-2 transition-all font-mono ${
                       !prioridadeSelecionada
-                        ? 'border-neon-cyan bg-neon-cyan/10'
-                        : 'border-gray-700 glass'
+                        ? 'border-tv-phosphor shadow-tv-glow'
+                        : 'border-tv-beige'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          !prioridadeSelecionada ? 'border-neon-cyan bg-neon-cyan' : 'border-gray-600'
+                        <div className={`w-5 h-5 border-2 flex items-center justify-center ${
+                          !prioridadeSelecionada ? 'border-tv-phosphor retro-bg' : 'border-tv-beige retro-bg'
                         }`}>
                           {!prioridadeSelecionada && (
-                            <div className="w-2 h-2 bg-white rounded-full" />
+                            <div className="w-2 h-2 bg-tv-black rounded-full" />
                           )}
                         </div>
                         <div className="text-left">
-                          <p className="font-bold text-white">Normal</p>
-                          <p className="text-sm text-gray-400">Entra na fila na ordem de chegada</p>
+                          <p className="font-bold text-tv-phosphor tv-text-glow">NORMAL</p>
+                          <p className="text-sm text-tv-gray">Entra na fila na ordem de chegada</p>
                         </div>
                       </div>
-                      <p className="text-xl font-bold text-neon-cyan">
+                      <p className="text-xl font-bold text-tv-phosphor tv-text-glow">
                         R$ {precoNormal.toFixed(2)}
                       </p>
                     </div>
@@ -986,29 +986,29 @@ function Home({ locacao }) {
                 >
                   <button
                     onClick={() => setPrioridadeSelecionada(true)}
-                    className={`w-full p-4 rounded-xl border-2 transition-all ${
+                    className={`w-full p-4 retro-card border-2 transition-all font-mono ${
                       prioridadeSelecionada
-                        ? 'border-neon-purple bg-neon-purple/10'
-                        : 'border-gray-700 glass'
+                        ? 'border-tv-blue shadow-tv-glow-blue'
+                        : 'border-tv-beige'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          prioridadeSelecionada ? 'border-neon-purple bg-neon-purple' : 'border-gray-600'
+                        <div className={`w-5 h-5 border-2 flex items-center justify-center ${
+                          prioridadeSelecionada ? 'border-tv-blue retro-bg' : 'border-tv-beige retro-bg'
                         }`}>
                           {prioridadeSelecionada && (
-                            <div className="w-2 h-2 bg-white rounded-full" />
+                            <div className="w-2 h-2 bg-tv-black rounded-full" />
                           )}
                         </div>
                         <div className="text-left">
-                          <p className="font-bold text-white flex items-center gap-2">
-                            Prioritária <Badge variant="neon" className="text-xs">VIP</Badge>
+                          <p className="font-bold text-tv-phosphor tv-text-glow flex items-center gap-2">
+                            PRIORITÁRIA <Badge variant="retro" className="text-xs font-mono">VIP</Badge>
                           </p>
-                          <p className="text-sm text-gray-400">Toca antes na fila!</p>
+                          <p className="text-sm text-tv-gray">Toca antes na fila!</p>
                         </div>
                       </div>
-                      <p className="text-xl font-bold text-neon-purple">
+                      <p className="text-xl font-bold text-tv-blue tv-text-glow">
                         R$ {precoPrioridade.toFixed(2)}
                       </p>
                     </div>
@@ -1019,10 +1019,10 @@ function Home({ locacao }) {
               {/* Dedicatória (Opcional) */}
               {permitirDedicatoria && (
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-white flex items-center gap-2">
-                    <span className="text-neon-pink">💝</span> Dedicatória (Opcional)
+                  <h4 className="font-mono font-semibold text-tv-phosphor flex items-center gap-2 tv-text-glow">
+                    <span>💝</span> DEDICATÓRIA (OPCIONAL)
                   </h4>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-tv-gray font-mono">
                     Envie uma mensagem especial que será exibida na TV quando sua música tocar!
                   </p>
 
@@ -1039,10 +1039,10 @@ function Home({ locacao }) {
                     placeholder="Para: Escreva sua dedicatória aqui..."
                     maxLength={200}
                     rows={3}
-                    className="w-full px-4 py-3 glass rounded-xl border border-gray-700 focus:border-neon-cyan transition-all resize-none text-white placeholder-gray-500"
+                    className="w-full px-4 py-3 retro-input resize-none font-mono"
                   />
 
-                  <p className="text-xs text-gray-500 text-right">
+                  <p className="text-xs text-tv-gray font-mono text-right">
                     {dedicatoria.length}/200 caracteres
                   </p>
                 </div>
