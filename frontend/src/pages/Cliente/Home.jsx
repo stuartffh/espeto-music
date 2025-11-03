@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Music, User, Clock, ChevronLeft, ChevronRight, Info, CreditCard, Gift, X, Loader2 } from 'lucide-react';
+import { Search, Music, User, Clock, ChevronLeft, ChevronRight, Info, CreditCard, Gift, X, Loader2, ChevronDown, Sparkles, TrendingUp, History } from 'lucide-react';
 import { buscarMusicas, criarPedidoMusica, buscarFila, validarGiftCard, usarGiftCard } from '../../services/api';
 import socket from '../../services/socket';
 import useStore from '../../store/useStore';
-import { categorias, getSugestoesDinamicas } from '../../data/musicSuggestions';
+import { categorias, getSugestoesDinamicas, getTodasSugestoes } from '../../data/musicSuggestions';
 import axios from 'axios';
 
 import Button from '../../components/ui/Button';
@@ -61,6 +61,9 @@ function Home({ locacao }) {
   const [precoNormal, setPrecoNormal] = useState(5.0);
   const [precoPrioridade, setPrecoPrioridade] = useState(10.0);
   const [permitirDedicatoria, setPermitirDedicatoria] = useState(true);
+  const [mostrarTutorial, setMostrarTutorial] = useState(true);
+  const [historicoBuscas, setHistoricoBuscas] = useState([]);
+  const [mostrarHistorico, setMostrarHistorico] = useState(false);
 
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { toast, showToast, hideToast } = useToast();
@@ -128,15 +131,49 @@ function Home({ locacao }) {
     };
   }, [setFila, carregarCarrinho]);
 
+  // Carregar histórico de buscas do localStorage
+  useEffect(() => {
+    const historicoSalvo = localStorage.getItem('historicoBuscas');
+    if (historicoSalvo) {
+      try {
+        setHistoricoBuscas(JSON.parse(historicoSalvo));
+      } catch (e) {
+        console.error('Erro ao carregar histórico:', e);
+      }
+    }
+  }, []);
+
+  // Verificar se deve mostrar tutorial na primeira vez
+  useEffect(() => {
+    const tutorialVisto = localStorage.getItem('tutorialVisto');
+    if (tutorialVisto === 'true') {
+      setMostrarTutorial(false);
+    }
+  }, []);
+
+  const salvarNoHistorico = (termo) => {
+    if (!termo.trim()) return;
+    
+    const novoHistorico = [
+      termo.trim(),
+      ...historicoBuscas.filter(b => b !== termo.trim())
+    ].slice(0, 5); // Máximo de 5 itens
+    
+    setHistoricoBuscas(novoHistorico);
+    localStorage.setItem('historicoBuscas', JSON.stringify(novoHistorico));
+  };
+
   const handleBuscar = async (e) => {
     e.preventDefault();
     if (!busca.trim()) return;
 
     setCarregandoBusca(true);
+    salvarNoHistorico(busca);
     try {
       const response = await buscarMusicas(busca);
       setResultados(response.data);
       setCategoriaAtiva(null);
+      setMostrarHistorico(false);
     } catch (error) {
       console.error('Erro ao buscar:', error);
       showToast('Erro ao buscar músicas. Tente novamente.', 'error');
@@ -145,12 +182,34 @@ function Home({ locacao }) {
     }
   };
 
+  const handleBuscarHistorico = (termo) => {
+    setBusca(termo);
+    salvarNoHistorico(termo);
+    setCarregandoBusca(true);
+    buscarMusicas(termo)
+      .then(response => {
+        setResultados(response.data);
+        setCategoriaAtiva(null);
+        setMostrarHistorico(false);
+      })
+      .catch(error => {
+        console.error('Erro:', error);
+        showToast('Erro ao buscar música. Tente novamente.', 'error');
+      })
+      .finally(() => {
+        setCarregandoBusca(false);
+      });
+  };
+
   const handleBuscarSugestao = (sugestao) => {
     setBusca(sugestao);
+    salvarNoHistorico(sugestao);
     setCarregandoBusca(true);
     buscarMusicas(sugestao)
       .then(response => {
         setResultados(response.data);
+        setCategoriaAtiva(null);
+        setMostrarHistorico(false);
       })
       .catch(error => {
         console.error('Erro:', error);
@@ -549,77 +608,239 @@ function Home({ locacao }) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Coluna Principal */}
           <div className="lg:col-span-2 space-y-6 md:space-y-8">
-            {/* Banner Explicativo - Como Funciona */}
+            {/* Banner Explicativo - Como Funciona (Colapsável) */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
               <Card variant="glass" hover glow className="border border-futura-primary/30">
-                <div className="flex items-start gap-5">
-                  <div className="flex-shrink-0 bg-gradient-to-br from-futura-primary/20 to-futura-secondary/20 p-4 rounded-xl border border-futura-primary/30">
-                    <Info className="w-7 h-7 text-futura-primary" />
+                <button
+                  onClick={() => {
+                    setMostrarTutorial(!mostrarTutorial);
+                    localStorage.setItem('tutorialVisto', 'true');
+                  }}
+                  className="w-full flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-start gap-5 flex-1">
+                    <div className="flex-shrink-0 bg-gradient-to-br from-futura-primary/20 to-futura-secondary/20 p-4 rounded-xl border border-futura-primary/30">
+                      <Info className="w-7 h-7 text-futura-primary" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h3 className="text-xl md:text-2xl font-extrabold gradient-text-primary mb-2">
+                        ✨ Como funciona?
+                      </h3>
+                      <p className="text-sm text-futura-gray-700">
+                        {mostrarTutorial ? 'Clique para minimizar' : 'Clique para ver o tutorial'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl md:text-2xl font-extrabold gradient-text-primary mb-5">
-                      ✨ Como funciona?
-                    </h3>
-                    <ol className="space-y-4 text-sm sm:text-base">
-                      <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-primary to-futura-secondary text-white flex items-center justify-center text-sm font-bold rounded-lg">1</span>
-                        <span className="text-white font-semibold pt-1 leading-relaxed">Busque pela música que deseja ouvir</span>
-                      </li>
-                      <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-secondary to-futura-accent text-white flex items-center justify-center text-sm font-bold rounded-lg">2</span>
-                        <span className="text-white font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
-                      </li>
-                      <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-accent to-futura-danger text-white flex items-center justify-center text-sm font-bold rounded-lg">3</span>
-                        <span className="text-white font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
-                      </li>
-                      {!modoGratuito && (
-                        <li className="flex items-start gap-4">
-                          <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-success to-futura-primary text-black flex items-center justify-center text-sm font-bold rounded-lg">4</span>
-                          <span className="text-white font-semibold pt-1 leading-relaxed">Após o pagamento, digite seu nome e aproveite!</span>
-                        </li>
-                      )}
-                    </ol>
-                  </div>
-                </div>
+                  <motion.div
+                    animate={{ rotate: mostrarTutorial ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <ChevronDown className="w-6 h-6 text-futura-primary flex-shrink-0" />
+                  </motion.div>
+                </button>
+
+                <AnimatePresence>
+                  {mostrarTutorial && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-5 pt-5 border-t border-futura-border">
+                        <ol className="space-y-4 text-sm sm:text-base">
+                          <motion.li
+                            className="flex items-start gap-4"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                          >
+                            <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-primary to-futura-secondary text-white flex items-center justify-center text-sm font-bold rounded-lg shadow-glow-primary">1</span>
+                            <span className="text-white font-semibold pt-1 leading-relaxed">Busque pela música que deseja ouvir</span>
+                          </motion.li>
+                          <motion.li
+                            className="flex items-start gap-4"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                          >
+                            <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-secondary to-futura-accent text-white flex items-center justify-center text-sm font-bold rounded-lg shadow-glow-secondary">2</span>
+                            <span className="text-white font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
+                          </motion.li>
+                          <motion.li
+                            className="flex items-start gap-4"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 }}
+                          >
+                            <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-accent to-futura-danger text-white flex items-center justify-center text-sm font-bold rounded-lg shadow-glow-accent">3</span>
+                            <span className="text-white font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
+                          </motion.li>
+                          {!modoGratuito && (
+                            <motion.li
+                              className="flex items-start gap-4"
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.4 }}
+                            >
+                              <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-success to-futura-primary text-black flex items-center justify-center text-sm font-bold rounded-lg shadow-glow-success">4</span>
+                              <span className="text-white font-semibold pt-1 leading-relaxed">Após o pagamento, digite seu nome e aproveite!</span>
+                            </motion.li>
+                          )}
+                        </ol>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </Card>
             </motion.div>
 
             {/* Busca */}
-            <form onSubmit={handleBuscar} className="space-y-2 sm:space-y-0">
-              <Input
-                type="text"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar músicas..."
-                icon={Search}
-                className="w-full"
-                iconRight={() => (
-                  <Button
-                    type="submit"
-                    size="sm"
-                    loading={carregandoBusca}
-                    disabled={carregandoBusca}
-                    className="hidden sm:inline-flex"
-                  >
-                    Buscar
-                  </Button>
-                )}
-              />
-              {/* Botão de busca mobile - abaixo do input */}
-              <Button
-                type="submit"
-                loading={carregandoBusca}
-                disabled={carregandoBusca}
-                className="w-full sm:hidden"
+            <div className="space-y-4">
+              <form onSubmit={handleBuscar} className="space-y-2 sm:space-y-0">
+                <div className="relative">
+                  <Input
+                    type="text"
+                    value={busca}
+                    onChange={(e) => {
+                      setBusca(e.target.value);
+                      setMostrarHistorico(e.target.value.trim().length === 0 && historicoBuscas.length > 0);
+                    }}
+                    onFocus={() => {
+                      if (historicoBuscas.length > 0 && !busca.trim()) {
+                        setMostrarHistorico(true);
+                      }
+                    }}
+                    onBlur={() => setTimeout(() => setMostrarHistorico(false), 200)}
+                    placeholder="Buscar músicas, artistas..."
+                    icon={Search}
+                    className="w-full"
+                    iconRight={() => (
+                      <div className="flex items-center gap-2">
+                        {historicoBuscas.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setMostrarHistorico(!mostrarHistorico)}
+                            className="p-1.5 rounded-lg hover:bg-futura-surface transition-colors"
+                          >
+                            <History className="w-4 h-4 text-futura-primary" />
+                          </button>
+                        )}
+                        <Button
+                          type="submit"
+                          size="sm"
+                          loading={carregandoBusca}
+                          disabled={carregandoBusca}
+                          className="hidden sm:inline-flex"
+                        >
+                          Buscar
+                        </Button>
+                      </div>
+                    )}
+                  />
+                  
+                  {/* Dropdown de Histórico */}
+                  <AnimatePresence>
+                    {mostrarHistorico && historicoBuscas.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full left-0 right-0 mt-2 glass-strong rounded-xl border border-futura-primary/30 shadow-2xl z-50 overflow-hidden"
+                      >
+                        <div className="p-2">
+                          <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-futura-gray-700 uppercase">
+                            <History className="w-4 h-4" />
+                            Buscas Recentes
+                          </div>
+                          {historicoBuscas.map((termo, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleBuscarHistorico(termo)}
+                              className="w-full text-left px-3 py-2 hover:bg-futura-surface rounded-lg transition-colors flex items-center gap-2 group"
+                            >
+                              <Search className="w-4 h-4 text-futura-gray-700 group-hover:text-futura-primary transition-colors" />
+                              <span className="text-sm text-white group-hover:text-futura-primary transition-colors">{termo}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                
+                {/* Botão de busca mobile - abaixo do input */}
+                <Button
+                  type="submit"
+                  loading={carregandoBusca}
+                  disabled={carregandoBusca}
+                  className="w-full sm:hidden"
+                >
+                  {carregandoBusca ? 'Buscando...' : 'Buscar Músicas'}
+                </Button>
+              </form>
+
+              {/* Chips de Busca Rápida - Categorias */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="flex flex-wrap items-center gap-2"
               >
-                {carregandoBusca ? 'Buscando...' : 'Buscar Músicas'}
-              </Button>
-            </form>
+                <span className="text-xs font-semibold text-futura-gray-700 uppercase flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  Buscar por:
+                </span>
+                {categorias.slice(0, 6).map((cat) => (
+                  <motion.button
+                    key={cat.id}
+                    onClick={() => handleBuscarSugestao(cat.nome.replace(/^[^\s]+\s/, ''))}
+                    className="px-3 py-1.5 text-xs font-semibold glass rounded-full border border-futura-border hover:border-futura-primary hover:shadow-glow-primary transition-all flex items-center gap-1.5"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <span>{cat.nome}</span>
+                    <TrendingUp className="w-3 h-3" />
+                  </motion.button>
+                ))}
+              </motion.div>
+
+              {/* Chips de Sugestões Populares */}
+              {!busca.trim() && resultados.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="space-y-2"
+                >
+                  <span className="text-xs font-semibold text-futura-gray-700 uppercase flex items-center gap-1">
+                    <Music className="w-3 h-3" />
+                    Sugestões populares:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {getTodasSugestoes().slice(0, 8).map((sugestao, index) => (
+                      <motion.button
+                        key={index}
+                        onClick={() => handleBuscarSugestao(sugestao)}
+                        className="px-3 py-1.5 text-xs glass rounded-full border border-futura-border hover:border-futura-primary hover:shadow-glow-primary transition-all"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.1 * index }}
+                      >
+                        {sugestao}
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </div>
 
             {/* Resultados */}
             <AnimatePresence mode="wait">
@@ -629,6 +850,22 @@ function Home({ locacao }) {
                 </div>
               ) : resultados.length > 0 ? (
                 <>
+                  {/* Contador de Resultados */}
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between mb-4"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge variant="primary" glow>
+                        {resultados.length} {resultados.length === 1 ? 'resultado' : 'resultados'}
+                      </Badge>
+                      <span className="text-sm text-futura-gray-700">
+                        {busca && `para "${busca}"`}
+                      </span>
+                    </div>
+                  </motion.div>
+
                   {/* Lista Mobile */}
                   <motion.div
                     className="md:hidden space-y-2"
@@ -692,9 +929,29 @@ function Home({ locacao }) {
                       <h3 className="text-xl sm:text-2xl font-extrabold gradient-text-primary mb-4">
                         🎧 Pronto para escolher sua música?
                       </h3>
-                      <p className="text-sm sm:text-base text-futura-gray-700 max-w-lg mx-auto px-4 leading-relaxed">
-                        Digite o nome da música ou artista no campo de busca acima e clique em <span className="font-bold text-futura-primary bg-futura-surface border border-futura-primary px-2 py-1 rounded hover-glow">"Buscar Músicas"</span> para começar!
+                      <p className="text-sm sm:text-base text-futura-gray-700 max-w-lg mx-auto px-4 leading-relaxed mb-6">
+                        Digite o nome da música ou artista no campo de busca acima ou escolha uma das sugestões abaixo!
                       </p>
+                      
+                      {/* Exemplos Interativos */}
+                      <div className="flex flex-wrap gap-2 justify-center max-w-2xl mx-auto px-4">
+                        {getTodasSugestoes().slice(0, 6).map((sugestao, index) => (
+                          <motion.button
+                            key={index}
+                            onClick={() => handleBuscarSugestao(sugestao)}
+                            className="px-4 py-2 text-sm glass rounded-lg border border-futura-border hover:border-futura-primary hover:shadow-glow-primary transition-all group"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 * index }}
+                          >
+                            <span className="text-white group-hover:text-futura-primary transition-all">
+                              {sugestao}
+                            </span>
+                          </motion.button>
+                        ))}
+                      </div>
                     </div>
                   </Card>
                 </motion.div>
