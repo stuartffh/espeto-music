@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import ProtectedRoute from './components/ProtectedRoute';
 import OfflineIndicator from './components/OfflineIndicator';
+import ParticlesBackground from './components/ParticlesBackground';
 
 const Home = lazy(() => import('./pages/Cliente/Home'));
 const Pagamento = lazy(() => import('./pages/Cliente/Pagamento'));
@@ -22,7 +23,8 @@ function App() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-futura-bg text-white">
+    <div className="min-h-screen bg-futura-bg text-white relative">
+      <ParticlesBackground />
       <OfflineIndicator />
       <AnimatePresence mode="wait" initial={false}>
         <Suspense fallback={<RouteFallback />}>

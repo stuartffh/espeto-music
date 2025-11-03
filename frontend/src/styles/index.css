@@ -30,10 +30,39 @@ body {
   min-height: 100vh;
   background: var(--futura-bg);
   color: #FFFFFF;
+  position: relative;
+}
+
+/* Background animado sutil */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(0, 245, 255, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(123, 44, 191, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 40% 20%, rgba(255, 0, 110, 0.02) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 #root {
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
 /* Scrollbar */
@@ -52,7 +81,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--futura-primary);
+  background: linear-gradient(180deg, var(--futura-primary), var(--futura-secondary));
 }
 
 /* Utilities */
@@ -78,6 +107,8 @@ body {
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-size: 200% 200%;
+    animation: gradientText 3s ease infinite;
   }
 
   .gradient-text-primary {
@@ -112,16 +143,130 @@ body {
 
   /* Card Hover */
   .card-hover {
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .card-hover:hover {
     transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(0, 245, 255, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 245, 255, 0.2), 0 0 60px rgba(0, 245, 255, 0.1);
+  }
+
+  /* Hover Glow Effect */
+  .hover-glow {
+    transition: all 0.3s ease;
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
+  }
+
+  /* Shimmer Effect */
+  .shimmer-effect {
+    background: linear-gradient(
+      90deg,
+      rgba(0, 245, 255, 0.1) 0%,
+      rgba(123, 44, 191, 0.2) 50%,
+      rgba(0, 245, 255, 0.1) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Neon Border Glow */
+  .neon-border {
+    border: 2px solid var(--futura-primary);
+    box-shadow: 
+      0 0 10px rgba(0, 245, 255, 0.3),
+      inset 0 0 10px rgba(0, 245, 255, 0.1);
+    animation: neonPulse 2s ease-in-out infinite;
+  }
+
+  .neon-border-accent {
+    border: 2px solid var(--futura-accent);
+    box-shadow: 
+      0 0 10px rgba(255, 0, 110, 0.3),
+      inset 0 0 10px rgba(255, 0, 110, 0.1);
+    animation: neonPulse 2s ease-in-out infinite;
+  }
+
+  /* Icon Animation */
+  .icon-bounce {
+    animation: iconBounce 2s ease-in-out infinite;
+  }
+
+  .icon-pulse {
+    animation: iconPulse 2s ease-in-out infinite;
+  }
+
+  .icon-rotate {
+    animation: iconRotate 3s linear infinite;
+  }
+
+  /* Enhanced Blur Effects */
+  .blur-glow {
+    filter: blur(20px);
+    opacity: 0.5;
+  }
+
+  .blur-glow-strong {
+    filter: blur(40px);
+    opacity: 0.3;
+  }
+}
+
+@keyframes neonPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 10px rgba(0, 245, 255, 0.3),
+      inset 0 0 10px rgba(0, 245, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 20px rgba(0, 245, 255, 0.6),
+      0 0 30px rgba(0, 245, 255, 0.4),
+      inset 0 0 15px rgba(0, 245, 255, 0.2);
+  }
+}
+
+@keyframes iconBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes iconPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes iconRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
 
 /* Animations */
+@keyframes gradientText {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
 @keyframes glowPulse {
   0%, 100% {
     box-shadow: 0 0 20px rgba(0, 245, 255, 0.4), 0 0 40px rgba(0, 245, 255, 0.2);
@@ -147,6 +292,13 @@ body {
   50% {
     transform: translateY(-10px);
   }
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 
 /* Responsive */

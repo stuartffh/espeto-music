@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import Card from './ui/Card';
+import AnimatedIcon from './AnimatedIcon';
 import clsx from 'clsx';
 
 const colorMap = {
@@ -19,19 +20,23 @@ export default function StatsCard({ title, value, icon: Icon, trend, color = 'pr
       <div className="flex items-center gap-4">
         {/* Ícone */}
         <div className={clsx(
-          'w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center border',
+          'w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center border neon-border',
           color === 'primary' && 'from-futura-primary/20 to-futura-secondary/20 border-futura-primary/30',
           color === 'secondary' && 'from-futura-secondary/20 to-futura-accent/20 border-futura-secondary/30',
           color === 'accent' && 'from-futura-accent/20 to-futura-danger/20 border-futura-accent/30',
           color === 'success' && 'from-futura-success/20 to-futura-primary/20 border-futura-success/30'
         )}>
-          <Icon className={clsx(
-            'w-6 h-6',
-            color === 'primary' && 'text-futura-primary',
-            color === 'secondary' && 'text-futura-secondary',
-            color === 'accent' && 'text-futura-accent',
-            color === 'success' && 'text-futura-success'
-          )} />
+          <AnimatedIcon
+            icon={Icon}
+            animation="pulse"
+            className={clsx(
+              color === 'primary' && 'text-futura-primary',
+              color === 'secondary' && 'text-futura-secondary',
+              color === 'accent' && 'text-futura-accent',
+              color === 'success' && 'text-futura-success'
+            )}
+            size="md"
+          />
         </div>
 
         {/* Conteúdo */}
