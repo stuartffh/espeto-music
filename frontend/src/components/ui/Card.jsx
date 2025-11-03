@@ -10,20 +10,19 @@ export default function Card({
   ...props
 }) {
   const variants = {
-    default: 'retro-card',
-    glass: 'tv-screen border-tv-beige',
-    bordered: 'bg-tv-screen border-2 border-tv-phosphor',
-    elevated: 'retro-card shadow-tv-glow',
-    retro: 'retro-card',
+    default: 'bg-futura-surface border border-futura-border',
+    glass: 'glass',
+    elevated: 'bg-futura-elevated border border-futura-border shadow-lg',
+    gradient: 'bg-gradient-to-br from-futura-surface to-futura-elevated border border-futura-primary/30',
   };
 
-  const hoverStyles = hover ? 'hover:scale-[1.01] transition-transform' : '';
-  const glowStyles = glow ? 'hover:shadow-tv-glow' : '';
+  const hoverStyles = hover ? 'card-hover' : '';
+  const glowStyles = glow ? 'hover:shadow-glow-primary' : '';
 
   return (
     <motion.div
       className={clsx(
-        'p-6',
+        'rounded-xl p-6',
         variants[variant],
         hoverStyles,
         glowStyles,

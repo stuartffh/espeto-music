@@ -50,7 +50,7 @@ export default function Modal({
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-0">
             <motion.div
               className={clsx(
-                'tv-screen border-tv-beige shadow-tv-glow w-full overflow-hidden',
+                'glass-strong rounded-2xl shadow-2xl w-full overflow-hidden border border-futura-border',
                 size === 'fullscreen' ? 'h-full m-0' : 'max-h-[90vh] md:m-4',
                 sizes[size]
               )}
@@ -61,21 +61,20 @@ export default function Modal({
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b-2 border-tv-beige">
-                <h2 className="text-2xl font-mono font-bold text-tv-phosphor tv-text-glow">
+              <div className="flex items-center justify-between p-6 border-b border-futura-border">
+                <h2 className="text-2xl font-bold text-white gradient-text-primary">
                   {title}
                 </h2>
                 <button
                   onClick={onClose}
-                  className="p-2 retro-button hover:bg-tv-beige transition-colors text-tv-black"
-                  style={{ minWidth: '40px', minHeight: '40px' }}
+                  className="p-2 rounded-lg hover:bg-futura-surface transition-colors text-futura-gray-700 hover:text-futura-primary"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
               {/* Content */}
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] text-tv-phosphor font-mono">
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] text-white">
                 {children}
               </div>
             </motion.div>

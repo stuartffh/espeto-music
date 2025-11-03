@@ -385,7 +385,7 @@ function Home({ locacao }) {
   };
 
   return (
-    <div className="min-h-screen bg-tv-black text-tv-phosphor">
+    <div className="min-h-screen bg-futura-bg text-white">
       <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:p-8">
         {/* Header */}
         <motion.div
@@ -397,12 +397,12 @@ function Home({ locacao }) {
           <div className="flex items-center justify-between mb-6 md:mb-8">
             <div className="w-10 md:w-14"></div>
             <motion.h1
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-mono font-extrabold text-tv-phosphor tv-text-glow animate-tv-glow"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold gradient-text"
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.5, type: 'spring' }}
             >
-              [ ESPETO MUSIC ]
+              🎵 Espeto Music
             </motion.h1>
             <ThemeToggle />
           </div>
@@ -418,12 +418,12 @@ function Home({ locacao }) {
               whileHover={{ scale: 1.05, y: -5 }}
               transition={{ type: 'spring', stiffness: 300 }}
             >
-              <Card variant="retro" className="text-center p-5 sm:p-6 md:p-8 border-tv-phosphor hover:shadow-tv-glow transition-all duration-300">
-                <div className="retro-bg border-2 border-tv-beige p-3 md:p-4 mx-auto w-fit mb-3 md:mb-4 shadow-md">
-                  <Music className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 text-tv-black" />
+              <Card variant="glass" hover glow className="text-center p-5 sm:p-6 md:p-8 border border-futura-primary/30">
+                <div className="bg-gradient-to-br from-futura-primary/20 to-futura-secondary/20 p-3 md:p-4 rounded-xl mx-auto w-fit mb-3 md:mb-4 border border-futura-primary/30">
+                  <Music className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 text-futura-primary" />
                 </div>
-                <p className="text-3xl sm:text-4xl md:text-5xl font-mono font-extrabold text-tv-phosphor mb-2 tv-text-glow">{fila.length}</p>
-                <p className="text-xs sm:text-sm md:text-base text-tv-gray font-mono font-semibold">MÚSICAS NA FILA</p>
+                <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold gradient-text-primary mb-2">{fila.length}</p>
+                <p className="text-xs sm:text-sm md:text-base text-futura-gray-700 font-semibold">Músicas na Fila</p>
               </Card>
             </motion.div>
 
@@ -431,26 +431,25 @@ function Home({ locacao }) {
               whileHover={{ scale: 1.05, y: -5 }}
               transition={{ type: 'spring', stiffness: 300 }}
             >
-              <Card variant="retro" className="text-center p-5 sm:p-6 md:p-8 border-tv-blue hover:shadow-tv-glow-blue transition-all duration-300">
-                <div className="retro-bg border-2 border-tv-beige p-3 md:p-4 mx-auto w-fit mb-3 md:mb-4 shadow-md">
-                  <Clock className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 text-tv-black" />
+              <Card variant="glass" hover glow className="text-center p-5 sm:p-6 md:p-8 border border-futura-secondary/30">
+                <div className="bg-gradient-to-br from-futura-secondary/20 to-futura-accent/20 p-3 md:p-4 rounded-xl mx-auto w-fit mb-3 md:mb-4 border border-futura-secondary/30">
+                  <Clock className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 text-futura-secondary" />
                 </div>
-                <p className="text-3xl sm:text-4xl md:text-5xl font-mono font-extrabold text-tv-phosphor mb-2 tv-text-glow">{tempoMaximo}min</p>
-                <p className="text-xs sm:text-sm md:text-base text-tv-gray font-mono font-semibold">TEMPO MÁXIMO</p>
+                <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold gradient-text-primary mb-2">{tempoMaximo}min</p>
+                <p className="text-xs sm:text-sm md:text-base text-futura-gray-700 font-semibold">Tempo Máximo</p>
               </Card>
             </motion.div>
           </motion.div>
 
           {/* Regras Toggle */}
-          <motion.button
+          <Button
             onClick={() => setMostrarRegras(!mostrarRegras)}
-            className="mt-8 md:mt-10 px-6 py-3 retro-button text-sm sm:text-base text-tv-black hover:shadow-tv-glow transition-all duration-300 flex items-center gap-3 mx-auto font-mono font-semibold"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            variant="outline"
+            className="mt-8 md:mt-10"
           >
-            <Info className="w-5 h-5 sm:w-5 sm:h-5" />
-            {mostrarRegras ? '[ OCULTAR REGRAS ]' : '[ VER REGRAS ]'}
-          </motion.button>
+            <Info className="w-5 h-5" />
+            {mostrarRegras ? 'Ocultar Regras' : 'Ver Regras'}
+          </Button>
         </motion.div>
 
         {/* Regras */}
@@ -463,21 +462,21 @@ function Home({ locacao }) {
               transition={{ duration: 0.4 }}
               className="mb-8 md:mb-12"
             >
-              <Card variant="retro" className="max-w-4xl mx-auto border-tv-beige shadow-tv-glow">
-                <h2 className="text-2xl md:text-3xl font-mono font-extrabold text-tv-phosphor mb-8 tv-text-glow">
-                  [ REGRAS DO ESPETO MUSIC ]
+              <Card variant="glass" hover glow className="max-w-4xl mx-auto border border-futura-primary/30">
+                <h2 className="text-2xl md:text-3xl font-extrabold gradient-text-primary mb-8">
+                  📋 Regras do Espeto Music
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <motion.div
-                    className="flex items-start gap-4 p-4 retro-card border-tv-beige hover:border-tv-phosphor transition-all"
+                    className="flex items-start gap-4 p-4 glass rounded-xl border border-futura-border hover:border-futura-primary transition-all"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="retro-bg border-2 border-tv-beige p-2 flex-shrink-0">
-                      <Clock className="w-6 h-6 text-tv-black flex-shrink-0" />
+                    <div className="bg-gradient-to-br from-futura-primary/20 to-futura-secondary/20 p-2 rounded-lg border border-futura-primary/30 flex-shrink-0">
+                      <Clock className="w-6 h-6 text-futura-primary flex-shrink-0" />
                     </div>
                     <div>
-                      <p className="font-mono font-bold text-tv-phosphor mb-1 tv-text-glow">TEMPO MÁXIMO</p>
-                      <p className="text-sm text-tv-gray font-mono leading-relaxed">
+                      <p className="font-semibold text-futura-primary mb-1">Tempo Máximo</p>
+                      <p className="text-sm text-futura-gray-700 leading-relaxed">
                         Até {tempoMaximo} minutos por música
                       </p>
                     </div>
@@ -487,12 +486,12 @@ function Home({ locacao }) {
                     className="flex items-start gap-4 p-4 retro-card border-tv-beige hover:border-tv-blue transition-all"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="retro-bg border-2 border-tv-beige p-2 flex-shrink-0">
-                      <User className="w-6 h-6 text-tv-black flex-shrink-0" />
+                    <div className="bg-gradient-to-br from-futura-secondary/20 to-futura-accent/20 p-2 rounded-lg border border-futura-secondary/30 flex-shrink-0">
+                      <User className="w-6 h-6 text-futura-secondary flex-shrink-0" />
                     </div>
                     <div>
-                      <p className="font-mono font-bold text-tv-phosphor mb-1 tv-text-glow">NOME OBRIGATÓRIO</p>
-                      <p className="text-sm text-tv-gray font-mono leading-relaxed">
+                      <p className="font-semibold text-futura-secondary mb-1">Nome Obrigatório</p>
+                      <p className="text-sm text-futura-gray-700 leading-relaxed">
                         Digite seu nome antes de escolher
                       </p>
                     </div>
@@ -502,27 +501,27 @@ function Home({ locacao }) {
                     className="flex items-start gap-4 p-4 retro-card border-tv-beige hover:border-tv-red transition-all"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="retro-bg border-2 border-tv-beige p-2 flex-shrink-0">
-                      <Music className="w-6 h-6 text-tv-black flex-shrink-0" />
+                    <div className="bg-gradient-to-br from-futura-accent/20 to-futura-danger/20 p-2 rounded-lg border border-futura-accent/30 flex-shrink-0">
+                      <Music className="w-6 h-6 text-futura-accent flex-shrink-0" />
                     </div>
                     <div>
-                      <p className="font-mono font-bold text-tv-phosphor mb-1 tv-text-glow">ORDEM FIFO</p>
-                      <p className="text-sm text-tv-gray font-mono leading-relaxed">
+                      <p className="font-semibold text-futura-accent mb-1">Ordem FIFO</p>
+                      <p className="text-sm text-futura-gray-700 leading-relaxed">
                         Primeiro a pedir, primeiro a tocar
                       </p>
                     </div>
                   </motion.div>
 
                   <motion.div
-                    className="flex items-start gap-4 p-4 retro-card border-tv-beige hover:border-tv-phosphor transition-all"
+                    className="flex items-start gap-4 p-4 glass rounded-xl border border-futura-border hover:border-futura-primary transition-all"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="retro-bg border-2 border-tv-beige p-2 flex-shrink-0 text-2xl flex items-center justify-center w-10 h-10 font-mono">
+                    <div className="bg-gradient-to-br from-futura-success/20 to-futura-primary/20 p-2 rounded-lg border border-futura-success/30 flex-shrink-0 text-2xl flex items-center justify-center w-10 h-10">
                       📺
                     </div>
                     <div>
-                      <p className="font-mono font-bold text-tv-phosphor mb-1 tv-text-glow">ACOMPANHE NA TV</p>
-                      <p className="text-sm text-tv-gray font-mono leading-relaxed">
+                      <p className="font-semibold text-futura-success mb-1">Acompanhe na TV</p>
+                      <p className="text-sm text-futura-gray-700 leading-relaxed">
                         Veja tocando em tempo real
                       </p>
                     </div>
@@ -542,32 +541,32 @@ function Home({ locacao }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
-              <Card variant="retro" className="border-tv-beige hover:border-tv-phosphor transition-all duration-300 hover:shadow-tv-glow">
+              <Card variant="glass" hover glow className="border border-futura-primary/30">
                 <div className="flex items-start gap-5">
-                  <div className="flex-shrink-0 retro-bg border-2 border-tv-beige p-4 shadow-md">
-                    <Info className="w-7 h-7 text-tv-black" />
+                  <div className="flex-shrink-0 bg-gradient-to-br from-futura-primary/20 to-futura-secondary/20 p-4 rounded-xl border border-futura-primary/30">
+                    <Info className="w-7 h-7 text-futura-primary" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl md:text-2xl font-mono font-extrabold text-tv-phosphor mb-5 tv-text-glow">
-                      [ COMO FUNCIONA? ]
+                    <h3 className="text-xl md:text-2xl font-extrabold gradient-text-primary mb-5">
+                      ✨ Como funciona?
                     </h3>
-                    <ol className="space-y-4 text-sm sm:text-base font-mono">
+                    <ol className="space-y-4 text-sm sm:text-base">
                       <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 retro-bg border-2 border-tv-beige text-tv-black flex items-center justify-center text-sm font-bold font-mono shadow-md">1</span>
-                        <span className="text-tv-phosphor font-semibold pt-1 leading-relaxed">Busque pela música que deseja ouvir</span>
+                        <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-primary to-futura-secondary text-white flex items-center justify-center text-sm font-bold rounded-lg">1</span>
+                        <span className="text-white font-semibold pt-1 leading-relaxed">Busque pela música que deseja ouvir</span>
                       </li>
                       <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 retro-bg border-2 border-tv-beige text-tv-black flex items-center justify-center text-sm font-bold font-mono shadow-md">2</span>
-                        <span className="text-tv-phosphor font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
+                        <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-secondary to-futura-accent text-white flex items-center justify-center text-sm font-bold rounded-lg">2</span>
+                        <span className="text-white font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
                       </li>
                       <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 retro-bg border-2 border-tv-beige text-tv-black flex items-center justify-center text-sm font-bold font-mono shadow-md">3</span>
-                        <span className="text-tv-phosphor font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
+                        <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-accent to-futura-danger text-white flex items-center justify-center text-sm font-bold rounded-lg">3</span>
+                        <span className="text-white font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
                       </li>
                       {!modoGratuito && (
                         <li className="flex items-start gap-4">
-                          <span className="flex-shrink-0 w-8 h-8 retro-bg border-2 border-tv-beige text-tv-black flex items-center justify-center text-sm font-bold font-mono shadow-md">4</span>
-                          <span className="text-tv-phosphor font-semibold pt-1 leading-relaxed">Após o pagamento, digite seu nome e aproveite!</span>
+                          <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-futura-success to-futura-primary text-black flex items-center justify-center text-sm font-bold rounded-lg">4</span>
+                          <span className="text-white font-semibold pt-1 leading-relaxed">Após o pagamento, digite seu nome e aproveite!</span>
                         </li>
                       )}
                     </ol>

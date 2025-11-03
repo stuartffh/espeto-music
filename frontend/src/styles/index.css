@@ -1,20 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables para tema retro TV */
+/* CSS Variables */
 :root {
-  --tv-phosphor: #39FF14;
-  --tv-phosphor-dark: #2ECC40;
-  --tv-phosphor-light: #7FFF00;
-  --tv-beige: #D4A574;
-  --tv-black: #0A0A0A;
-  --tv-screen: #1A1A1A;
-  --tv-red: #FF4444;
-  --tv-blue: #4A90E2;
-  --tv-yellow: #FFD700;
+  --futura-primary: #00F5FF;
+  --futura-secondary: #7B2CBF;
+  --futura-accent: #FF006E;
+  --futura-success: #00FF88;
+  --futura-warning: #FFB800;
+  --futura-danger: #FF3366;
+  --futura-bg: #0A0A0F;
+  --futura-surface: #14141F;
+  --futura-border: #28283F;
 }
 
 * {
@@ -24,252 +24,132 @@
 }
 
 body {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
-  background-color: var(--tv-black);
-  color: var(--tv-phosphor);
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
+  background: var(--futura-bg);
+  color: #FFFFFF;
 }
 
 #root {
   min-height: 100vh;
-  position: relative;
 }
 
-/* Efeito CRT - Scanlines */
-.crt-effect::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.15),
-    rgba(0, 0, 0, 0.15) 1px,
-    transparent 1px,
-    transparent 2px
-  );
-  pointer-events: none;
-  z-index: 9999;
-  animation: scanline 8s linear infinite;
-}
-
-/* Efeito CRT - Ruído estático */
-.crt-effect::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.03) 0px, transparent 1px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.03) 0px, transparent 1px);
-  background-size: 4px 4px;
-  pointer-events: none;
-  z-index: 9998;
-  animation: static 0.5s steps(4) infinite;
-  opacity: 0.3;
-}
-
-/* Distorção de borda CRT */
-.crt-vignette {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  box-shadow: 
-    inset 0 0 100px rgba(0, 0, 0, 0.5),
-    inset 0 0 50px rgba(0, 0, 0, 0.3);
-  pointer-events: none;
-  z-index: 10000;
-}
-
-/* Scrollbar retro */
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--tv-screen);
-  border: 1px solid var(--tv-beige);
+  background: var(--futura-surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--tv-beige);
-  border: 1px solid var(--tv-phosphor);
+  background: var(--futura-border);
+  border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--tv-phosphor);
-  border: 1px solid var(--tv-phosphor-light);
+  background: var(--futura-primary);
 }
 
-/* Utilities retro */
+/* Utilities */
 @layer utilities {
-  /* Efeito de borda retro */
-  .retro-border {
-    border: 2px solid var(--tv-beige);
-    box-shadow: 
-      inset 0 2px 4px rgba(0, 0, 0, 0.5),
-      inset 0 -2px 4px rgba(255, 255, 255, 0.1),
-      0 0 10px rgba(57, 255, 20, 0.2);
+  /* Glassmorphism */
+  .glass {
+    background: rgba(20, 20, 31, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  /* Efeito de borda com glow verde */
-  .tv-glow-border {
-    border: 2px solid var(--tv-phosphor);
-    box-shadow: 
-      0 0 10px rgba(57, 255, 20, 0.4),
-      inset 0 0 10px rgba(57, 255, 20, 0.1);
+  .glass-strong {
+    background: rgba(20, 20, 31, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
   }
 
-  /* Texto com glow verde */
-  .tv-text-glow {
-    color: var(--tv-phosphor);
-    text-shadow: 
-      0 0 10px rgba(57, 255, 20, 0.8),
-      0 0 20px rgba(57, 255, 20, 0.6),
-      0 0 30px rgba(57, 255, 20, 0.4);
+  /* Gradient Text */
+  .gradient-text {
+    background: linear-gradient(135deg, var(--futura-primary), var(--futura-secondary), var(--futura-accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  /* Fundo retro bege */
-  .retro-bg {
-    background: linear-gradient(135deg, #D4A574 0%, #B8946F 100%);
-    border: 2px solid #B8946F;
+  .gradient-text-primary {
+    background: linear-gradient(135deg, var(--futura-primary), var(--futura-secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  /* Superfície de tela CRT */
-  .tv-screen {
-    background: var(--tv-screen);
-    border: 3px solid var(--tv-beige);
-    box-shadow: 
-      inset 0 0 50px rgba(0, 0, 0, 0.5),
-      0 0 20px rgba(57, 255, 20, 0.1);
+  /* Glow Effects */
+  .text-glow-primary {
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.6), 0 0 20px rgba(0, 245, 255, 0.4);
   }
 
-  /* Efeito de pixelado */
-  .pixelated {
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
+  .text-glow-secondary {
+    text-shadow: 0 0 10px rgba(123, 44, 191, 0.6), 0 0 20px rgba(123, 44, 191, 0.4);
   }
 
-  /* Efeito de botão retro */
-  .retro-button {
-    background: linear-gradient(135deg, var(--tv-beige) 0%, var(--tv-beige-dark) 100%);
-    border: 2px outset var(--tv-beige-light);
-    box-shadow: 
-      0 4px 8px rgba(0, 0, 0, 0.3),
-      inset 0 1px 2px rgba(255, 255, 255, 0.2);
+  .text-glow-accent {
+    text-shadow: 0 0 10px rgba(255, 0, 110, 0.6), 0 0 20px rgba(255, 0, 110, 0.4);
   }
 
-  .retro-button:active {
-    border: 2px inset var(--tv-beige-light);
-    box-shadow: 
-      inset 0 2px 4px rgba(0, 0, 0, 0.5),
-      inset 0 -1px 2px rgba(255, 255, 255, 0.1);
+  /* Border Gradient */
+  .border-gradient {
+    border: 2px solid transparent;
+    background-image: 
+      linear-gradient(var(--futura-surface), var(--futura-surface)),
+      linear-gradient(135deg, var(--futura-primary), var(--futura-secondary));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
   }
 
-  /* Card retro */
-  .retro-card {
-    background: var(--tv-screen);
-    border: 2px solid var(--tv-beige);
-    box-shadow: 
-      inset 0 2px 4px rgba(0, 0, 0, 0.5),
-      0 0 15px rgba(57, 255, 20, 0.2);
+  /* Card Hover */
+  .card-hover {
+    transition: all 0.3s ease;
   }
 
-  /* Input retro */
-  .retro-input {
-    background: var(--tv-black);
-    border: 2px inset var(--tv-beige);
-    color: var(--tv-phosphor);
-    font-family: 'Courier New', monospace;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
-  }
-
-  .retro-input:focus {
-    outline: none;
-    border-color: var(--tv-phosphor);
-    box-shadow: 
-      inset 0 2px 4px rgba(0, 0, 0, 0.5),
-      0 0 10px rgba(57, 255, 20, 0.4);
-  }
-
-  /* Link retro */
-  .retro-link {
-    color: var(--tv-phosphor);
-    text-decoration: underline;
-    text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
-  }
-
-  .retro-link:hover {
-    color: var(--tv-phosphor-light);
-    text-shadow: 0 0 10px rgba(57, 255, 20, 0.8);
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 245, 255, 0.2);
   }
 }
 
 /* Animations */
-@keyframes scanline {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(100vh); }
-}
-
-@keyframes flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.95; }
-}
-
-@keyframes static {
-  0% { background-position: 0 0; }
-  100% { background-position: 20px 20px; }
-}
-
-@keyframes glitch {
-  0%, 100% { transform: translate(0); }
-  20% { transform: translate(-2px, 2px); }
-  40% { transform: translate(-2px, -2px); }
-  60% { transform: translate(2px, 2px); }
-  80% { transform: translate(2px, -2px); }
-}
-
-/* Efeito de brilho pulsante */
-@keyframes tv-glow {
+@keyframes glowPulse {
   0%, 100% {
-    text-shadow: 
-      0 0 5px rgba(57, 255, 20, 0.5),
-      0 0 10px rgba(57, 255, 20, 0.3);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.4), 0 0 40px rgba(0, 245, 255, 0.2);
   }
   50% {
-    text-shadow: 
-      0 0 10px rgba(57, 255, 20, 0.8),
-      0 0 20px rgba(57, 255, 20, 0.6),
-      0 0 30px rgba(57, 255, 20, 0.4);
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.6), 0 0 60px rgba(0, 245, 255, 0.4);
   }
 }
 
-.animate-tv-glow {
-  animation: tv-glow 2s ease-in-out infinite;
-}
-
-/* Responsividade mantida */
-@media (max-width: 768px) {
-  .crt-effect::before,
-  .crt-effect::after {
-    opacity: 0.5;
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
   }
 }
 
-/* Reduzir movimento para acessibilidade */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Responsive */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -279,4 +159,3 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
-

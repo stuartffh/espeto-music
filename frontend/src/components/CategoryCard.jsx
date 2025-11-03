@@ -19,21 +19,20 @@ export default function CategoryCard({ categoria, active = false, onClick }) {
   return (
     <motion.button
       className={clsx(
-        'retro-card p-6 min-w-[140px] flex flex-col items-center gap-3 transition-all snap-center border-tv-beige',
-        active && 'border-tv-phosphor shadow-tv-glow'
+        'glass rounded-xl p-6 min-w-[140px] flex flex-col items-center gap-3 transition-all snap-center',
+        active && 'border-2 border-futura-primary shadow-glow-primary'
       )}
-      whileHover={{ scale: 1.05 }}
+      whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(0, 245, 255, 0.3)' }}
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
     >
       <Icon
         className="w-8 h-8"
         style={{ 
-          color: active ? '#39FF14' : categoria.cor || '#D4A574',
-          filter: active ? 'drop-shadow(0 0 10px rgba(57, 255, 20, 0.8))' : 'none'
+          color: active ? '#00F5FF' : categoria.cor || '#FFFFFF',
         }}
       />
-      <span className="text-sm font-mono font-semibold text-tv-phosphor tv-text-glow">
+      <span className="text-sm font-semibold text-white">
         {categoria.nome}
       </span>
     </motion.button>

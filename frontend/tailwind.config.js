@@ -8,101 +8,84 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Cores retro de TV (anos 80-90)
-        tv: {
-          // Verde fosforescente (texto de TV antiga)
-          phosphor: '#39FF14',
-          'phosphor-dark': '#2ECC40',
-          'phosphor-light': '#7FFF00',
-          // Bege/marrom da carcaça
-          beige: '#D4A574',
-          'beige-dark': '#B8946F',
-          'beige-light': '#E8C9A0',
-          // Preto profundo da tela
-          black: '#0A0A0A',
-          screen: '#1A1A1A',
-          'screen-dark': '#0F0F0F',
-          // Vermelho retro (botões, alertas)
-          red: '#FF4444',
-          'red-dark': '#CC0000',
-          // Azul retro (links, destaques)
-          blue: '#4A90E2',
-          'blue-dark': '#357ABD',
-          // Amarelo retro (avisos)
-          yellow: '#FFD700',
-          'yellow-dark': '#CCAA00',
-          // Cinza dos controles
-          gray: '#8B8B8B',
-          'gray-dark': '#5A5A5A',
-          'gray-light': '#B0B0B0',
-        },
-        retro: {
-          bg: '#1A1A1A',
-          surface: '#2A2A2A',
-          border: '#4A4A4A',
-          text: '#39FF14',
-          textDark: '#2ECC40',
-          accent: '#FF4444',
-          secondary: '#4A90E2',
+        // Paleta futurista
+        futura: {
+          // Cores principais
+          primary: '#00F5FF',      // Cyan brilhante
+          secondary: '#7B2CBF',     // Roxo profundo
+          accent: '#FF006E',        // Rosa vibrante
+          success: '#00FF88',      // Verde neon
+          warning: '#FFB800',       // Amarelo ouro
+          danger: '#FF3366',       // Vermelho neon
+          
+          // Escala de cinzas
+          'gray-50': '#0A0A0F',
+          'gray-100': '#14141F',
+          'gray-200': '#1E1E2F',
+          'gray-300': '#28283F',
+          'gray-400': '#32324F',
+          'gray-500': '#3C3C5F',
+          'gray-600': '#505070',
+          'gray-700': '#646480',
+          'gray-800': '#787890',
+          'gray-900': '#8C8CA0',
+          
+          // Backgrounds
+          bg: '#0A0A0F',
+          surface: '#14141F',
+          'surface-hover': '#1E1E2F',
+          elevated: '#1E1E2F',
+          border: '#28283F',
         },
       },
       fontFamily: {
-        // Fontes retro monospace
-        mono: ['Courier New', 'Courier', 'monospace'],
-        retro: ['Courier New', 'Courier', 'monospace', 'VT323', 'Share Tech Mono'],
-        sans: ['Courier New', 'Courier', 'monospace', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'monospace'],
       },
       animation: {
-        // Efeitos CRT
-        'scanline': 'scanline 8s linear infinite',
-        'flicker': 'flicker 0.15s infinite',
-        'static': 'static 0.5s steps(4) infinite',
-        'glitch': 'glitch 0.3s ease-in-out infinite',
-        'tv-on': 'tvOn 1s ease-out',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        // Animações normais
+        'glow-pulse': 'glowPulse 2s ease-in-out infinite',
+        'shimmer': 'shimmer 2s linear infinite',
         'float': 'float 3s ease-in-out infinite',
-        'shake': 'shake 0.5s ease-in-out',
+        'slide-up': 'slideUp 0.3s ease-out',
+        'slide-down': 'slideDown 0.3s ease-out',
+        'fade-in': 'fadeIn 0.3s ease-out',
       },
       keyframes: {
-        scanline: {
-          '0%': { transform: 'translateY(0)' },
-          '100%': { transform: 'translateY(100vh)' },
+        glowPulse: {
+          '0%, 100%': {
+            boxShadow: '0 0 20px rgba(0, 245, 255, 0.4), 0 0 40px rgba(0, 245, 255, 0.2)',
+          },
+          '50%': {
+            boxShadow: '0 0 30px rgba(0, 245, 255, 0.6), 0 0 60px rgba(0, 245, 255, 0.4)',
+          },
         },
-        flicker: {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.95' },
-        },
-        static: {
-          '0%': { backgroundPosition: '0 0' },
-          '100%': { backgroundPosition: '20px 20px' },
-        },
-        glitch: {
-          '0%, 100%': { transform: 'translate(0)' },
-          '20%': { transform: 'translate(-2px, 2px)' },
-          '40%': { transform: 'translate(-2px, -2px)' },
-          '60%': { transform: 'translate(2px, 2px)' },
-          '80%': { transform: 'translate(2px, -2px)' },
-        },
-        tvOn: {
-          '0%': { opacity: '0', transform: 'scale(1.05)' },
-          '100%': { opacity: '1', transform: 'scale(1)' },
+        shimmer: {
+          '0%': { backgroundPosition: '-1000px 0' },
+          '100%': { backgroundPosition: '1000px 0' },
         },
         float: {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%': { transform: 'translateY(-10px)' },
         },
-        shake: {
-          '0%, 100%': { transform: 'translateX(0)' },
-          '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-5px)' },
-          '20%, 40%, 60%, 80%': { transform: 'translateX(5px)' },
+        slideUp: {
+          '0%': { transform: 'translateY(20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        slideDown: {
+          '0%': { transform: 'translateY(-20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
         },
       },
       boxShadow: {
-        'tv-glow': '0 0 20px rgba(57, 255, 20, 0.3), inset 0 0 20px rgba(57, 255, 20, 0.1)',
-        'tv-glow-red': '0 0 20px rgba(255, 68, 68, 0.3), inset 0 0 20px rgba(255, 68, 68, 0.1)',
-        'tv-glow-blue': '0 0 20px rgba(74, 144, 226, 0.3), inset 0 0 20px rgba(74, 144, 226, 0.1)',
-        'retro-inset': 'inset 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 -2px 4px rgba(255, 255, 255, 0.1)',
+        'glow-primary': '0 0 20px rgba(0, 245, 255, 0.4), 0 0 40px rgba(0, 245, 255, 0.2)',
+        'glow-secondary': '0 0 20px rgba(123, 44, 191, 0.4), 0 0 40px rgba(123, 44, 191, 0.2)',
+        'glow-accent': '0 0 20px rgba(255, 0, 110, 0.4), 0 0 40px rgba(255, 0, 110, 0.2)',
+        'glow-success': '0 0 20px rgba(0, 255, 136, 0.4), 0 0 40px rgba(0, 255, 136, 0.2)',
+        'inner-glow': 'inset 0 0 20px rgba(0, 245, 255, 0.1)',
       },
       screens: {
         'xs': '375px',

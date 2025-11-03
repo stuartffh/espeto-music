@@ -12,14 +12,16 @@ export default function Button({
   className = '',
   ...props
 }) {
-  const baseStyles = 'inline-flex items-center justify-center gap-2 font-mono font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed border-2';
+  const baseStyles = 'inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-futura-bg disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variants = {
-    primary: 'retro-button text-tv-black hover:shadow-tv-glow focus:ring-tv-phosphor border-tv-beige',
-    secondary: 'bg-tv-screen border-tv-phosphor text-tv-phosphor hover:bg-tv-screen hover:shadow-tv-glow focus:ring-tv-phosphor tv-text-glow',
-    ghost: 'bg-transparent border-tv-phosphor text-tv-phosphor hover:bg-tv-phosphor/10 hover:shadow-tv-glow focus:ring-tv-phosphor tv-text-glow',
-    danger: 'retro-button bg-tv-red border-tv-red-dark text-white hover:shadow-tv-glow-red focus:ring-tv-red',
-    tv: 'tv-screen border-tv-phosphor text-tv-phosphor hover:shadow-tv-glow focus:ring-tv-phosphor tv-text-glow',
+    primary: 'bg-gradient-to-r from-futura-primary to-futura-secondary text-white hover:shadow-glow-primary focus:ring-futura-primary',
+    secondary: 'bg-futura-surface border border-futura-border text-white hover:bg-futura-surface-hover hover:border-futura-primary focus:ring-futura-primary',
+    accent: 'bg-gradient-to-r from-futura-accent to-futura-secondary text-white hover:shadow-glow-accent focus:ring-futura-accent',
+    success: 'bg-gradient-to-r from-futura-success to-futura-primary text-black font-bold hover:shadow-glow-success focus:ring-futura-success',
+    danger: 'bg-gradient-to-r from-futura-danger to-futura-accent text-white hover:shadow-lg focus:ring-futura-danger',
+    ghost: 'bg-transparent border border-futura-border text-futura-primary hover:bg-futura-surface hover:border-futura-primary focus:ring-futura-primary',
+    outline: 'bg-transparent border-2 border-futura-primary text-futura-primary hover:bg-futura-primary hover:text-white focus:ring-futura-primary',
   };
 
   const sizes = {

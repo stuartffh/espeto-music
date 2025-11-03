@@ -13,8 +13,8 @@ const TVPanel = lazy(() => import('./pages/TV/Panel'));
 const LocacaoCliente = lazy(() => import('./pages/Cliente/LocacaoCliente'));
 
 const RouteFallback = () => (
-  <div className="flex h-[60vh] w-full items-center justify-center text-lg font-mono text-tv-phosphor animate-tv-glow">
-    [ CARREGANDO INTERFACE... ]
+  <div className="flex h-[60vh] w-full items-center justify-center text-lg font-medium text-futura-primary">
+    Carregando interface...
   </div>
 );
 
@@ -22,10 +22,7 @@ function App() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-tv-black text-tv-phosphor crt-effect relative">
-      {/* Efeito CRT Vignette */}
-      <div className="crt-vignette"></div>
-      
+    <div className="min-h-screen bg-futura-bg text-white">
       <OfflineIndicator />
       <AnimatePresence mode="wait" initial={false}>
         <Suspense fallback={<RouteFallback />}>

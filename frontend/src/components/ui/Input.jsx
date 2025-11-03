@@ -22,10 +22,10 @@ export default function Input({
       {label && (
         <motion.label
           className={clsx(
-            'absolute left-3 transition-all duration-200 pointer-events-none font-mono',
+            'absolute left-3 transition-all duration-200 pointer-events-none text-sm font-medium',
             isFocused || props.value
-              ? '-top-2.5 text-xs bg-tv-black px-1 text-tv-phosphor tv-text-glow'
-              : 'top-3 text-sm text-tv-gray'
+              ? '-top-2.5 text-xs bg-futura-bg px-1 text-futura-primary'
+              : 'top-3 text-sm text-futura-gray-700'
           )}
           animate={{
             y: isFocused || props.value ? 0 : 0,
@@ -38,21 +38,20 @@ export default function Input({
 
       <div className="relative">
         {Icon && (
-          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-tv-gray" />
+          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-futura-gray-700" />
         )}
 
         <motion.input
           type={inputType}
           className={clsx(
-            'w-full px-4 py-3 font-mono',
-            'retro-input',
-            'text-tv-phosphor',
-            'placeholder-tv-gray',
-            'focus:border-tv-phosphor focus:shadow-tv-glow',
+            'w-full px-4 py-3 rounded-lg',
+            'bg-futura-surface border border-futura-border',
+            'text-white placeholder-futura-gray-700',
+            'focus:border-futura-primary focus:ring-2 focus:ring-futura-primary/50',
             'transition-all duration-200',
             Icon && 'pl-10',
             (IconRight || type === 'password') && 'pr-10',
-            error && 'border-tv-red focus:border-tv-red focus:shadow-tv-glow-red'
+            error && 'border-futura-danger focus:border-futura-danger focus:ring-futura-danger/50'
           )}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
@@ -65,19 +64,18 @@ export default function Input({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-tv-gray hover:text-tv-phosphor transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-futura-gray-700 hover:text-futura-primary transition-colors"
           >
             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
         ) : IconRight ? (
-          <IconRight className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-tv-gray" />
+          <IconRight className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-futura-gray-700" />
         ) : null}
       </div>
 
       {error && (
         <motion.p
-          className="mt-1 text-sm text-tv-red font-mono tv-text-glow"
-          style={{ textShadow: '0 0 10px rgba(255, 68, 68, 0.8)' }}
+          className="mt-1 text-sm text-futura-danger font-medium"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
