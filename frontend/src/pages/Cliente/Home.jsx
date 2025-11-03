@@ -1018,10 +1018,10 @@ function Home({ locacao }) {
           )}
         </div>
 
-        {/* FAB Mobile */}
+        {/* FAB Mobile - Fila de Músicas */}
         {isMobile && (
           <motion.button
-            className="fixed bottom-6 right-6 bg-gradient-to-r from-futura-accent to-futura-danger p-4 rounded-full z-30 shadow-glow-accent border-2 border-futura-accent/30 hover:scale-110 transition-transform"
+            className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 bg-gradient-to-r from-futura-primary to-futura-secondary p-4 rounded-full z-30 shadow-glow-primary border-2 border-futura-primary/30 hover:scale-110 transition-transform"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             animate={{ y: [0, -5, 0] }}
@@ -1032,8 +1032,9 @@ function Home({ locacao }) {
             {fila.length > 0 && (
               <Badge
                 className="absolute -top-2 -right-2 text-xs font-bold font-mono"
-                variant="danger"
+                variant="primary"
                 pulse
+                glow
               >
                 {fila.length}
               </Badge>

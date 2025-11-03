@@ -21,7 +21,7 @@ function CarrinhoButton() {
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0, opacity: 0 }}
-      className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-40"
+      className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-40 max-w-[calc(100vw-120px)]"
     >
       <motion.button
         whileHover={{ scale: 1.05 }}
