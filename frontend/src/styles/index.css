@@ -1,16 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for Theme Colors */
+/* CSS Variables para tema retro TV */
 :root {
-  --neon-cyan: #00f5ff;
-  --neon-purple: #b300ff;
-  --neon-pink: #ff006e;
-  --neon-green: #00ff9f;
-  --neon-yellow: #ffea00;
+  --tv-phosphor: #39FF14;
+  --tv-phosphor-dark: #2ECC40;
+  --tv-phosphor-light: #7FFF00;
+  --tv-beige: #D4A574;
+  --tv-black: #0A0A0A;
+  --tv-screen: #1A1A1A;
+  --tv-red: #FF4444;
+  --tv-blue: #4A90E2;
+  --tv-yellow: #FFD700;
 }
 
 * {
@@ -20,281 +24,259 @@
 }
 
 body {
-  font-family: 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Courier New', Courier, monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  background-color: var(--tv-black);
+  color: var(--tv-phosphor);
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
 }
 
 #root {
   min-height: 100vh;
+  position: relative;
 }
 
-/* Custom Scrollbar - Dark Theme */
-.dark ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Efeito CRT - Scanlines */
+.crt-effect::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 9999;
+  animation: scanline 8s linear infinite;
 }
 
-.dark ::-webkit-scrollbar-track {
-  background: rgba(26, 26, 46, 0.5);
-  border-radius: 4px;
+/* Efeito CRT - Ruído estático */
+.crt-effect::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.03) 0px, transparent 1px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.03) 0px, transparent 1px);
+  background-size: 4px 4px;
+  pointer-events: none;
+  z-index: 9998;
+  animation: static 0.5s steps(4) infinite;
+  opacity: 0.3;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
-  border-radius: 4px;
+/* Distorção de borda CRT */
+.crt-vignette {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: 
+    inset 0 0 100px rgba(0, 0, 0, 0.5),
+    inset 0 0 50px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 10000;
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
-}
-
-/* Custom Scrollbar - Light Theme */
+/* Scrollbar retro */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(230, 230, 250, 0.5);
-  border-radius: 4px;
+  background: var(--tv-screen);
+  border: 1px solid var(--tv-beige);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 4px;
+  background: var(--tv-beige);
+  border: 1px solid var(--tv-phosphor);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #764ba2, #f093fb);
+  background: var(--tv-phosphor);
+  border: 1px solid var(--tv-phosphor-light);
 }
 
-/* Glassmorphism Utility Classes */
+/* Utilities retro */
 @layer utilities {
-  .glass {
-    background: rgba(26, 26, 46, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Efeito de borda retro */
+  .retro-border {
+    border: 2px solid var(--tv-beige);
+    box-shadow: 
+      inset 0 2px 4px rgba(0, 0, 0, 0.5),
+      inset 0 -2px 4px rgba(255, 255, 255, 0.1),
+      0 0 10px rgba(57, 255, 20, 0.2);
   }
 
-  .glass-heavy {
-    background: rgba(26, 26, 46, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+  /* Efeito de borda com glow verde */
+  .tv-glow-border {
+    border: 2px solid var(--tv-phosphor);
+    box-shadow: 
+      0 0 10px rgba(57, 255, 20, 0.4),
+      inset 0 0 10px rgba(57, 255, 20, 0.1);
   }
 
-  .glass-light {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+  /* Texto com glow verde */
+  .tv-text-glow {
+    color: var(--tv-phosphor);
+    text-shadow: 
+      0 0 10px rgba(57, 255, 20, 0.8),
+      0 0 20px rgba(57, 255, 20, 0.6),
+      0 0 30px rgba(57, 255, 20, 0.4);
   }
 
-  .neon-border {
-    border: 2px solid transparent;
-    background-image: linear-gradient(#1a1a2e, #1a1a2e),
-      linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
-    background-origin: border-box;
-    background-clip: padding-box, border-box;
+  /* Fundo retro bege */
+  .retro-bg {
+    background: linear-gradient(135deg, #D4A574 0%, #B8946F 100%);
+    border: 2px solid #B8946F;
   }
 
-  .neon-border-glow {
-    border: 3px solid transparent;
-    background-image: linear-gradient(#000000, #000000),
-      linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
-    background-origin: border-box;
-    background-clip: padding-box, border-box;
-    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3), 0 0 40px rgba(179, 0, 255, 0.2);
+  /* Superfície de tela CRT */
+  .tv-screen {
+    background: var(--tv-screen);
+    border: 3px solid var(--tv-beige);
+    box-shadow: 
+      inset 0 0 50px rgba(0, 0, 0, 0.5),
+      0 0 20px rgba(57, 255, 20, 0.1);
   }
 
-  .gradient-text {
-    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+  /* Efeito de pixelado */
+  .pixelated {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
   }
 
-  .gradient-primary {
-    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+  /* Efeito de botão retro */
+  .retro-button {
+    background: linear-gradient(135deg, var(--tv-beige) 0%, var(--tv-beige-dark) 100%);
+    border: 2px outset var(--tv-beige-light);
+    box-shadow: 
+      0 4px 8px rgba(0, 0, 0, 0.3),
+      inset 0 1px 2px rgba(255, 255, 255, 0.2);
   }
 
-  .gradient-secondary {
-    background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
+  .retro-button:active {
+    border: 2px inset var(--tv-beige-light);
+    box-shadow: 
+      inset 0 2px 4px rgba(0, 0, 0, 0.5),
+      inset 0 -1px 2px rgba(255, 255, 255, 0.1);
   }
 
-  .gradient-success {
-    background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
+  /* Card retro */
+  .retro-card {
+    background: var(--tv-screen);
+    border: 2px solid var(--tv-beige);
+    box-shadow: 
+      inset 0 2px 4px rgba(0, 0, 0, 0.5),
+      0 0 15px rgba(57, 255, 20, 0.2);
   }
 
-  .card-hover {
-    transition: all 0.3s ease;
+  /* Input retro */
+  .retro-input {
+    background: var(--tv-black);
+    border: 2px inset var(--tv-beige);
+    color: var(--tv-phosphor);
+    font-family: 'Courier New', monospace;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
-  .card-hover:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 0 30px rgba(0, 245, 255, 0.3);
+  .retro-input:focus {
+    outline: none;
+    border-color: var(--tv-phosphor);
+    box-shadow: 
+      inset 0 2px 4px rgba(0, 0, 0, 0.5),
+      0 0 10px rgba(57, 255, 20, 0.4);
   }
 
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  /* Link retro */
+  .retro-link {
+    color: var(--tv-phosphor);
+    text-decoration: underline;
+    text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
+  }
+
+  .retro-link:hover {
+    color: var(--tv-phosphor-light);
+    text-shadow: 0 0 10px rgba(57, 255, 20, 0.8);
   }
 }
 
-/* Custom Animations */
-@keyframes glow {
-  0%,
-  100% {
-    text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan),
-      0 0 30px var(--neon-cyan);
-  }
-  50% {
-    text-shadow: 0 0 20px var(--neon-cyan), 0 0 30px var(--neon-cyan),
-      0 0 40px var(--neon-cyan);
-  }
+/* Animations */
+@keyframes scanline {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100vh); }
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.95; }
 }
 
-@keyframes equalizer {
-  0% {
-    height: 20%;
-  }
-  25% {
-    height: 80%;
-  }
-  50% {
-    height: 40%;
-  }
-  75% {
-    height: 90%;
-  }
-  100% {
-    height: 20%;
-  }
+@keyframes static {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 20px; }
 }
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+@keyframes glitch {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
 }
 
-@keyframes float {
+/* Efeito de brilho pulsante */
+@keyframes tv-glow {
   0%, 100% {
-    transform: translateY(0px);
+    text-shadow: 
+      0 0 5px rgba(57, 255, 20, 0.5),
+      0 0 10px rgba(57, 255, 20, 0.3);
   }
   50% {
-    transform: translateY(-10px);
+    text-shadow: 
+      0 0 10px rgba(57, 255, 20, 0.8),
+      0 0 20px rgba(57, 255, 20, 0.6),
+      0 0 30px rgba(57, 255, 20, 0.4);
   }
 }
 
-@keyframes glow-pulse {
-  0%, 100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.6;
-  }
+.animate-tv-glow {
+  animation: tv-glow 2s ease-in-out infinite;
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.animate-glow-pulse {
-  animation: glow-pulse 2s ease-in-out infinite;
-}
-
-@keyframes slide-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+/* Responsividade mantida */
+@media (max-width: 768px) {
+  .crt-effect::before,
+  .crt-effect::after {
+    opacity: 0.5;
   }
 }
 
-@keyframes slide-in-left {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
+/* Reduzir movimento para acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out;
-}
-
-.animate-slide-in-right {
-  animation: slide-in-right 0.3s ease-out;
-}
-
-.animate-slide-in-left {
-  animation: slide-in-left 0.3s ease-out;
-}
-
-/* Skeleton Loader */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.05) 25%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.05) 75%
-  );
-  background-size: 1000px 100%;
-  animation: shimmer 2s linear infinite;
-}
-
-.light .skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(230, 230, 230, 1) 25%,
-    rgba(250, 250, 250, 1) 50%,
-    rgba(230, 230, 230, 1) 75%
-  );
-  background-size: 1000px 100%;
-}
-
-/* Snap Scroll for Categories */
-.snap-x {
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-}
-
-.snap-center {
-  scroll-snap-align: center;
-}
-
-/* Hide Scrollbar but keep functionality */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}

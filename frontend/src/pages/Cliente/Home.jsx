@@ -385,7 +385,7 @@ function Home({ locacao }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-light-bg via-gray-100 to-gray-200 dark:from-dark-bg dark:via-gray-900 dark:to-gray-950 transition-all duration-500">
+    <div className="min-h-screen bg-tv-black text-tv-phosphor">
       <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:p-8">
         {/* Header */}
         <motion.div
@@ -397,12 +397,12 @@ function Home({ locacao }) {
           <div className="flex items-center justify-between mb-6 md:mb-8">
             <div className="w-10 md:w-14"></div>
             <motion.h1
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold bg-gradient-to-r from-neon-cyan via-neon-purple to-neon-pink bg-clip-text text-transparent drop-shadow-2xl"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-mono font-extrabold text-tv-phosphor tv-text-glow animate-tv-glow"
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.5, type: 'spring' }}
             >
-              🎵 Espeto Music
+              [ ESPETO MUSIC ]
             </motion.h1>
             <ThemeToggle />
           </div>
@@ -418,12 +418,12 @@ function Home({ locacao }) {
               whileHover={{ scale: 1.05, y: -5 }}
               transition={{ type: 'spring', stiffness: 300 }}
             >
-              <Card variant="glass" className="text-center p-5 sm:p-6 md:p-8 border-2 border-neon-cyan/40 hover:border-neon-cyan hover:shadow-2xl hover:shadow-neon-cyan/20 transition-all duration-300 bg-gradient-to-br from-neon-cyan/5 to-transparent">
-                <div className="bg-gradient-to-br from-neon-cyan to-neon-purple p-3 md:p-4 rounded-2xl mx-auto w-fit mb-3 md:mb-4 shadow-lg">
-                  <Music className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 text-white drop-shadow-lg" />
+              <Card variant="retro" className="text-center p-5 sm:p-6 md:p-8 border-tv-phosphor hover:shadow-tv-glow transition-all duration-300">
+                <div className="retro-bg border-2 border-tv-beige p-3 md:p-4 mx-auto w-fit mb-3 md:mb-4 shadow-md">
+                  <Music className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 text-tv-black" />
                 </div>
-                <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 drop-shadow-lg">{fila.length}</p>
-                <p className="text-xs sm:text-sm md:text-base text-gray-200 dark:text-gray-200 font-semibold tracking-wide">Músicas na Fila</p>
+                <p className="text-3xl sm:text-4xl md:text-5xl font-mono font-extrabold text-tv-phosphor mb-2 tv-text-glow">{fila.length}</p>
+                <p className="text-xs sm:text-sm md:text-base text-tv-gray font-mono font-semibold">MÚSICAS NA FILA</p>
               </Card>
             </motion.div>
 
@@ -431,12 +431,12 @@ function Home({ locacao }) {
               whileHover={{ scale: 1.05, y: -5 }}
               transition={{ type: 'spring', stiffness: 300 }}
             >
-              <Card variant="glass" className="text-center p-5 sm:p-6 md:p-8 border-2 border-neon-purple/40 hover:border-neon-purple hover:shadow-2xl hover:shadow-neon-purple/20 transition-all duration-300 bg-gradient-to-br from-neon-purple/5 to-transparent">
-                <div className="bg-gradient-to-br from-neon-purple to-neon-pink p-3 md:p-4 rounded-2xl mx-auto w-fit mb-3 md:mb-4 shadow-lg">
-                  <Clock className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 text-white drop-shadow-lg" />
+              <Card variant="retro" className="text-center p-5 sm:p-6 md:p-8 border-tv-blue hover:shadow-tv-glow-blue transition-all duration-300">
+                <div className="retro-bg border-2 border-tv-beige p-3 md:p-4 mx-auto w-fit mb-3 md:mb-4 shadow-md">
+                  <Clock className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 text-tv-black" />
                 </div>
-                <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 drop-shadow-lg">{tempoMaximo}min</p>
-                <p className="text-xs sm:text-sm md:text-base text-gray-200 dark:text-gray-200 font-semibold tracking-wide">Tempo Máximo</p>
+                <p className="text-3xl sm:text-4xl md:text-5xl font-mono font-extrabold text-tv-phosphor mb-2 tv-text-glow">{tempoMaximo}min</p>
+                <p className="text-xs sm:text-sm md:text-base text-tv-gray font-mono font-semibold">TEMPO MÁXIMO</p>
               </Card>
             </motion.div>
           </motion.div>
@@ -444,12 +444,12 @@ function Home({ locacao }) {
           {/* Regras Toggle */}
           <motion.button
             onClick={() => setMostrarRegras(!mostrarRegras)}
-            className="mt-8 md:mt-10 px-6 py-3 rounded-xl glass border-2 border-neon-cyan/40 hover:border-neon-cyan text-sm sm:text-base text-neon-cyan hover:text-white hover:bg-neon-cyan/10 transition-all duration-300 flex items-center gap-3 mx-auto font-semibold shadow-lg hover:shadow-neon-cyan/30 hover:shadow-xl"
+            className="mt-8 md:mt-10 px-6 py-3 retro-button text-sm sm:text-base text-tv-black hover:shadow-tv-glow transition-all duration-300 flex items-center gap-3 mx-auto font-mono font-semibold"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
             <Info className="w-5 h-5 sm:w-5 sm:h-5" />
-            {mostrarRegras ? 'Ocultar Regras' : 'Ver Regras'}
+            {mostrarRegras ? '[ OCULTAR REGRAS ]' : '[ VER REGRAS ]'}
           </motion.button>
         </motion.div>
 
@@ -463,66 +463,66 @@ function Home({ locacao }) {
               transition={{ duration: 0.4 }}
               className="mb-8 md:mb-12"
             >
-              <Card variant="glass" className="max-w-4xl mx-auto border-2 border-neon-purple/30 shadow-xl">
-                <h2 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-neon-cyan to-neon-purple bg-clip-text text-transparent mb-8">
-                  📋 Regras do Espeto Music
+              <Card variant="retro" className="max-w-4xl mx-auto border-tv-beige shadow-tv-glow">
+                <h2 className="text-2xl md:text-3xl font-mono font-extrabold text-tv-phosphor mb-8 tv-text-glow">
+                  [ REGRAS DO ESPETO MUSIC ]
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <motion.div
-                    className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-neon-cyan/5 to-transparent border border-neon-cyan/20 hover:border-neon-cyan/50 transition-all"
+                    className="flex items-start gap-4 p-4 retro-card border-tv-beige hover:border-tv-phosphor transition-all"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="bg-gradient-to-br from-neon-cyan to-blue-500 p-2 rounded-lg">
-                      <Clock className="w-6 h-6 text-white flex-shrink-0" />
+                    <div className="retro-bg border-2 border-tv-beige p-2 flex-shrink-0">
+                      <Clock className="w-6 h-6 text-tv-black flex-shrink-0" />
                     </div>
                     <div>
-                      <p className="font-bold text-white mb-1">Tempo Máximo</p>
-                      <p className="text-sm text-gray-300 dark:text-gray-300 leading-relaxed">
+                      <p className="font-mono font-bold text-tv-phosphor mb-1 tv-text-glow">TEMPO MÁXIMO</p>
+                      <p className="text-sm text-tv-gray font-mono leading-relaxed">
                         Até {tempoMaximo} minutos por música
                       </p>
                     </div>
                   </motion.div>
 
                   <motion.div
-                    className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-neon-purple/5 to-transparent border border-neon-purple/20 hover:border-neon-purple/50 transition-all"
+                    className="flex items-start gap-4 p-4 retro-card border-tv-beige hover:border-tv-blue transition-all"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="bg-gradient-to-br from-neon-purple to-purple-600 p-2 rounded-lg">
-                      <User className="w-6 h-6 text-white flex-shrink-0" />
+                    <div className="retro-bg border-2 border-tv-beige p-2 flex-shrink-0">
+                      <User className="w-6 h-6 text-tv-black flex-shrink-0" />
                     </div>
                     <div>
-                      <p className="font-bold text-white mb-1">Nome Obrigatório</p>
-                      <p className="text-sm text-gray-300 dark:text-gray-300 leading-relaxed">
+                      <p className="font-mono font-bold text-tv-phosphor mb-1 tv-text-glow">NOME OBRIGATÓRIO</p>
+                      <p className="text-sm text-tv-gray font-mono leading-relaxed">
                         Digite seu nome antes de escolher
                       </p>
                     </div>
                   </motion.div>
 
                   <motion.div
-                    className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-neon-pink/5 to-transparent border border-neon-pink/20 hover:border-neon-pink/50 transition-all"
+                    className="flex items-start gap-4 p-4 retro-card border-tv-beige hover:border-tv-red transition-all"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="bg-gradient-to-br from-neon-pink to-pink-600 p-2 rounded-lg">
-                      <Music className="w-6 h-6 text-white flex-shrink-0" />
+                    <div className="retro-bg border-2 border-tv-beige p-2 flex-shrink-0">
+                      <Music className="w-6 h-6 text-tv-black flex-shrink-0" />
                     </div>
                     <div>
-                      <p className="font-bold text-white mb-1">Ordem FIFO</p>
-                      <p className="text-sm text-gray-300 dark:text-gray-300 leading-relaxed">
+                      <p className="font-mono font-bold text-tv-phosphor mb-1 tv-text-glow">ORDEM FIFO</p>
+                      <p className="text-sm text-tv-gray font-mono leading-relaxed">
                         Primeiro a pedir, primeiro a tocar
                       </p>
                     </div>
                   </motion.div>
 
                   <motion.div
-                    className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-green-500/5 to-transparent border border-green-500/20 hover:border-green-500/50 transition-all"
+                    className="flex items-start gap-4 p-4 retro-card border-tv-beige hover:border-tv-phosphor transition-all"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-2 rounded-lg text-2xl flex items-center justify-center w-10 h-10">
+                    <div className="retro-bg border-2 border-tv-beige p-2 flex-shrink-0 text-2xl flex items-center justify-center w-10 h-10 font-mono">
                       📺
                     </div>
                     <div>
-                      <p className="font-bold text-white mb-1">Acompanhe na TV</p>
-                      <p className="text-sm text-gray-300 dark:text-gray-300 leading-relaxed">
+                      <p className="font-mono font-bold text-tv-phosphor mb-1 tv-text-glow">ACOMPANHE NA TV</p>
+                      <p className="text-sm text-tv-gray font-mono leading-relaxed">
                         Veja tocando em tempo real
                       </p>
                     </div>
@@ -542,32 +542,32 @@ function Home({ locacao }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
-              <Card variant="glass" className="border-2 border-neon-cyan/40 hover:border-neon-cyan/60 transition-all duration-300 bg-gradient-to-br from-neon-cyan/10 via-neon-purple/5 to-neon-pink/10 shadow-xl hover:shadow-2xl">
+              <Card variant="retro" className="border-tv-beige hover:border-tv-phosphor transition-all duration-300 hover:shadow-tv-glow">
                 <div className="flex items-start gap-5">
-                  <div className="flex-shrink-0 bg-gradient-to-br from-neon-cyan via-neon-purple to-neon-pink p-4 rounded-2xl shadow-lg">
-                    <Info className="w-7 h-7 text-white drop-shadow-lg" />
+                  <div className="flex-shrink-0 retro-bg border-2 border-tv-beige p-4 shadow-md">
+                    <Info className="w-7 h-7 text-tv-black" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-neon-cyan via-neon-purple to-neon-pink bg-clip-text text-transparent mb-5 drop-shadow-md">
-                      ✨ Como funciona?
+                    <h3 className="text-xl md:text-2xl font-mono font-extrabold text-tv-phosphor mb-5 tv-text-glow">
+                      [ COMO FUNCIONA? ]
                     </h3>
-                    <ol className="space-y-4 text-sm sm:text-base">
+                    <ol className="space-y-4 text-sm sm:text-base font-mono">
                       <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-neon-cyan to-blue-500 text-white flex items-center justify-center text-sm font-bold shadow-lg">1</span>
-                        <span className="text-white font-semibold pt-1 leading-relaxed">Busque pela música que deseja ouvir</span>
+                        <span className="flex-shrink-0 w-8 h-8 retro-bg border-2 border-tv-beige text-tv-black flex items-center justify-center text-sm font-bold font-mono shadow-md">1</span>
+                        <span className="text-tv-phosphor font-semibold pt-1 leading-relaxed">Busque pela música que deseja ouvir</span>
                       </li>
                       <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-neon-purple to-purple-600 text-white flex items-center justify-center text-sm font-bold shadow-lg">2</span>
-                        <span className="text-white font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
+                        <span className="flex-shrink-0 w-8 h-8 retro-bg border-2 border-tv-beige text-tv-black flex items-center justify-center text-sm font-bold font-mono shadow-md">2</span>
+                        <span className="text-tv-phosphor font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Clique em "Adicionar" para colocar na fila' : 'Adicione músicas ao carrinho'}</span>
                       </li>
                       <li className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-neon-pink to-pink-600 text-white flex items-center justify-center text-sm font-bold shadow-lg">3</span>
-                        <span className="text-white font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
+                        <span className="flex-shrink-0 w-8 h-8 retro-bg border-2 border-tv-beige text-tv-black flex items-center justify-center text-sm font-bold font-mono shadow-md">3</span>
+                        <span className="text-tv-phosphor font-semibold pt-1 leading-relaxed">{modoGratuito ? 'Aguarde sua música tocar na TV!' : 'Finalize o pagamento com PIX ou Gift Card'}</span>
                       </li>
                       {!modoGratuito && (
                         <li className="flex items-start gap-4">
-                          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 text-white flex items-center justify-center text-sm font-bold shadow-lg">4</span>
-                          <span className="text-white font-semibold pt-1 leading-relaxed">Após o pagamento, digite seu nome e aproveite!</span>
+                          <span className="flex-shrink-0 w-8 h-8 retro-bg border-2 border-tv-beige text-tv-black flex items-center justify-center text-sm font-bold font-mono shadow-md">4</span>
+                          <span className="text-tv-phosphor font-semibold pt-1 leading-relaxed">Após o pagamento, digite seu nome e aproveite!</span>
                         </li>
                       )}
                     </ol>

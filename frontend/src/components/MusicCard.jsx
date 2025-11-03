@@ -13,23 +13,23 @@ export default function MusicCard({ musica, onAdd, loading = false, showCartButt
 
   return (
     <motion.div
-      className="glass rounded-lg overflow-hidden group cursor-pointer"
-      whileHover={{ scale: 1.05 }}
+      className="retro-card overflow-hidden group cursor-pointer"
+      whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
       {/* Thumbnail */}
-      <div className="relative aspect-video overflow-hidden">
+      <div className="relative aspect-video overflow-hidden border-b-2 border-tv-beige">
         <img
           src={musica.thumbnail || musica.musicaThumbnail}
           alt={musica.titulo || musica.musicaTitulo}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 pixelated"
         />
 
-        {/* Overlay Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <Play className="w-16 h-16 text-neon-cyan" />
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <Play className="w-16 h-16 text-tv-phosphor tv-text-glow" />
         </div>
 
         {/* Duração Badge */}
@@ -45,10 +45,10 @@ export default function MusicCard({ musica, onAdd, loading = false, showCartButt
 
       {/* Conteúdo */}
       <div className="p-4">
-        <h3 className="text-lg font-semibold text-white mb-1 line-clamp-2">
+        <h3 className="text-lg font-mono font-semibold text-tv-phosphor mb-1 line-clamp-2 tv-text-glow">
           {musica.titulo || musica.musicaTitulo}
         </h3>
-        <p className="text-sm text-gray-400 mb-4 line-clamp-1">
+        <p className="text-sm text-tv-gray mb-4 line-clamp-1 font-mono">
           {musica.canal || musica.artista || 'Artista Desconhecido'}
         </p>
 

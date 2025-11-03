@@ -16,31 +16,31 @@ const Toast = ({ message, type = 'info', isOpen, onClose, duration = 3000 }) => 
   const variants = {
     success: {
       icon: CheckCircle,
-      color: 'from-green-500 to-emerald-600',
-      bgColor: 'bg-green-500/10',
-      borderColor: 'border-green-500/30',
-      textColor: 'text-green-500',
+      bgColor: 'bg-tv-screen',
+      borderColor: 'border-tv-phosphor',
+      textColor: 'text-tv-phosphor',
+      shadow: 'shadow-tv-glow',
     },
     error: {
       icon: XCircle,
-      color: 'from-red-500 to-pink-600',
-      bgColor: 'bg-red-500/10',
-      borderColor: 'border-red-500/30',
-      textColor: 'text-red-500',
+      bgColor: 'bg-tv-screen',
+      borderColor: 'border-tv-red',
+      textColor: 'text-tv-red',
+      shadow: 'shadow-tv-glow-red',
     },
     warning: {
       icon: AlertCircle,
-      color: 'from-yellow-500 to-orange-600',
-      bgColor: 'bg-yellow-500/10',
-      borderColor: 'border-yellow-500/30',
-      textColor: 'text-yellow-500',
+      bgColor: 'bg-tv-screen',
+      borderColor: 'border-tv-yellow',
+      textColor: 'text-tv-yellow',
+      shadow: 'shadow-tv-glow',
     },
     info: {
       icon: Info,
-      color: 'from-blue-500 to-cyan-600',
-      bgColor: 'bg-blue-500/10',
-      borderColor: 'border-blue-500/30',
-      textColor: 'text-blue-500',
+      bgColor: 'bg-tv-screen',
+      borderColor: 'border-tv-blue',
+      textColor: 'text-tv-blue',
+      shadow: 'shadow-tv-glow-blue',
     },
   };
 
@@ -59,34 +59,35 @@ const Toast = ({ message, type = 'info', isOpen, onClose, duration = 3000 }) => 
         >
           <div
             className={`
-              glass backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 border-2 shadow-2xl
-              ${config.bgColor} ${config.borderColor}
+              ${config.bgColor} border-2 ${config.borderColor} ${config.shadow}
+              p-3 sm:p-4 font-mono
             `}
           >
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Icon com gradiente */}
-              <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br ${config.color} p-1.5 sm:p-2 flex items-center justify-center shadow-lg`}>
-                <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              {/* Icon */}
+              <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 border-2 ${config.borderColor} flex items-center justify-center ${config.textColor}`}>
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
 
               {/* Mensagem */}
-              <p className="flex-1 text-xs sm:text-sm md:text-base font-medium text-gray-900 dark:text-white leading-tight">
+              <p className={`flex-1 text-xs sm:text-sm md:text-base font-mono leading-tight ${config.textColor}`}>
                 {message}
               </p>
 
               {/* Botão fechar */}
               <button
                 onClick={onClose}
-                className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-white/10 dark:hover:bg-black/10 transition-colors flex items-center justify-center"
+                className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 retro-button hover:bg-tv-beige transition-colors text-tv-black flex items-center justify-center"
               >
-                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />
+                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
 
             {/* Barra de progresso */}
             {duration > 0 && (
               <motion.div
-                className={`h-0.5 sm:h-1 bg-gradient-to-r ${config.color} rounded-full mt-2 sm:mt-3`}
+                className={`h-1 bg-tv-phosphor mt-2 sm:mt-3`}
+                style={{ boxShadow: '0 0 10px rgba(57, 255, 20, 0.5)' }}
                 initial={{ width: '100%' }}
                 animate={{ width: '0%' }}
                 transition={{ duration: duration / 1000, ease: 'linear' }}

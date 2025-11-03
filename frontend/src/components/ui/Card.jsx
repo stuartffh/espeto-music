@@ -3,26 +3,27 @@ import clsx from 'clsx';
 
 export default function Card({
   children,
-  variant = 'glass',
+  variant = 'default',
   hover = true,
   glow = false,
   className = '',
   ...props
 }) {
   const variants = {
-    default: 'bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border',
-    glass: 'glass',
-    bordered: 'bg-transparent border-2 border-neon-cyan/30',
-    elevated: 'bg-white dark:bg-dark-elevated shadow-2xl',
+    default: 'retro-card',
+    glass: 'tv-screen border-tv-beige',
+    bordered: 'bg-tv-screen border-2 border-tv-phosphor',
+    elevated: 'retro-card shadow-tv-glow',
+    retro: 'retro-card',
   };
 
-  const hoverStyles = hover ? 'hover:scale-[1.02] transition-transform' : '';
-  const glowStyles = glow ? 'hover:shadow-neon-cyan' : '';
+  const hoverStyles = hover ? 'hover:scale-[1.01] transition-transform' : '';
+  const glowStyles = glow ? 'hover:shadow-tv-glow' : '';
 
   return (
     <motion.div
       className={clsx(
-        'rounded-lg p-6',
+        'p-6',
         variants[variant],
         hoverStyles,
         glowStyles,

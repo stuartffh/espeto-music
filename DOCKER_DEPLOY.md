@@ -331,7 +331,7 @@ Se encontrar problemas:
 1. Verifique os logs: `docker-compose logs -f`
 2. Teste health check: `curl http://localhost:3000/api/health`
 3. Verifique variáveis: `docker-compose config`
-4. Consulte [DEPLOYMENT.md](./DEPLOYMENT.md) para mais detalhes
+4. Consulte este documento para mais detalhes sobre deployment
 
 ## 📚 Referências
 

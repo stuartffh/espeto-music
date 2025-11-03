@@ -10,25 +10,25 @@ export default function Badge({
   className = '',
 }) {
   const variants = {
-    success: 'bg-neon-green/20 text-neon-green border-neon-green',
-    warning: 'bg-neon-yellow/20 text-neon-yellow border-neon-yellow',
-    danger: 'bg-neon-pink/20 text-neon-pink border-neon-pink',
-    info: 'bg-neon-cyan/20 text-neon-cyan border-neon-cyan',
-    neon: 'bg-neon-purple/20 text-neon-purple border-neon-purple',
+    success: 'bg-tv-screen/50 text-tv-phosphor border-tv-phosphor tv-text-glow',
+    warning: 'bg-tv-screen/50 text-tv-yellow border-tv-yellow',
+    danger: 'bg-tv-screen/50 text-tv-red border-tv-red',
+    info: 'bg-tv-screen/50 text-tv-blue border-tv-blue',
+    retro: 'retro-bg text-tv-black border-tv-beige-dark',
   };
 
   const sizes = {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-3 py-1 text-sm',
-    lg: 'px-4 py-1.5 text-base',
+    sm: 'px-2 py-0.5 text-xs font-mono',
+    md: 'px-3 py-1 text-sm font-mono',
+    lg: 'px-4 py-1.5 text-base font-mono',
   };
 
-  const glowStyles = glow ? 'shadow-lg' : '';
+  const glowStyles = glow ? 'shadow-tv-glow' : '';
 
   return (
     <motion.span
       className={clsx(
-        'inline-flex items-center justify-center font-semibold rounded-full border',
+        'inline-flex items-center justify-center font-semibold border-2',
         variants[variant],
         sizes[size],
         glowStyles,

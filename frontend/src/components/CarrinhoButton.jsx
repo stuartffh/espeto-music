@@ -27,7 +27,7 @@ function CarrinhoButton() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={abrirCarrinho}
-        className="relative bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-full shadow-2xl transition-all p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 group"
+        className="relative retro-button hover:shadow-tv-glow text-tv-black rounded-none shadow-2xl transition-all p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 group border-tv-beige"
       >
         {/* Ícone do Carrinho */}
         <div className="relative">
@@ -40,7 +40,7 @@ function CarrinhoButton() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
-                className="absolute -top-2 -right-2 bg-yellow-400 text-slate-900 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg"
+                className="absolute -top-2 -right-2 bg-tv-red border-2 border-tv-black text-white text-xs font-bold font-mono w-6 h-6 flex items-center justify-center shadow-lg"
               >
                 {quantidadeItens}
               </motion.div>
@@ -50,18 +50,18 @@ function CarrinhoButton() {
 
         {/* Valor Total (sempre visível) */}
         <div className="flex flex-col items-start">
-          <span className="text-[10px] sm:text-xs text-white/80 hidden sm:block">Total</span>
-          <span className="text-sm sm:text-base md:text-lg font-bold">
+          <span className="text-[10px] sm:text-xs text-tv-black/80 hidden sm:block font-mono">TOTAL</span>
+          <span className="text-sm sm:text-base md:text-lg font-bold font-mono">
             R$ {valorTotal.toFixed(2).replace('.', ',')}
           </span>
         </div>
 
         {/* Efeito de pulso */}
         <motion.div
-          className="absolute inset-0 rounded-full bg-red-500/30"
+          className="absolute inset-0 border-2 border-tv-phosphor opacity-50"
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.5, 0, 0.5],
+            scale: [1, 1.1, 1],
+            opacity: [0.3, 0.6, 0.3],
           }}
           transition={{
             duration: 2,

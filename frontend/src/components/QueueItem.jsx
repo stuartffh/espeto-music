@@ -8,9 +8,9 @@ export default function QueueItem({ musica, posicao, isPlaying = false }) {
   return (
     <motion.div
       className={clsx(
-        'glass rounded-xl p-3 sm:p-4 mb-2 sm:mb-3 flex items-center gap-3 sm:gap-4 transition-all duration-200',
-        isPlaying && 'border-2 border-neon-cyan shadow-lg shadow-neon-cyan/20',
-        !isPlaying && 'hover:shadow-md'
+        'retro-card p-3 sm:p-4 mb-2 sm:mb-3 flex items-center gap-3 sm:gap-4 transition-all duration-200 border-tv-beige',
+        isPlaying && 'border-tv-phosphor shadow-tv-glow',
+        !isPlaying && 'hover:shadow-tv-glow'
       )}
       layout
       initial={{ opacity: 0, x: -20 }}
@@ -20,25 +20,26 @@ export default function QueueItem({ musica, posicao, isPlaying = false }) {
     >
       {/* Posição Badge */}
       <Badge
-        variant="neon"
+        variant={isPlaying ? 'success' : 'retro'}
         size="sm"
         pulse={isPlaying}
-        className="min-w-[32px] sm:min-w-[36px] flex items-center justify-center font-bold"
+        glow={isPlaying}
+        className="min-w-[32px] sm:min-w-[36px] flex items-center justify-center font-bold font-mono"
       >
         {isPlaying ? '▶' : posicao}
       </Badge>
 
       {/* Thumbnail */}
       {musica.musicaThumbnail && (
-        <div className="relative flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden shadow-md">
+        <div className="relative flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 border-2 border-tv-beige overflow-hidden shadow-md">
           <img
             src={musica.musicaThumbnail}
             alt={musica.musicaTitulo}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover pixelated"
             loading="lazy"
           />
           {isPlaying && (
-            <div className="absolute inset-0 bg-gradient-to-t from-neon-cyan/40 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-tv-phosphor/20 border-2 border-tv-phosphor" />
           )}
         </div>
       )}
@@ -47,16 +48,16 @@ export default function QueueItem({ musica, posicao, isPlaying = false }) {
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-start gap-2">
           {!musica.musicaThumbnail && (
-            <Music2 className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+            <Music2 className="w-4 h-4 text-tv-gray flex-shrink-0 mt-0.5" />
           )}
           <h4 className={clsx(
-            "text-sm sm:text-base font-bold line-clamp-2 leading-snug",
-            isPlaying ? "text-neon-cyan" : "text-white"
+            "text-sm sm:text-base font-mono font-bold line-clamp-2 leading-snug",
+            isPlaying ? "text-tv-phosphor tv-text-glow" : "text-tv-phosphor"
           )}>
             {musica.musicaTitulo}
           </h4>
         </div>
-        <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-400">
+        <div className="flex items-center gap-1.5 text-xs sm:text-sm text-tv-gray font-mono">
           <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
           <p className="truncate">
             {musica.nomeCliente || 'Anônimo'}

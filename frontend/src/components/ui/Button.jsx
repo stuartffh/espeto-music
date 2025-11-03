@@ -12,14 +12,14 @@ export default function Button({
   className = '',
   ...props
 }) {
-  const baseStyles = 'inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'inline-flex items-center justify-center gap-2 font-mono font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed border-2';
 
   const variants = {
-    primary: 'bg-gradient-to-r from-neon-cyan to-neon-purple text-white hover:shadow-neon-cyan focus:ring-neon-cyan',
-    secondary: 'bg-gradient-to-r from-neon-purple to-neon-pink text-white hover:shadow-neon-purple focus:ring-neon-purple',
-    ghost: 'bg-transparent border-2 border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-dark-bg dark:hover:text-dark-bg',
-    danger: 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:shadow-lg focus:ring-red-500',
-    neon: 'glass border-2 border-neon-cyan text-neon-cyan hover:bg-neon-cyan/10 hover:shadow-neon-cyan',
+    primary: 'retro-button text-tv-black hover:shadow-tv-glow focus:ring-tv-phosphor border-tv-beige',
+    secondary: 'bg-tv-screen border-tv-phosphor text-tv-phosphor hover:bg-tv-screen hover:shadow-tv-glow focus:ring-tv-phosphor tv-text-glow',
+    ghost: 'bg-transparent border-tv-phosphor text-tv-phosphor hover:bg-tv-phosphor/10 hover:shadow-tv-glow focus:ring-tv-phosphor tv-text-glow',
+    danger: 'retro-button bg-tv-red border-tv-red-dark text-white hover:shadow-tv-glow-red focus:ring-tv-red',
+    tv: 'tv-screen border-tv-phosphor text-tv-phosphor hover:shadow-tv-glow focus:ring-tv-phosphor tv-text-glow',
   };
 
   const sizes = {

@@ -39,7 +39,7 @@ export default function Modal({
         <>
           {/* Overlay */}
           <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -50,7 +50,7 @@ export default function Modal({
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-0">
             <motion.div
               className={clsx(
-                'glass rounded-lg shadow-2xl w-full overflow-hidden',
+                'tv-screen border-tv-beige shadow-tv-glow w-full overflow-hidden',
                 size === 'fullscreen' ? 'h-full m-0' : 'max-h-[90vh] md:m-4',
                 sizes[size]
               )}
@@ -61,20 +61,21 @@ export default function Modal({
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-dark-border">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white gradient-text">
+              <div className="flex items-center justify-between p-6 border-b-2 border-tv-beige">
+                <h2 className="text-2xl font-mono font-bold text-tv-phosphor tv-text-glow">
                   {title}
                 </h2>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-elevated transition-colors"
+                  className="p-2 retro-button hover:bg-tv-beige transition-colors text-tv-black"
+                  style={{ minWidth: '40px', minHeight: '40px' }}
                 >
-                  <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                  <X className="w-6 h-6" />
                 </button>
               </div>
 
               {/* Content */}
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] text-tv-phosphor font-mono">
                 {children}
               </div>
             </motion.div>

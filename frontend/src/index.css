@@ -1,11 +1,11 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Courier New', Courier, monospace;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: dark;
+  color: #39FF14;
+  background-color: #0A0A0A;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,11 +15,14 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  color: #39FF14;
+  text-decoration: underline;
+  text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
 }
+
 a:hover {
-  color: #535bf2;
+  color: #7FFF00;
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.8);
 }
 
 body {
@@ -28,41 +31,53 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background-color: #0A0A0A;
+  color: #39FF14;
 }
 
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  font-family: 'Courier New', Courier, monospace;
+  color: #39FF14;
+  text-shadow: 
+    0 0 10px rgba(57, 255, 20, 0.8),
+    0 0 20px rgba(57, 255, 20, 0.6);
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
+  border-radius: 0;
+  border: 2px outset #D4A574;
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  font-family: 'Courier New', Courier, monospace;
+  background: linear-gradient(135deg, #D4A574 0%, #B8946F 100%);
+  color: #0A0A0A;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  transition: all 0.2s;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.2);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+button:hover {
+  background: linear-gradient(135deg, #E8C9A0 0%, #D4A574 100%);
+  box-shadow: 
+    0 0 10px rgba(57, 255, 20, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+button:active {
+  border: 2px inset #D4A574;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.5),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.1);
+}
+
+button:focus,
+button:focus-visible {
+  outline: 2px solid #39FF14;
+  outline-offset: 2px;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
 }

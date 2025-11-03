@@ -4,10 +4,10 @@ import Card from './ui/Card';
 import clsx from 'clsx';
 
 const colorMap = {
-  cyan: 'from-neon-cyan to-neon-cyan/50',
-  purple: 'from-neon-purple to-neon-purple/50',
-  pink: 'from-neon-pink to-neon-pink/50',
-  green: 'from-neon-green to-neon-green/50',
+  cyan: 'bg-tv-screen border-tv-phosphor',
+  purple: 'bg-tv-screen border-tv-blue',
+  pink: 'bg-tv-screen border-tv-red',
+  green: 'bg-tv-screen border-tv-phosphor',
 };
 
 export default function StatsCard({ title, value, icon: Icon, trend, color = 'cyan' }) {
@@ -15,31 +15,39 @@ export default function StatsCard({ title, value, icon: Icon, trend, color = 'cy
   const isNegative = trend < 0;
 
   return (
-    <Card variant="glass" hover glow>
+    <Card variant="retro" hover glow className={colorMap[color]}>
       <div className="flex items-center gap-4">
         {/* Ícone */}
         <div className={clsx(
-          'w-12 h-12 rounded-full bg-gradient-to-br flex items-center justify-center',
-          colorMap[color]
+          'w-12 h-12 border-2 border-tv-beige flex items-center justify-center retro-bg',
+          color === 'cyan' && 'border-tv-phosphor',
+          color === 'purple' && 'border-tv-blue',
+          color === 'pink' && 'border-tv-red'
         )}>
-          <Icon className="w-6 h-6 text-white" />
+          <Icon className={clsx(
+            'w-6 h-6',
+            color === 'cyan' && 'text-tv-phosphor',
+            color === 'purple' && 'text-tv-blue',
+            color === 'pink' && 'text-tv-red',
+            'default' && 'text-tv-black'
+          )} />
         </div>
 
         {/* Conteúdo */}
         <div className="flex-1">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          <p className="text-sm text-tv-gray mb-1 font-mono">
             {title}
           </p>
-          <p className="text-3xl font-bold gradient-text">
+          <p className="text-3xl font-mono font-bold text-tv-phosphor tv-text-glow">
             {value}
           </p>
 
           {/* Trend Indicator */}
           {trend !== undefined && trend !== 0 && (
             <div className={clsx(
-              'flex items-center gap-1 text-sm mt-1',
-              isPositive && 'text-neon-green',
-              isNegative && 'text-neon-pink'
+              'flex items-center gap-1 text-sm mt-1 font-mono',
+              isPositive && 'text-tv-phosphor',
+              isNegative && 'text-tv-red'
             )}>
               {isPositive ? (
                 <TrendingUp className="w-4 h-4" />
